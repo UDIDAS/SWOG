@@ -118,6 +118,63 @@ def extract_node_features(labels: np.ndarray,
     return features
 
 
+def _compute_shared_boundary(labels: np.ndarray, id_a: int, id_b: int) -> int:
+    """Count boundary voxels shared between two adjacent supernodes."""
+    # Vectorised: count faces where label transitions from id_a to id_b
+    count = 0
+    for axis in range(3):
+        sl_lo = [slice(None)] * 3
+        sl_hi = [slice(None)] * 3
+        sl_lo[axis] = slice(0, -1)
+        sl_hi[axis] = slice(1, None)
+        a = labels[tuple(sl_lo)]
+        b = labels[tuple(sl_hi)]
+        count += int(((a == id_a) & (b == id_b)).sum())
+        count += int(((a == id_b) & (b == id_a)).sum())
+    return count
+
+
+def _precompute_shared_boundaries(labels: np.ndarray, adjacency: dict) -> dict:
+    """Precompute shared boundary length for all adjacent pairs. Vectorised."""
+    flat = labels.ravel()
+    H, W, D = labels.shape
+    idx = np.arange(H * W * D, dtype=np.int64).reshape(H, W, D)
+
+    # Collect all boundary face pairs
+    all_a, all_b = [], []
+    for axis in range(3):
+        sl_lo = [slice(None)] * 3
+        sl_hi = [slice(None)] * 3
+        sl_lo[axis] = slice(0, -1)
+        sl_hi[axis] = slice(1, None)
+        a = labels[tuple(sl_lo)].ravel()
+        b = labels[tuple(sl_hi)].ravel()
+        boundary = (a != b) & (a > 0) & (b > 0)
+        all_a.append(a[boundary])
+        all_b.append(b[boundary])
+
+    if not all_a:
+        return {}
+
+    a_arr = np.concatenate(all_a)
+    b_arr = np.concatenate(all_b)
+
+    # Canonicalise: (min, max)
+    lo = np.minimum(a_arr, b_arr)
+    hi = np.maximum(a_arr, b_arr)
+    max_id = int(labels.max())
+    pair_keys = lo.astype(np.int64) * (max_id + 1) + hi.astype(np.int64)
+
+    # Count occurrences per pair
+    unique_keys, counts = np.unique(pair_keys, return_counts=True)
+    result = {}
+    for k, c in zip(unique_keys, counts):
+        id_lo = int(k // (max_id + 1))
+        id_hi = int(k % (max_id + 1))
+        result[(id_lo, id_hi)] = int(c)
+    return result
+
+
 def extract_edge_features(labels: np.ndarray,
                           volume: np.ndarray,
                           adjacency: dict,
@@ -125,10 +182,19 @@ def extract_edge_features(labels: np.ndarray,
     """
     Compute per-edge features for supernode pairs.
 
+    Features (12 per edge — Luke's expanded set):
+      Original 4: log_volume_ratio, intensity_diff_norm, distance_norm, orientation_cos
+      New ratios: compactness_ratio, elongation_ratio, boundary_ratio, intensity_std_ratio
+      New relational: shared_boundary, shared_boundary_frac_a, shared_boundary_frac_b,
+                      intensity_gradient (diff / distance)
+
     Returns dict  {(id_a, id_b): feature_dict}
     """
     edge_feats = {}
     max_dim = max(labels.shape)
+
+    # Precompute shared boundaries vectorised
+    shared_bounds = _precompute_shared_boundaries(labels, adjacency)
 
     for (i, j), _ in adjacency.items():
         fi = node_features.get(i)
@@ -136,6 +202,7 @@ def extract_edge_features(labels: np.ndarray,
         if fi is None or fj is None:
             continue
 
+        # --- Original 4 features ---
         log_vol_ratio = float(np.log(fi["volume"] / (fj["volume"] + 1e-8) + 1e-8))
 
         int_range = max(abs(fi["mean_intensity"]) + abs(fj["mean_intensity"]), 1e-8)
@@ -147,18 +214,49 @@ def extract_edge_features(labels: np.ndarray,
         dist = float(np.linalg.norm(diff))
         dist_norm = dist / max_dim
 
-        # Paper Eq. 9: cos θ = |d_u^T d_v| — 3D dot product of dominant axes
         di = np.array(fi.get("dominant_axis_vec", [1, 0, 0]), dtype=np.float64)
         dj = np.array(fj.get("dominant_axis_vec", [1, 0, 0]), dtype=np.float64)
         di_norm = np.linalg.norm(di) + 1e-8
         dj_norm = np.linalg.norm(dj) + 1e-8
         cos_theta = float(abs(np.dot(di / di_norm, dj / dj_norm)))
 
+        # --- Luke's additional ratios ---
+        # Ratios between all geometric properties (scale-invariant)
+        compact_ratio = fi["compactness"] / (fj["compactness"] + 1e-8)
+        log_compact_ratio = float(np.log(compact_ratio + 1e-8))
+
+        elong_ratio = fi["elongation"] / (fj["elongation"] + 1e-8)
+        log_elong_ratio = float(np.log(elong_ratio + 1e-8))
+
+        boundary_ratio = fi["boundary_length"] / (fj["boundary_length"] + 1e-8)
+        log_boundary_ratio = float(np.log(boundary_ratio + 1e-8))
+
+        std_ratio = fi["intensity_std"] / (fj["intensity_std"] + 1e-8)
+        log_std_ratio = float(np.log(std_ratio + 1e-8))
+
+        # --- Shared boundary (structural) ---
+        key = (min(i, j), max(i, j))
+        shared = shared_bounds.get(key, 0)
+        # Fraction of each supernode's boundary that is shared
+        shared_frac_a = shared / (fi["boundary_length"] + 1e-8)
+        shared_frac_b = shared / (fj["boundary_length"] + 1e-8)
+
+        # Intensity gradient: how fast intensity changes per unit distance
+        int_gradient = abs(fi["mean_intensity"] - fj["mean_intensity"]) / (dist + 1e-8)
+
         edge_feats[(i, j)] = {
             "log_volume_ratio": round(log_vol_ratio, 4),
             "intensity_diff_norm": round(float(int_diff_norm), 4),
             "distance_norm": round(float(dist_norm), 4),
             "orientation_cos": round(cos_theta, 4),
+            "log_compactness_ratio": round(log_compact_ratio, 4),
+            "log_elongation_ratio": round(log_elong_ratio, 4),
+            "log_boundary_ratio": round(log_boundary_ratio, 4),
+            "log_std_ratio": round(log_std_ratio, 4),
+            "shared_boundary": round(float(shared), 4),
+            "shared_boundary_frac_a": round(float(shared_frac_a), 4),
+            "shared_boundary_frac_b": round(float(shared_frac_b), 4),
+            "intensity_gradient": round(float(int_gradient), 6),
         }
 
     return edge_feats
@@ -195,7 +293,11 @@ def build_pyg_graph(node_features: dict,
     edge_idx = []
     edge_attr = []
     edge_feat_names = ["log_volume_ratio", "intensity_diff_norm",
-                       "distance_norm", "orientation_cos"]
+                       "distance_norm", "orientation_cos",
+                       "log_compactness_ratio", "log_elongation_ratio",
+                       "log_boundary_ratio", "log_std_ratio",
+                       "shared_boundary", "shared_boundary_frac_a",
+                       "shared_boundary_frac_b", "intensity_gradient"]
 
     for (i, j), ef in edge_features.items():
         if i in sid_to_idx and j in sid_to_idx:

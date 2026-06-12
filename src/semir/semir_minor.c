@@ -17,6 +17,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 
 /* ---------- Bitflags for expanded tensor entries ---------- */
 #define FLAG_VISITED   0x01
@@ -184,6 +185,15 @@ int semir_minor_construct(
                     long tidx = T_IDX(py, px, pz);
                     if (T[tidx] & FLAG_VISITED)
                         continue;
+
+                    /* Size cap: stop growing at beta_max to prevent
+                       giant supernodes. Remaining voxels become new seeds. */
+                    if (area >= beta_max) {
+                        /* Don't mark as visited — next outer-loop pass
+                           will pick this voxel up as a new seed. */
+                        continue;
+                    }
+
                     T[tidx] |= FLAG_VISITED;
 
                     /* Voxel coordinates */
@@ -232,11 +242,17 @@ int semir_minor_construct(
                             /* Merge: mark edge as contracted */
                             T[eidx] |= FLAG_VISITED;
                             stack_push(&stk, ny, nx, nz);
-                        } else if (diff >= alpha) {
-                            /* Paper Algorithm 3: mark edge as deleted during
-                               flood-fill. Strong boundary detected. */
+                        } else if (diff > alpha) {
+                            /* Strong boundary: mark edge as deleted */
                             T[eidx] |= FLAG_EDGE_DEL;
                             T[T_IDX(py, px, pz)] |= FLAG_BOUNDARY;
+                        } else {
+                            /* psi < diff <= alpha: merge but mark as
+                               boundary voxel. Alpha is the hard cutoff;
+                               psi controls SMBO boundary sensitivity. */
+                            T[eidx] |= FLAG_VISITED;
+                            T[T_IDX(py, px, pz)] |= FLAG_BOUNDARY;
+                            stack_push(&stk, ny, nx, nz);
                         }
                     }
                 }
@@ -278,6 +294,22 @@ int semir_minor_construct(
             }
         }
     }
+
+    /* Debug: count kept vs deleted supernodes and unassigned voxels */
+    int n_kept = 0, n_deleted = 0;
+    long total_area_kept = 0;
+    for (int s = 0; s < sn_count; s++) {
+        if (sn_area[s] >= 0) { n_kept++; total_area_kept += sn_area[s]; }
+        else n_deleted++;
+    }
+    /* Count unassigned voxels (label still 0 from memset) */
+    long n_unassigned = 0;
+    for (int i = 0; i < HWD; i++) {
+        if (labels_out[i] == 0) n_unassigned++;
+    }
+    fprintf(stderr, "[semir_minor] sn_count=%d kept=%d deleted=%d "
+            "total_area_kept=%ld unassigned_voxels=%ld/%d\n",
+            sn_count, n_kept, n_deleted, total_area_kept, n_unassigned, HWD);
 
     /* Phase 2: Relabel — compact surviving supernodes, zero out deleted ones */
     int *remap = (int *)calloc(sn_count + 1, sizeof(int));

@@ -17,7 +17,7 @@ from torch_geometric.nn import GINEConv, BatchNorm
 class SEMIRClassifier(nn.Module):
     """3-layer GINE for supernode-level tumor classification."""
 
-    def __init__(self, node_dim: int = 7, edge_dim: int = 4,
+    def __init__(self, node_dim: int = 7, edge_dim: int = 12,
                  hidden_dim: int = 128, n_classes: int = 2):
         super().__init__()
 
@@ -93,27 +93,37 @@ class SEMIRClassifier(nn.Module):
 
 def train_gine(train_graphs: list, val_graphs: list,
                epochs: int = 200, lr: float = 1e-3,
-               patience: int = 10, device: str = "cpu"):
+               patience: int = 10, device: str = "cpu",
+               batch_size: int = 4):
     """
     Train GINE on a list of PyG Data objects.
 
+    Paper Appendix F: batch size 1-4, Adam lr=1e-3, no weight decay,
+    early stopping on val Dice with patience 10.
+
     Returns trained model and training history.
     """
+    from torch_geometric.loader import DataLoader
+
     model = SEMIRClassifier().to(device)
-    # Paper Appendix F: "Adam lr=10^-3 and no weight decay"
     optimiser = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0)
 
-    # Class weights for imbalanced tumor/background — capped to avoid instability
+    # Class weights — sqrt scaling capped at 30 (Luke's suggestion)
     total_pos = sum(int((g.y == 1).sum()) for g in train_graphs)
     total_neg = sum(int((g.y == 0).sum()) for g in train_graphs)
     if total_pos > 0:
+        import math
         raw_ratio = total_neg / total_pos
-        capped_ratio = min(raw_ratio, 50.0)  # cap at 50x to prevent gradient explosion
+        capped_ratio = min(math.sqrt(raw_ratio), 30.0)
         weight = torch.tensor([1.0, capped_ratio], dtype=torch.float32).to(device)
         print(f"  Class weight: [1.0, {capped_ratio:.1f}] (raw ratio: {raw_ratio:.1f})")
     else:
         weight = torch.ones(2, dtype=torch.float32).to(device)
     criterion = nn.CrossEntropyLoss(weight=weight)
+
+    # DataLoader for mini-batch training (paper: batch size 1-4)
+    train_loader = DataLoader(train_graphs, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_graphs, batch_size=batch_size) if val_graphs else None
 
     history = {"train_loss": [], "val_loss": [], "val_dice": []}
     best_dice = -1.0
@@ -121,34 +131,36 @@ def train_gine(train_graphs: list, val_graphs: list,
     wait = 0
 
     for epoch in range(1, epochs + 1):
-        # --- Train (iterate graphs one at a time — they can be large) ---
         model.train()
         total_loss = 0.0
-        for g in train_graphs:
-            g_dev = g.to(device)
+        n_batches = 0
+        for batch in train_loader:
+            batch = batch.to(device)
             optimiser.zero_grad()
-            logits = model(g_dev)
-            loss = criterion(logits, g_dev.y)
+            logits = model(batch)
+            loss = criterion(logits, batch.y)
             loss.backward()
             optimiser.step()
             total_loss += loss.item()
-        avg_train = total_loss / len(train_graphs)
+            n_batches += 1
+        avg_train = total_loss / max(n_batches, 1)
         history["train_loss"].append(avg_train)
 
-        # --- Validate ---
-        if val_graphs:
+        if val_loader:
             model.eval()
             vloss_total, tp_all, fp_all, fn_all = 0.0, 0, 0, 0
+            n_val = 0
             with torch.no_grad():
-                for g in val_graphs:
-                    g_dev = g.to(device)
-                    logits = model(g_dev)
-                    vloss_total += criterion(logits, g_dev.y).item()
+                for batch in val_loader:
+                    batch = batch.to(device)
+                    logits = model(batch)
+                    vloss_total += criterion(logits, batch.y).item()
                     preds = logits.argmax(dim=1)
-                    tp_all += ((preds == 1) & (g_dev.y == 1)).sum().item()
-                    fp_all += ((preds == 1) & (g_dev.y == 0)).sum().item()
-                    fn_all += ((preds == 0) & (g_dev.y == 1)).sum().item()
-            vloss = vloss_total / len(val_graphs)
+                    tp_all += ((preds == 1) & (batch.y == 1)).sum().item()
+                    fp_all += ((preds == 1) & (batch.y == 0)).sum().item()
+                    fn_all += ((preds == 0) & (batch.y == 1)).sum().item()
+                    n_val += 1
+            vloss = vloss_total / max(n_val, 1)
             dice = float(2 * tp_all / (2 * tp_all + fp_all + fn_all + 1e-8))
             history["val_loss"].append(vloss)
             history["val_dice"].append(dice)
