@@ -285,10 +285,16 @@ def build_pyg_graph(node_features: dict,
     x = np.array([[node_features[s][f] for f in node_feat_names] for s in sids],
                  dtype=np.float32)
 
+    # Log-transform size features before normalization to preserve dynamic range
+    log_cols = [0, 1, 4]  # volume, boundary_length, dominant_axis
+    for col in log_cols:
+        x[:, col] = np.log1p(x[:, col])
+
+    # Z-score standardization (preserves relative differences, unlike min-max)
     for col in range(x.shape[1]):
-        mn, mx = x[:, col].min(), x[:, col].max()
-        if mx - mn > 1e-8:
-            x[:, col] = (x[:, col] - mn) / (mx - mn)
+        mu, sigma = x[:, col].mean(), x[:, col].std()
+        if sigma > 1e-8:
+            x[:, col] = (x[:, col] - mu) / sigma
 
     edge_idx = []
     edge_attr = []
