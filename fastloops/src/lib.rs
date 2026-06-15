@@ -1,4 +1,5 @@
 // fastloops: graph-minor pooling on 2D images or 3D volumes.
+// Contraction uses Kruskal-like canonical-anchored merging (SEMIR paper).
 use ndarray::{Array2, Array3};
 use numpy::{PyArray2, PyArray3, PyReadonlyArrayDyn};
 use pyo3::exceptions::PyValueError;
@@ -60,207 +61,169 @@ struct Out<const D: usize> { adj: Vec<u8>, ddims: [usize; D], node_feats: Vec<u6
 
 fn process<const D: usize>(
     data: &[u8], dims: [usize; D], c: usize, merge_distance: u32, cut_distance: u32, delete_small: usize, delete_large: usize,
-    value_min: u32, value_max: u32, divisor: f64, method: u8, weighted_luma: bool, max_nonzero: usize
+    value_min: u32, value_max: u32, _divisor: f64, method: u8, weighted_luma: bool, max_nonzero: usize
 ) -> Out<D> {
     let lay = build_layout(D, c); let nf = lay.nf;
-    let mut n_voxels = dims.iter().product::<usize>();
+    let n_voxels = dims.iter().product::<usize>();
     let mut ddims = [0usize; D]; for k in 0..D { ddims[k] = dims[k] * 2 - 1; }
     let mut dstride = [0usize; D]; let mut vstride = [0usize; D]; dstride[D-1] = 1; vstride[D-1] = 1;
     for k in (0..D-1).rev() { dstride[k] = dstride[k+1] * ddims[k+1]; vstride[k] = vstride[k+1] * dims[k+1]; }
-    let n_adj = ddims.iter().product::<usize>(); let mut adj = vec![0u8; n_adj]; let mut labels = vec![-1i64; n_voxels];
-    let mut step = [0usize; D]; let mut start = [0usize; D]; for k in 0..D { step[k] = coprime_step(dims[k], divisor); start[k] = step[k] % dims[k]; }
-    let total = 3usize.pow(D as u32); let mut offsets = Vec::new();
-    for code in 0..total {
-        let mut t = code; let mut delta = [0isize; D]; let mut nz = 0;
-        for k in 0..D { let trit = t % 3; t /= 3; delta[k] = match trit { 0 => 0, 1 => 2, _ => -2 }; if delta[k] != 0 { nz += 1; } }
-        if nz == 0 || nz > max_nonzero { continue; } offsets.push(delta);
-    }
-    let mut node_feats = Vec::new(); let mut cur = 0; let mut stack = Vec::new(); let mut delete_stack = Vec::new(); let mut region_voxels = Vec::new();
-    for idx in 0..n_voxels {
-        let mut rem = idx; let mut coord = [0usize; D]; let mut vseed = [0usize; D];
-        for k in (0..D).rev() { let i_k = rem % dims[k]; rem /= dims[k]; let ck = (start[k] + i_k * step[k]) % dims[k]; vseed[k] = ck; coord[k] = ck * 2; }
-        let seed_flat = flat::<D>(&coord, &dstride); if adj[seed_flat] & VISITED != 0 { continue; }
-        let base = cur * nf; if node_feats.len() < base + nf { node_feats.resize(base + nf, 0); } else { for t in base..base+nf { node_feats[t] = 0; } }
-        node_feats[base + lay.min_max[0]] = u64::MAX; node_feats[base + lay.min_max[2]] = u64::MAX; if D == 3 { node_feats[base + lay.min_max[4]] = u64::MAX; }
-        for k in 0..D { node_feats[base + lay.canon0 + k] = u64::MAX; }
-        let seed_voxel_flat = flat::<D>(&vseed, &vstride); let seed = &data[seed_voxel_flat * c .. seed_voxel_flat * c + c];
-        adj[seed_flat] |= NODE_MERGED | IN_CURRENT_REGION; stack.clear(); delete_stack.clear(); region_voxels.clear(); stack.push(coord);
-        while let Some(dc) = stack.pop() {
-            let cf = flat::<D>(&dc, &dstride); if adj[cf] & VISITED != 0 { continue; } adj[cf] |= VISITED; delete_stack.push(cf);
-            let mut vc = [0usize; D]; for k in 0..D { vc[k] = dc[k] / 2; } let vf = flat::<D>(&vc, &vstride); region_voxels.push(vf);
-            let here = &data[vf * c .. vf * c + c];
-            let x = vc[D-1] as u64; let y = vc[D-2] as u64; node_feats[base + lay.area] += 1;
-            node_feats[base + lay.s[0]] += x; node_feats[base + lay.s[1]] += y; node_feats[base + lay.cov[0]] += x*x; node_feats[base + lay.cov[1]] += y*y; node_feats[base + lay.cov[2]] += x*y;
-            if x < node_feats[base + lay.min_max[0]] { node_feats[base + lay.min_max[0]] = x; } if x > node_feats[base + lay.min_max[1]] { node_feats[base + lay.min_max[1]] = x; }
-            if y < node_feats[base + lay.min_max[2]] { node_feats[base + lay.min_max[2]] = y; } if y > node_feats[base + lay.min_max[3]] { node_feats[base + lay.min_max[3]] = y; }
-            if D == 3 { let z = vc[0] as u64; node_feats[base + lay.s[2]] += z; node_feats[base + lay.cov[3]] += z*z; node_feats[base + lay.cov[4]] += x*z; node_feats[base + lay.cov[5]] += y*z;
-                if z < node_feats[base + lay.min_max[4]] { node_feats[base + lay.min_max[4]] = z; } if z > node_feats[base + lay.min_max[5]] { node_feats[base + lay.min_max[5]] = z; } }
-            for ch in 0..c { node_feats[base + lay.chan0 + ch] += here[ch] as u64; }
-            { let mut less = false; for k in 0..D { let cv = node_feats[base + lay.canon0 + k]; let v = vc[k] as u64; if v < cv { less = true; break; } if v > cv { break; } }
-                if less { for k in 0..D { node_feats[base + lay.canon0 + k] = vc[k] as u64; } } }
-            let mut on_boundary = false;
-            for off in &offsets {
-                let mut ncoord = [0usize; D]; let mut ecoord = [0usize; D]; let mut ok = true;
-                for k in 0..D { let nv = dc[k] as isize + off[k]; if nv < 0 || nv >= ddims[k] as isize { ok = false; break; } ncoord[k] = nv as usize; ecoord[k] = (dc[k] as isize + off[k]/2) as usize; }
-                if !ok { continue; } let nf_flat = flat::<D>(&ncoord, &dstride); let ef_flat = flat::<D>(&ecoord, &dstride); let n_flags = adj[nf_flat];
-                if n_flags & IN_CURRENT_REGION != 0 { adj[ef_flat] |= EDGE_MERGED; continue; }
-                if n_flags & (VISITED | NODE_MERGED) != 0 { on_boundary = true; continue; }
-                let mut nvc = [0usize; D]; for k in 0..D { nvc[k] = ncoord[k] / 2; } let nvf = flat::<D>(&nvc, &vstride); let neighbor = &data[nvf*c..nvf*c+c];
-                let diff = channel_distance(seed, neighbor, method, weighted_luma);
-                if diff <= merge_distance { adj[nf_flat] |= NODE_MERGED | IN_CURRENT_REGION; adj[ef_flat] |= EDGE_MERGED; stack.push(ncoord); }
-                else { on_boundary = true; if diff >= cut_distance { adj[ef_flat] |= EDGE_DELETED; } }
-            }
-            if on_boundary { adj[cf] |= NODE_ADJACENT_BOUNDARY; node_feats[base + lay.boundary] += 1; }
-        }
-        let area = node_feats[base + lay.area] as usize; let csum: u64 = (0..c).map(|ch| node_feats[base + lay.chan0 + ch]).sum();
-        let mean = (csum / (area as u64 * c as u64)) as u32; let size_ok = (area > delete_small && area < delete_large) || (delete_small >= delete_large);
-        let value_ok = mean >= value_min && mean <= value_max;
-        if size_ok && value_ok { for &df in &delete_stack { adj[df] &= !IN_CURRENT_REGION; } for &vf in &region_voxels { labels[vf] = cur as i64; } cur += 1; }
-        else { for &df in &delete_stack { adj[df] |= NODE_DELETED; adj[df] &= !(NODE_MERGED | IN_CURRENT_REGION); } }
-    }
+    let n_adj = ddims.iter().product::<usize>(); let mut adj = vec![0u8; n_adj];
 
     // =========================================================================
-    // Phase 1b: Iterative supernode merging
+    // Phase 1: Kruskal-like canonical-anchored edge contraction
     //
-    // The initial seed-based growth (Phase 1) compares every neighbor to the
-    // fixed seed voxel. This produces ~10^6 tiny supernodes because CT noise
-    // causes most adjacent voxel pairs to exceed ψ.
+    // Paper: "Edge contraction merges neighboring supernodes v_i, v_k if
+    // ||I_{v_i} - I_{v_k}|| <= ψ where I_v is the intensity of the canonical
+    // voxel. Contraction recurses until no further valid merges exist."
     //
-    // The SEMIR paper says: "Contraction recurses until no further valid merges
-    // exist." This means: after merging supernodes, recompute the representative
-    // intensity and re-check neighbors. We approximate this by iterating:
-    //   1. Compute per-supernode mean intensity
-    //   2. Find adjacent supernode pairs whose means differ by ≤ ψ
-    //   3. Merge them (Union-Find)
-    //   4. Relabel and repeat until convergence
+    // Implementation: bucket-sort all adjacent voxel pairs by distance,
+    // process from smallest to largest. Union-Find tracks supernodes.
+    // Before each merge, check canonical intensities (not edge distance).
+    // The canonical anchors prevent transitive drift beyond ±ψ.
     // =========================================================================
-    let mut voff_face = Vec::new();
-    for code in 0..total {
-        let mut t = code; let mut d = [0isize; D]; let mut nz = 0;
-        for k in 0..D { let trit = t % 3; t /= 3; d[k] = match trit { 0 => 0, 1 => 1, _ => -1 }; if d[k] != 0 { nz += 1; } }
-        if nz == 0 || nz > 1 { continue; } // faces only for adjacency scan
-        let mut canon = true; for k in 0..D { if d[k] != 0 { canon = d[k] > 0; break; } }
-        if canon { voff_face.push(d); }
+
+    // Union-Find with path compression + union by size
+    let mut uf_parent: Vec<usize> = (0..n_voxels).collect();
+    let mut uf_size: Vec<u64> = vec![1; n_voxels];
+    // Per-supernode canonical: intensity of the first-merged (most central) voxel
+    // Initialize to each voxel's own intensity
+    let mut canon_int: Vec<u32> = (0..n_voxels).map(|v| {
+        (0..c).map(|ch| data[v * c + ch] as u32).sum::<u32>() / c as u32
+    }).collect();
+
+    #[inline]
+    fn uf_find(x: usize, parent: &mut [usize]) -> usize {
+        let mut r = x;
+        while parent[r] != r { r = parent[r]; }
+        let mut c = x;
+        while parent[c] != r { let n = parent[c]; parent[c] = r; c = n; }
+        r
     }
 
-    // Step 1: Build supernode adjacency from voxel boundaries (ONE scan)
-    let mut sn_adj: HashMap<(usize, usize), bool> = HashMap::new();
-    let mut sn_canon_int = vec![0u32; cur];
+    // Bucket sort: collect all face-adjacent pairs by distance (0..=255)
+    let mut buckets: Vec<Vec<(usize, usize)>> = vec![Vec::new(); 256];
     for v in 0..n_voxels {
-        let la = labels[v]; if la < 0 { continue; }
-        let r = la as usize;
-        // Track canonical (smallest flat index) intensity
-        if sn_canon_int[r] == 0 || v == 0 {
-            sn_canon_int[r] = (0..c).map(|ch| data[v * c + ch] as u32).sum::<u32>() / c as u32;
-        }
         let mut rem = v; let mut vc = [0usize; D];
         for k in (0..D).rev() { vc[k] = rem % dims[k]; rem /= dims[k]; }
-        for off in &voff_face {
-            let mut nb = [0usize; D]; let mut ok = true;
-            for k in 0..D { let q = vc[k] as isize + off[k]; if q < 0 || q >= dims[k] as isize { ok = false; break; } nb[k] = q as usize; }
-            if !ok { continue; }
-            let nbf = flat::<D>(&nb, &vstride);
-            let lb = labels[nbf]; if lb < 0 || lb == la { continue; }
-            let (a, b) = if la < lb { (la as usize, lb as usize) } else { (lb as usize, la as usize) };
-            sn_adj.entry((a, b)).or_insert(true);
+        // Only check "forward" neighbors to avoid duplicates
+        for axis in 0..D {
+            if vc[axis] + 1 < dims[axis] {
+                let mut nb = vc; nb[axis] += 1;
+                let nbf = flat::<D>(&nb, &vstride);
+                let dist = channel_distance(&data[v*c..v*c+c], &data[nbf*c..nbf*c+c], method, weighted_luma);
+                if dist <= 255 {
+                    buckets[dist as usize].push((v, nbf));
+                }
+            }
         }
     }
-    // Fix canonical: re-scan to get actual first-voxel intensity per supernode
-    let mut sn_canon_set = vec![false; cur];
+
+    // Process buckets 0..=merge_distance: merge pairs if canonicals are within ψ
+    for dist in 0..=merge_distance.min(255) {
+        for &(a, b) in &buckets[dist as usize] {
+            let ra = uf_find(a, &mut uf_parent);
+            let rb = uf_find(b, &mut uf_parent);
+            if ra == rb { continue; }
+
+            // SEMIR check: compare canonical intensities, not edge distance
+            let canon_diff = (canon_int[ra] as i32 - canon_int[rb] as i32).unsigned_abs();
+            if canon_diff > merge_distance { continue; }
+
+            // Merge smaller into larger; canonical = larger's canonical
+            let (big, small) = if uf_size[ra] >= uf_size[rb] { (ra, rb) } else { (rb, ra) };
+            uf_parent[small] = big;
+            uf_size[big] += uf_size[small];
+            // Canonical stays as the larger supernode's (already set)
+
+            // Mark edge as merged in adj tensor
+            let mut va = [0usize; D]; let mut vb = [0usize; D];
+            let mut rem = a; for k in (0..D).rev() { va[k] = rem % dims[k]; rem /= dims[k]; }
+            rem = b; for k in (0..D).rev() { vb[k] = rem % dims[k]; rem /= dims[k]; }
+            let mut ec = [0usize; D]; for k in 0..D { ec[k] = va[k] + vb[k]; } // doubled coords: edge midpoint
+            let ef = flat::<D>(&ec, &dstride);
+            adj[ef] |= EDGE_MERGED;
+        }
+    }
+
+    // Build contiguous labels from Union-Find
+    let mut root_to_id: HashMap<usize, i64> = HashMap::new();
+    let mut labels = vec![-1i64; n_voxels];
+    let mut cur: usize = 0;
     for v in 0..n_voxels {
-        let r = labels[v]; if r < 0 { continue; }
-        let r = r as usize;
-        if !sn_canon_set[r] {
-            sn_canon_int[r] = (0..c).map(|ch| data[v * c + ch] as u32).sum::<u32>() / c as u32;
-            sn_canon_set[r] = true;
+        let r = uf_find(v, &mut uf_parent);
+        if let Some(&id) = root_to_id.get(&r) {
+            labels[v] = id;
+        } else {
+            root_to_id.insert(r, cur as i64);
+            labels[v] = cur as i64;
+            cur += 1;
         }
     }
 
-    // Step 2: Iterate on supernode graph (fast — no voxel scanning)
-    let max_merge_iters = 100;
-    for _iter in 0..max_merge_iters {
-        // Find pairs to merge based on canonical intensity
-        let mut pairs_to_merge = Vec::new();
-        for &(a, b) in sn_adj.keys() {
-            let diff = (sn_canon_int[a] as i32 - sn_canon_int[b] as i32).unsigned_abs();
-            if diff <= cut_distance { pairs_to_merge.push((a, b)); }
-        }
-        if pairs_to_merge.is_empty() { break; }
-
-        // Direct-pair merge — NO transitivity per iteration
-        let mut mapping: Vec<i64> = (0..cur as i64).collect();
-        let mut already_merged = vec![false; cur];
-        for (a, b) in &pairs_to_merge {
-            let (a, b) = (*a, *b);
-            if already_merged[a] || already_merged[b] { continue; }
-            mapping[b] = a as i64;
-            already_merged[a] = true;
-            already_merged[b] = true;
-        }
-
-        // Compact to contiguous IDs
-        let mut id_map: HashMap<i64, i64> = HashMap::new();
-        let mut new_id: i64 = 0;
-        let mut final_mapping = vec![0i64; cur];
-        for r in 0..cur {
-            let target = mapping[r];
-            if let Some(&id) = id_map.get(&target) { final_mapping[r] = id; }
-            else { id_map.insert(target, new_id); final_mapping[r] = new_id; new_id += 1; }
-        }
-        let old_cur = cur;
-        cur = new_id as usize;
-        if cur == old_cur { break; }
-
-        // Relabel voxels (ONE voxel scan per iteration — unavoidable)
-        for v in 0..n_voxels {
-            if labels[v] >= 0 { labels[v] = final_mapping[labels[v] as usize]; }
-        }
-
-        // Rebuild supernode adjacency from old adjacency (fast, no voxel scan)
-        let mut new_adj: HashMap<(usize, usize), bool> = HashMap::new();
-        for &(a, b) in sn_adj.keys() {
-            let na = final_mapping[a] as usize;
-            let nb = final_mapping[b] as usize;
-            if na != nb {
-                let key = if na < nb { (na, nb) } else { (nb, na) };
-                new_adj.entry(key).or_insert(true);
-            }
-        }
-        sn_adj = new_adj;
-
-        // Rebuild canonical intensities for merged supernodes
-        // Pick canonical from the smaller-ID original supernode (deterministic)
-        let mut new_canon = vec![0u32; cur];
-        let mut canon_set = vec![false; cur];
-        for old_r in 0..old_cur {
-            let new_r = final_mapping[old_r] as usize;
-            if !canon_set[new_r] {
-                new_canon[new_r] = sn_canon_int[old_r];
-                canon_set[new_r] = true;
-            }
-        }
-        sn_canon_int = new_canon;
+    // Mark node/edge states in adj tensor for boundary detection
+    for v in 0..n_voxels {
+        let mut rem = v; let mut vc = [0usize; D];
+        for k in (0..D).rev() { vc[k] = rem % dims[k]; rem /= dims[k]; }
+        let dc = { let mut c2 = [0usize; D]; for k in 0..D { c2[k] = vc[k] * 2; } c2 };
+        let cf = flat::<D>(&dc, &dstride);
+        adj[cf] |= VISITED | NODE_MERGED;
     }
 
-    // Recompute all node_feats from scratch for merged labels
-    node_feats.clear();
-    node_feats.resize(cur * nf, 0);
+    // =========================================================================
+    // Phase 2: Node deletion (same as Luke's original)
+    // =========================================================================
+    // Compute per-supernode stats for deletion decisions
+    let mut sn_area = vec![0u64; cur];
+    let mut sn_chan_sum = vec![0u64; cur];
+    for v in 0..n_voxels {
+        let r = labels[v] as usize;
+        sn_area[r] += 1;
+        let val: u64 = (0..c).map(|ch| data[v * c + ch] as u64).sum();
+        sn_chan_sum[r] += val;
+    }
+
+    let mut keep = vec![true; cur];
+    for r in 0..cur {
+        let area = sn_area[r] as usize;
+        let mean = (sn_chan_sum[r] / (sn_area[r].max(1) * c as u64)) as u32;
+        let size_ok = (area > delete_small && area < delete_large) || (delete_small >= delete_large);
+        let value_ok = mean >= value_min && mean <= value_max;
+        if !size_ok || !value_ok { keep[r] = false; }
+    }
+
+    // Remap: deleted supernodes get label -1, survivors get contiguous IDs
+    let mut remap = vec![-1i64; cur];
+    let mut new_cur: usize = 0;
+    for r in 0..cur {
+        if keep[r] { remap[r] = new_cur as i64; new_cur += 1; }
+    }
+    for v in 0..n_voxels {
+        let old = labels[v];
+        if old >= 0 {
+            let new_label = remap[old as usize];
+            labels[v] = new_label;
+            if new_label < 0 {
+                // Mark deleted in adj
+                let mut rem = v; let mut vc = [0usize; D];
+                for k in (0..D).rev() { vc[k] = rem % dims[k]; rem /= dims[k]; }
+                let dc = { let mut c2 = [0usize; D]; for k in 0..D { c2[k] = vc[k] * 2; } c2 };
+                adj[flat::<D>(&dc, &dstride)] |= NODE_DELETED;
+            }
+        }
+    }
+    cur = new_cur;
+
+    // =========================================================================
+    // Phase 3: Compute node features for surviving supernodes
+    // =========================================================================
+    let mut node_feats = vec![0u64; cur * nf];
     for r in 0..cur {
         let base = r * nf;
         node_feats[base + lay.min_max[0]] = u64::MAX;
         node_feats[base + lay.min_max[2]] = u64::MAX;
         if D == 3 { node_feats[base + lay.min_max[4]] = u64::MAX; }
         for k in 0..D { node_feats[base + lay.canon0 + k] = u64::MAX; }
-    }
-    // Reset adj boundary flags (will recompute)
-    for v in 0..n_voxels {
-        if labels[v] >= 0 {
-            let mut rem = v; let mut vc = [0usize; D];
-            for k in (0..D).rev() { vc[k] = rem % dims[k]; rem /= dims[k]; }
-            let dc = { let mut c2 = [0usize; D]; for k in 0..D { c2[k] = vc[k] * 2; } c2 };
-            let cf = flat::<D>(&dc, &dstride);
-            adj[cf] &= !NODE_ADJACENT_BOUNDARY; // clear boundary flag, will recompute
-        }
     }
     for v in 0..n_voxels {
         let r = labels[v]; if r < 0 { continue; }
@@ -276,62 +239,65 @@ fn process<const D: usize>(
         if y < node_feats[base + lay.min_max[2]] { node_feats[base + lay.min_max[2]] = y; }
         if y > node_feats[base + lay.min_max[3]] { node_feats[base + lay.min_max[3]] = y; }
         if D == 3 {
-            let z = vc[0] as u64;
-            node_feats[base + lay.s[2]] += z;
+            let z = vc[0] as u64; node_feats[base + lay.s[2]] += z;
             node_feats[base + lay.cov[3]] += z*z; node_feats[base + lay.cov[4]] += x*z; node_feats[base + lay.cov[5]] += y*z;
             if z < node_feats[base + lay.min_max[4]] { node_feats[base + lay.min_max[4]] = z; }
             if z > node_feats[base + lay.min_max[5]] { node_feats[base + lay.min_max[5]] = z; }
         }
         for ch in 0..c { node_feats[base + lay.chan0 + ch] += data[v * c + ch] as u64; }
-        { let mut less = false; for k in 0..D { let cv = node_feats[base + lay.canon0 + k]; let vk = vc[k] as u64; if vk < cv { less = true; break; } if vk > cv { break; } }
+        { let mut less = false; for k in 0..D { let cv = node_feats[base + lay.canon0 + k]; let vk = vc[k] as u64;
+            if vk < cv { less = true; break; } if vk > cv { break; } }
             if less { for k in 0..D { node_feats[base + lay.canon0 + k] = vc[k] as u64; } } }
-        // Boundary check
+        // Boundary detection
         let mut on_boundary = false;
-        for off in &voff_face {
-            let mut nb = [0usize; D]; let mut ok = true;
-            for k in 0..D { let q = vc[k] as isize + off[k]; if q < 0 || q >= dims[k] as isize { ok = false; break; } nb[k] = q as usize; }
-            if !ok { on_boundary = true; continue; }
-            let nbf = flat::<D>(&nb, &vstride);
-            let lb = labels[nbf];
-            if lb < 0 || lb != r as i64 { on_boundary = true; }
+        for axis in 0..D {
+            for dir in [-1isize, 1] {
+                let nk = vc[axis] as isize + dir;
+                if nk < 0 || nk >= dims[axis] as isize { on_boundary = true; continue; }
+                let mut nb = vc; nb[axis] = nk as usize;
+                let nbf = flat::<D>(&nb, &vstride);
+                if labels[nbf] < 0 || labels[nbf] != r as i64 { on_boundary = true; }
+            }
         }
         if on_boundary { node_feats[base + lay.boundary] += 1; }
     }
+    let n_reg = cur;
 
-    let n_reg = cur; node_feats.truncate(n_reg * nf);
-
-    // Build voff for edge construction (same as before, but uses max_nonzero)
-    let mut voff = Vec::new();
+    // =========================================================================
+    // Phase 4: Edge building (Luke's original — cut edges kept with cut_frac)
+    // =========================================================================
+    let total = 3usize.pow(D as u32); let mut voff = Vec::new();
     for code in 0..total {
-        let mut t = code; let mut d = [0isize; D]; let mut nz = 0; for k in 0..D { let trit = t % 3; t /= 3; d[k] = match trit { 0 => 0, 1 => 1, _ => -1 }; if d[k] != 0 { nz += 1; } }
-        if nz == 0 || nz > max_nonzero { continue; } let mut canon = true; for k in 0..D { if d[k] != 0 { canon = d[k] > 0; break; } } if canon { voff.push(d); }
-    }
-    // Pre-compute per-supernode mean intensity for supernode-level edge deletion
-    let mut sn_mean = vec![0u32; n_reg];
-    for r in 0..n_reg {
-        let base = r * nf;
-        let area = node_feats[base + lay.area].max(1);
-        let chan_sum: u64 = (0..c).map(|ch| node_feats[base + lay.chan0 + ch]).sum();
-        sn_mean[r] = (chan_sum / (area * c as u64)) as u32;
+        let mut t = code; let mut d = [0isize; D]; let mut nz = 0;
+        for k in 0..D { let trit = t % 3; t /= 3; d[k] = match trit { 0 => 0, 1 => 1, _ => -1 }; if d[k] != 0 { nz += 1; } }
+        if nz == 0 || nz > max_nonzero { continue; }
+        let mut canon = true; for k in 0..D { if d[k] != 0 { canon = d[k] > 0; break; } } if canon { voff.push(d); }
     }
     let mut emap = HashMap::new();
     for p in 0..n_voxels {
-        let la = labels[p]; if la < 0 { continue; } let mut rem = p; let mut vc = [0usize; D]; for k in (0..D).rev() { vc[k] = rem % dims[k]; rem /= dims[k]; }
+        let la = labels[p]; if la < 0 { continue; }
+        let mut rem = p; let mut vc = [0usize; D]; for k in (0..D).rev() { vc[k] = rem % dims[k]; rem /= dims[k]; }
         for off in &voff {
-            let mut nb = [0usize; D]; let mut ok = true; for k in 0..D { let q = vc[k] as isize + off[k]; if q < 0 || q >= dims[k] as isize { ok = false; break; } nb[k] = q as usize; } if !ok { continue; }
+            let mut nb = [0usize; D]; let mut ok = true;
+            for k in 0..D { let q = vc[k] as isize + off[k]; if q < 0 || q >= dims[k] as isize { ok = false; break; } nb[k] = q as usize; }
+            if !ok { continue; }
             let nbf = flat::<D>(&nb, &vstride); let lb = labels[nbf]; if lb < 0 || lb == la { continue; }
             let key = if la < lb { (la, lb) } else { (lb, la) };
-            // Edge deletion uses supernode mean intensities, not raw voxel-pair distances
-            let mean_dist = (sn_mean[la as usize] as i32 - sn_mean[lb as usize] as i32).unsigned_abs();
-            let mut es = [0usize; D]; for k in 0..D { es[k] = (2 * vc[k] as isize + off[k]) as usize; } let ef = flat::<D>(&es, &dstride); let is_cut = mean_dist >= cut_distance; if is_cut { adj[ef] |= EDGE_DELETED; continue; }
-            // Still compute raw voxel distance for edge features (boundary contrast)
             let dist = channel_distance(&data[p*c..p*c+c], &data[nbf*c..nbf*c+c], method, weighted_luma);
-            let e = emap.entry(key).or_insert([0u64; N_EDGE_FEATURES]); e[0] += 1; e[1] += dist as u64; if dist as u64 > e[2] { e[2] = dist as u64; } e[3] += 0;
+            let mut es = [0usize; D]; for k in 0..D { es[k] = (2 * vc[k] as isize + off[k]) as usize; }
+            let ef = flat::<D>(&es, &dstride);
+            let is_cut = dist >= cut_distance; if is_cut { adj[ef] |= EDGE_DELETED; }
+            let e = emap.entry(key).or_insert([0u64; N_EDGE_FEATURES]);
+            e[0] += 1; e[1] += dist as u64; if dist as u64 > e[2] { e[2] = dist as u64; } e[3] += is_cut as u64;
         }
     }
-    let mut keys: Vec<(i64, i64)> = emap.keys().copied().collect(); keys.sort_unstable(); let n_edges = keys.len();
+    let mut keys: Vec<(i64, i64)> = emap.keys().copied().collect(); keys.sort_unstable();
+    let n_edges = keys.len();
     let mut edge_index = vec![0i64; 2 * n_edges]; let mut edge_feats = vec![0u64; N_EDGE_FEATURES * n_edges];
-    for (i, k) in keys.iter().enumerate() { edge_index[i] = k.0; edge_index[n_edges + i] = k.1; let e = emap[k]; for j in 0..N_EDGE_FEATURES { edge_feats[i * N_EDGE_FEATURES + j] = e[j]; } }
+    for (i, k) in keys.iter().enumerate() {
+        edge_index[i] = k.0; edge_index[n_edges + i] = k.1;
+        let e = emap[k]; for j in 0..N_EDGE_FEATURES { edge_feats[i * N_EDGE_FEATURES + j] = e[j]; }
+    }
     Out { adj, ddims, node_feats, n_reg, nf, labels, edge_index, edge_feats, n_edges }
 }
 
