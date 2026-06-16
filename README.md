@@ -4,7 +4,7 @@ Reproduction of SEMIR graph-minor segmentation for medical images, targeting LiT
 
 ## Goal
 
-Replace AuSAM (SAM2.1 + DBSCAN) with SEMIR's learned graph minors in the ACM MMKG VKG pipeline, eliminating dependency on ground-truth CSV files.
+Replace AuSAM (SAM2.1 + DBSCAN) with SEMIR's learned graph minors in the ACM MMKG VKG pipeline, eliminating dependency on ground-truth CSV files for tumor phenotype extraction.
 
 ## Repository Structure
 
@@ -14,13 +14,15 @@ fastloops/
   Cargo.toml          — Rust dependencies (pyo3, numpy, ndarray)
 
 notebooks/
-  rust_crate.ipynb    — Luke's original crate reference + feature extraction
-  semir_lits_v7.py    — Current pipeline: oracle search → diagnostics → GINE training
-  semir_pancreas_detections.ipynb — Pancreas dataset exploration
+  semir_lits_twostage.ipynb — Current: two-stage liver-crop + protected coarsening + GINE
+  semir_lits_v7.py          — Previous: full-volume oracle search + GINE training
+  run_semir_jepa.py         — DINO + IG-JEPA self-supervised pre-training exploration
+  rust_crate.ipynb          — Luke's original crate reference + feature extraction
 
 results/
-  semir_lits_v7/      — Latest experiment results
-  archive/            — Earlier experiment results (v5, v6)
+  semir_lits_twostage/ — Two-stage pipeline results (oracle diagnostics + GINE Dice)
+  semir_lits_v7/       — Full-volume pipeline results
+  archive/             — Earlier experiment results (v5, v6)
 ```
 
 ## Rust Crate (`fastloops`)
@@ -31,11 +33,10 @@ Binary tensor-based graph-minor pooling on 3D medical volumes.
 ```bash
 source ~/.cargo/env
 cd fastloops
-maturin build --release --interpreter ~/.conda/envs/llmft/bin/python
-pip install --no-deps --force-reinstall target/wheels/fastloops-*.whl
+VIRTUAL_ENV= CONDA_PREFIX=~/.conda/envs/llmft maturin develop --release
 ```
 
-**Usage:**
+**API:**
 ```python
 import fastloops
 import numpy as np
@@ -43,15 +44,19 @@ import numpy as np
 # Input: uint8 CT volume, C-contiguous, channel-last
 ct_u8 = np.ascontiguousarray(volume[..., np.newaxis])  # (D, H, W, 1)
 
+# Standard coarsening
 node_feats, edge_index, edge_feats, labels, adj = fastloops.merge_and_cut(
     ct_u8,
-    merge_distance=3,       # ψ: edge contraction threshold (uint8 scale)
-    cut_distance=15,        # α: edge deletion threshold
-    delete_small_node_max_size=0,   # β_min (0 = no deletion)
-    delete_large_node_min_size=n,   # β_max
-    delete_value_min=0,     # m_min
-    delete_value_max=255,   # m_max
+    merge_distance=5,       # ψ: edge contraction threshold (uint8 scale)
+    cut_distance=25,        # α: edge deletion threshold
     connectivity="faces",   # 6-connected
+)
+
+# Protected coarsening (prevents merging/deletion of candidate tumor voxels)
+protect_mask = suspicious_region.astype(np.uint8)  # same shape as volume
+node_feats, edge_index, edge_feats, labels, adj = fastloops.merge_and_cut_protected(
+    ct_u8, protect_mask,
+    merge_distance=5, cut_distance=25, connectivity="faces",
 )
 ```
 
@@ -62,20 +67,16 @@ node_feats, edge_index, edge_feats, labels, adj = fastloops.merge_and_cut(
 - `labels` (D, H, W): voxel-to-supernode mapping (-1 = deleted)
 - `adj`: binary tensor with bitflags
 
-**Current algorithm:** Kruskal-like canonical-anchored edge contraction:
-1. Bucket-sort all adjacent voxel pairs by intensity distance
-2. Process smallest-first with Union-Find
-3. Before each merge, check canonical intensities of both supernodes (not raw edge distance)
-4. Canonical = intensity of largest component's representative voxel (prevents drift)
+**Protection mechanism:** `merge_and_cut_protected` takes a binary mask where nonzero voxels are "protected." During edge contraction, merging is blocked across the protected/non-protected boundary. During node deletion, any supernode containing a protected voxel is preserved regardless of size/intensity thresholds.
 
 ## SEMIR Pipeline
 
-**Node features** (per supernode, paper Section 3.2):
+**Node features** (per supernode):
 | Feature | Formula |
 |---------|---------|
 | Volume | aᵤ (voxel count) |
 | Boundary length | bᵤ |
-| Compactness | 36πaᵤ²/(bᵤ³ + ε) |
+| Compactness | bᵤ / aᵤ^(2/3) |
 | Elongation | λ_max / (λ_min + ε) |
 | Dominant axis | Principal eigenvector (3 components) |
 | Mean intensity | Channel sum / volume / 255 |
@@ -85,38 +86,37 @@ node_feats, edge_index, edge_feats, labels, adj = fastloops.merge_and_cut(
 
 **GNN**: 3-layer GINE (hidden 128), binary tumor-vs-rest, Adam lr=1e-3, early stopping on lifted voxel Dice.
 
-## Current Status
+## Current Approach: Two-Stage Protected Coarsening
 
-**Paper target:** LiTS tumor Dice 0.891 ± 0.007, ~1,075 supernodes.
+The key insight: standard coarsening destroys tumor information because default deletion removes 77% of tumor voxels (small tumor supernodes get killed). The two-stage approach fixes this:
 
-### What works
-- Oracle Dice 0.94 at overlap threshold 0.10 — the graph representation preserves tumor boundaries
-- Full-graph GPU training at 7-30s/epoch on L40S (49GB)
-- Feature extraction matching the paper's 7 node + 6 edge features
+1. **Liver ROI crop** — bounding box from organ mask + 32-voxel margin, reduces volume by ~50%
+2. **Intensity-based protection** — identify hypodense voxels inside liver (< mean - 0.5σ), dilate by 2. This catches tumor candidates without using GT labels. Achieves 100% recall on tumor voxels.
+3. **Protected coarsening** — run fastloops with default deletion, but protected supernodes survive. Result: 0% tumor deletion, oracle Dice ~0.90.
+4. **GINE classification** — train on the protected graph, lift predictions to voxel level.
 
-### Blocking issue: graph compression
-Our crate produces **~1.7M supernodes** vs the paper's **~1K**. This 1000x gap causes:
-- Features degenerate at single-voxel resolution (Cohen's d < 0.54)
-- Extreme class imbalance (143:1 tumor:background)
-- GNN cannot learn (val Dice = 0.000 with standard CE)
+### Results (10-volume diagnostic)
 
-Best training result: **val Dice 0.112** on consolidated 300K-node graphs (oracle ceiling 0.47).
+| Mode | Description | Oracle@0.25 | Tumor Del% | Supernodes |
+|------|------------|-------------|------------|------------|
+| A | Full CT, default deletion | 0.282 | 77.4% | 5K |
+| B | Liver crop, default deletion | 0.281 | 77.2% | 5K |
+| **C** | **Liver crop + intensity protection** | **0.892** | **0.0%** | **241K** |
+| D | Liver crop + GT protection (UB) | 0.895 | 0.0% | 27K |
 
-### Approaches tried
-| Approach | Supernodes | Oracle | Training Dice | Issue |
-|----------|-----------|--------|--------------|-------|
-| Luke's BFS (ψ=3) | 1.7M | 0.94 | 0.000 | Too many nodes, features degenerate |
-| Iterative consolidation (canonical, no-transitivity) | 300K | 0.47 | 0.112 | Oracle too low |
-| Kruskal canonical-anchored | 1.9M | 0.94 | — | Same as BFS: 1 giant blob + fragments |
-| Higher ψ (8-20) | 250K-840K | 0.07-0.80 | — | Tumor merges with liver |
+### Training Results (118 volumes, Mode C)
 
-### Next steps
-- Awaiting the paper author's LiTS implementation code
-- The contraction algorithm is the sole remaining gap — all other components match the paper
+| Split | Voxel Dice | Recall | Precision | N |
+|-------|-----------|--------|-----------|---|
+| Train | 0.176 | 0.235 | 0.240 | 82 |
+| Val | 0.197 | 0.216 | 0.343 | 17 |
+| Test | 0.233 | 0.300 | 0.343 | 19 |
+
+**Best val Dice: 0.321** — up from <1% with unprotected coarsening. The remaining gap to the paper's 0.891 is primarily due to the large graph size (~241K nodes avg) which makes GINE training difficult. Next step: reduce protected region to compress graphs closer to ~10K-50K nodes.
 
 ## Data
 
-- **LiTS**: `/scratch/ud3d4/acm_data/Data/` (118 volumes with tumor, .npy)
+- **LiTS**: `/scratch/ud3d4/acm_data/Data/` (118 volumes with tumor, .npy format)
 - **Pancreas (MSD Task07)**: `/scratch/ud3d4/acm_data/Pancreas/` (281 volumes, .nii.gz)
 - **GT CSVs**: `/home/ud3d4/Desktop/Projects/acm_mmkg/data/`
 

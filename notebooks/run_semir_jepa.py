@@ -10,7 +10,7 @@ Pipeline:
   4. MLP probe for tumor classification
   5. Lift to voxels + Dice evaluation
 
-Side project while awaiting SEMIR author's LiTS code.
+Explores self-supervised pre-training as a complement to the SEMIR graph-minor pipeline.
 """
 
 import os, sys, copy, time, json, re, random
