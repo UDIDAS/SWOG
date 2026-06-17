@@ -133,3 +133,15 @@ Our two-stage protection approach capped at val Dice 0.48. The bottleneck was al
 8. **HU window [−50, 250] is the default** — [0,200] doubles contrast but misses structures
 9. **Cut edges stay in the graph** — they're marked with cut_frac feature, not removed
 10. **Don't stack Rust crate changes** — test each change independently
+11. **Post-hoc contraction hurts GINE** — selectively merging background supernodes (172K→52K) changes graph topology from grid-like to hub-and-spoke, GINE val Dice drops from 0.48 to 0.13
+12. **SMBO works for parameter search** — Optuna TPE found good params in 40 trials (~1hr), better than manual grid search
+13. **Luke's features ≈ our features** — linearity/planarity/sphericity vs elongation, +3 log-ratio edges. ~90% overlap. Features aren't the bottleneck.
+14. **Luke's band-flood gives 0.978 oracle** — vs our 0.90. The gap is in graph construction quality, not compression or features.
+
+### v14 — Stage 2 selective contraction + SMBO (2026-06-17)
+- **Files**: `notebooks/stage2_selective_contraction.ipynb`
+- **Results**: `results/stage2_selective/`
+- **Approach**: SMBO (Optuna, 40 trials) optimizes 7 params (psi, alpha, std_mult, dilate_iter, bg_threshold, prot_threshold, n_rounds) against oracle Dice. Selective contraction merges background aggressively, protects tumor candidates, never crosses boundary.
+- **SMBO found**: psi=9, alpha=83, std_mult=1.86, bg_threshold=5, prot_threshold=9, n_rounds=1 → 52K nodes, oracle 0.856
+- **Result**: val Dice 0.13, test Dice 0.05 — much worse than v11 (val 0.48)
+- **Key insight**: contraction changes topology in ways GINE can't handle. The 172K→52K compression breaks message passing patterns. GINE trained on original protected graphs (v11) significantly outperforms GINE on contracted graphs.
