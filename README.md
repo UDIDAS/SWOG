@@ -1,68 +1,119 @@
 # SEMIR: Semantic Minor-Induced Representation Learning
 
-Graph-minor segmentation for 3D medical images. Building on the learned intensity-band coarsening approach for LiTS liver tumor segmentation.
+Graph-minor segmentation for 3D medical images. Reproducing the SEMIR paper's binary-tensor approach for LiTS liver tumor segmentation, with the goal of replacing GT-dependent CSV pipelines in the ACM MMKG VKG system.
 
 ## Goal
 
-Replace AuSAM (SAM2.1 + DBSCAN) with SEMIR's learned graph minors in the ACM MMKG VKG pipeline, eliminating dependency on ground-truth CSV files for tumor phenotype extraction.
+Replace AuSAM (SAM2.1 + DBSCAN) with SEMIR's learned graph minors in the ACM MMKG VKG pipeline. SEMIR derives tumor phenotypes (volume, compactness, elongation, intensity) directly from graph structure, eliminating the dependency on ground-truth CSV files that don't exist in real clinical data.
+
+## How SEMIR Works (Simple Version)
+
+SEMIR takes a 3D CT scan and **grows regions from seed points**. Each region expands outward until it hits a tissue boundary — where intensity changes sharply. This produces ~1,000 supernodes, each covering a meaningful tissue region (a chunk of liver, a piece of tumor, etc).
+
+A graph neural network (GINE) then classifies each supernode as tumor or background. Predictions are lifted back to voxels for the final segmentation mask.
+
+The key is a **few-shot boundary search**: using just 5 labeled examples, the algorithm finds the exact intensity threshold where supernode boundaries align with real tissue boundaries. When they align, each supernode contains pure tumor or pure background — making classification easy.
+
+Compare this to our earlier approach: chopping the scan into millions of individual voxels, then trying to filter out the useless ones. That gave us millions of tiny pieces with no relationship to tissue structure.
 
 ## Pipeline Architecture
 
 ```
-Stage 1a  — Learned intensity-band flood contraction (cheap, safe, transferable)
-Stage 1b  — Certified junk deletion (oracle-budgeted intensity band removal)
-Stage 2   — Learned faithful contraction (edge scoring + shape-faithfulness metric)
-Stage 3   — Task GNN (tumor node classification + voxel lifting)
+Raw CT volume (512x512xD, ~10M voxels)
+    |
+    v
+[1] Liver crop (bbox + margin, reduces ~50%)
+    |
+    v
+[2] Binary tensor construction (Rust, merge_and_cut)
+    — Canonical-intensity flood-fill from seed voxels
+    — Expands until |seed_intensity - neighbor_intensity| > psi
+    — Produces ~1K-7K boundary-aligned supernodes
+    |
+    v
+[3] Few-shot parameter search (5 labeled examples)
+    — Searches psi, alpha, beta over Cartesian grid
+    — Maximizes boundary Dice: supernode edges align with GT tumor edge
+    — Finds params where supernodes snap to tissue boundaries
+    |
+    v
+[4] Voxel reassignment (distance_transform_edt)
+    — Deleted voxels reassigned to nearest surviving supernode
+    — Guarantees every voxel maps to exactly one supernode
+    |
+    v
+[5] Feature extraction (7 node + 4 edge features, paper-matched)
+    — Node: volume, boundary_length, compactness, elongation,
+            dominant_axis, mean_intensity, intensity_std
+    — Edge: log_volume_ratio, intensity_diff, centroid_distance, orientation_cosine
+    |
+    v
+[6] GINE classifier (3-layer, hidden=128)
+    — Binary: tumor vs background per supernode
+    — Trained on full dataset split with weighted cross-entropy
+    |
+    v
+[7] Voxel lifting (bijective LUT, O(N))
+    — Supernode predictions mapped to voxel mask via label volume
+    — Exact — no interpolation or boundary artifacts
 ```
 
 ## Repository Structure
 
 ```
-notebooks/
-  NewSemirStage1 (2).ipynb       — Luke's Stage 1: band-flood coarsening + certified deletion
-  stage2_selective_contraction.ipynb — Our Stage 2: selective contraction + SMBO + GINE (v14)
+scripts/
+  v17_semir.py                   -- Full SEMIR pipeline (current best)
+  v16_evaluate.py                -- v16b: band-flood + protection (previous best)
+  sweep_protection.py            -- Protection tightness analysis
+  test_merge_and_cut.py          -- Binary tensor parameter sweep
+  test_contraction.py            -- Canonical-intensity contraction test
 
-fastloops/                       — Our Rust crate (merge_and_cut + merge_and_cut_protected)
-fastloops_band/                  — Luke's Rust crate (band_build for band-flood)
+notebooks/
+  v16_luke_pipeline.ipynb        -- v16: Luke's band-flood + GINE
+  v15_protected_subgraph.ipynb   -- v15: merge_and_cut + protection mask
+  path_a_gine_stage1.ipynb       -- Path A: identity bands + GINE
+  stage2_selective_contraction.ipynb -- v14: post-hoc contraction (failed)
+
+fastloops/                       -- Rust crate: merge_and_cut (paper's binary tensor)
+fastloops_band/                  -- Rust crate: band_build (Luke's band-flood)
 
 docs/
-  SEMIR-MedicalImages.pdf        — SEMIR paper (MICCAI submission)
-  SEMIR_Semantic_Minor_Ind.pdf   — SEMIR supplementary
+  SEMIR-MedicalImages.pdf        -- SEMIR paper
+  SWOG Surgery Presentation.pptx -- VKG presentation
 
-results/
-  stage2_selective/              — Stage 2 selective contraction results (SMBO + GINE)
-
-archive/                         — Previous experiments (v1-v13, see archive/CHANGELOG.md)
+results/                         -- Per-version results (JSON + model checkpoints)
+archive/                         -- v1-v13 experiments (see archive/CHANGELOG.md)
 ```
 
-## Current Status (v14)
+## Experiment History
 
-**Stage 2 Selective Contraction + SMBO + GINE**
+| Version | Approach | Nodes | Oracle | Val Dice | Key Finding |
+|---------|----------|-------|--------|----------|-------------|
+| v11 | merge_and_cut (no deletion) | 172K | 0.90 | 0.48 | Baseline |
+| v14 | Post-hoc contraction | 52K | 0.86 | 0.13 | Contraction kills graph topology |
+| v15 | merge_and_cut + protection | 164K | 0.93 | 0.50 | Protection helps oracle, not Dice |
+| v16b | **band_flood + protection** | 240K | 0.98 | **0.59** | Luke's oracle boost, still too large |
+| v17 | **merge_and_cut + boundary search** | ~1-7K | TBD | TBD | Paper's approach, all fixes applied |
 
-SMBO (Optuna, 40 trials) optimized 7 parameters jointly against oracle Dice on val set:
-- psi=9, alpha=83, std_mult=1.86, dilate_iter=1
-- bg_threshold=5, prot_threshold=9, n_rounds=1
-- Compressed to ~52K nodes (from 172K), oracle 0.856
+### Key Findings
 
-| Split | Dice | Recall | Precision | Oracle | Nodes | N |
-|-------|------|--------|-----------|--------|-------|---|
-| Train | 0.090 | 0.096 | 0.223 | 0.815 | 54K | 82 |
-| Val | 0.057 | 0.035 | 0.231 | 0.856 | 53K | 17 |
-| Test | 0.050 | 0.047 | 0.204 | 0.853 | 62K | 19 |
+1. **Graph size is the bottleneck, not oracle.** v16b has oracle 0.98 but val Dice 0.59 because 240K-node graphs are too large for 3-layer GINE message passing.
 
-**Finding**: Selective contraction compressed graphs effectively (172K → 52K) but GINE performance dropped significantly (val 0.48 → 0.13). The contraction changes graph topology in ways that hurt GINE's message passing — likely hub-and-spoke structure replacing the original grid-like connectivity.
+2. **band_build doesn't merge.** Luke's `band_build` quantizes by intensity band but never merges adjacent regions. This gives fine-grained supernodes (82% are single-voxel) that need external deletion hacks.
 
-**Previous best (v11, archive)**: val Dice 0.48, test 0.32 on 172K-node protected graphs without contraction.
+3. **merge_and_cut IS the paper's binary tensor.** It does canonical-intensity flood-fill — compares every neighbor against the seed voxel's intensity, preventing transitive drift. This naturally produces ~1K large, boundary-aligned supernodes.
 
-## Key Learnings
+4. **Post-hoc contraction breaks topology.** Merging background supernodes after construction (v14) changes grid-like graphs to hub-and-spoke, killing GINE performance.
 
-See [archive/CHANGELOG.md](archive/CHANGELOG.md) for full experiment history (v1-v13).
+5. **Deleted voxels must be reassigned.** Dropping them as label=-1 collapses oracle from 0.87 to 0.34. Reassignment via `distance_transform_edt` to nearest survivor preserves full tumor recall.
 
-The core challenge remains graph compression: the paper achieves 0.891 Dice on ~1K nodes. Our best oracle is 0.90 on 172K nodes. Reducing nodes via contraction loses more in GINE learnability than it gains in compression.
+6. **Protection masks don't scale.** Intensity-based protection (liver_mean - Nσ) can't separate tumor from background because their HU ranges overlap. Tightening protection loses tumor voxels; loosening keeps too many nodes.
+
+7. **Boundary alignment is the real objective.** The paper's few-shot search maximizes boundary Dice — overlap between supernode edges and GT tissue edges. This is what makes ~1K nodes meaningful: each covers a coherent tissue region.
 
 ## Data
 
-- **LiTS**: `/scratch/ud3d4/acm_data/Data/` (118 volumes with tumor, .npy format)
+- **LiTS**: `/scratch/ud3d4/acm_data/Data/` (118 volumes with tumor, .npy)
 - **Pancreas (MSD Task07)**: `/scratch/ud3d4/acm_data/Pancreas/` (281 volumes, .nii.gz)
 - **GT CSVs**: `/home/ud3d4/Desktop/Projects/acm_mmkg/data/`
 
