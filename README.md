@@ -62,8 +62,9 @@ Raw CT volume (512x512xD, ~10M voxels)
 
 ```
 scripts/
-  v17_semir.py                   -- Full SEMIR pipeline (current best)
-  v16_evaluate.py                -- v16b: band-flood + protection (previous best)
+  v18_paper_exact.py             -- Paper-exact SEMIR (current, running)
+  v17_semir.py                   -- merge_and_cut + boundary search (predecessor)
+  v16_evaluate.py                -- v16b: band-flood + protection (val Dice 0.59)
   sweep_protection.py            -- Protection tightness analysis
   test_merge_and_cut.py          -- Binary tensor parameter sweep
   test_contraction.py            -- Canonical-intensity contraction test
@@ -93,15 +94,18 @@ archive/                         -- v1-v13 experiments (see archive/CHANGELOG.md
 | v14 | Post-hoc contraction | 52K | 0.86 | 0.13 | Contraction kills graph topology |
 | v15 | merge_and_cut + protection | 164K | 0.93 | 0.50 | Protection helps oracle, not Dice |
 | v16b | **band_flood + protection** | 240K | 0.98 | **0.59** | Luke's oracle boost, still too large |
-| v17 | **merge_and_cut + boundary search** | ~1-7K | TBD | TBD | Paper's approach, all fixes applied |
+| v17 | merge_and_cut + boundary search | ~1-7K | TBD | TBD | Correct algorithm, wrong search grid |
+| v18 | **paper-exact reproduction** | ~1K | TBD | TBD | All 6 params searched, all 131 vols, 5 runs |
 
 ### Key Findings
 
 1. **Graph size is the bottleneck, not oracle.** v16b has oracle 0.98 but val Dice 0.59 because 240K-node graphs are too large for 3-layer GINE message passing.
 
-2. **band_build doesn't merge.** Luke's `band_build` quantizes by intensity band but never merges adjacent regions. This gives fine-grained supernodes (82% are single-voxel) that need external deletion hacks.
+2. **merge_and_cut and band_build share the same core algorithm** — binary tensor, flood-fill, coprime iterator, moment accumulation. The ONLY difference is the merge predicate: `merge_and_cut` uses `|I_seed - I_neighbor| ≤ ψ` (continuous threshold, paper-exact), `band_build` uses `band_of[I_seed] == band_of[I_neighbor]` (discrete learned lookup). Luke's `band_build` is a generalization with non-uniform boundaries, which gave better oracle (0.978 vs 0.93) but with 196 narrow bands it fragmented into 1.6M single-voxel supernodes.
 
 3. **merge_and_cut IS the paper's binary tensor.** It does canonical-intensity flood-fill — compares every neighbor against the seed voxel's intensity, preventing transitive drift. This naturally produces ~1K large, boundary-aligned supernodes.
+
+4. **A hybrid approach is promising:** use `band_build` with a coarser learned dictionary (~20-30 bands instead of 196) to get both non-uniform boundaries AND actual merging. This would combine Luke's oracle advantage with the paper's compression.
 
 4. **Post-hoc contraction breaks topology.** Merging background supernodes after construction (v14) changes grid-like graphs to hub-and-spoke, killing GINE performance.
 
