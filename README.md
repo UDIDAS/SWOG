@@ -1,75 +1,82 @@
-# SEMIR: Semantic Minor-Induced Representation Learning
+# AUSAM FLARE Reproduction
 
-Reproducing the SEMIR paper's binary-tensor approach for LiTS liver tumor segmentation, with the goal of replacing GT-dependent CSV pipelines in the ACM MMKG VKG system.
+Reimplementation of the AUSAM (Adaptive Unified Segmentation Anything Model) pipeline for the FLARE abdominal CT segmentation dataset. The original implementation spans 5 Jupyter notebooks — this branch consolidates them into a single notebook with shared utilities and per-experiment sections.
 
-## Goal
+## Original Notebooks (in `FLARE.zip`)
 
-Replace AuSAM (SAM2.1 + DBSCAN) with SEMIR's learned graph minors in the ACM MMKG VKG pipeline. SEMIR derives tumor phenotypes (volume, compactness, elongation, intensity) directly from graph structure — no ground-truth CSV files needed.
+| Notebook | Class | Method | Reported Test Dice |
+|---|---|---|---|
+| `SAM-DBSCAN_FLARE-paper1.ipynb` | 4 (Pancreas) | H2E curriculum | 0.822 |
+| `SAM-DBSCAN_FLARE-paper1-aggregation.ipynb` | 12 (Duodenum) | Transfer learning (class 1 -> 12) | *(not saved)* |
+| `SAM-DBSCAN_FLARE-paper1-sam2.ipynb` | 1 (Liver) | SAM2 Hiera | 0.941 |
+| `SAM-DBSCAN_FLARE-Tumor.ipynb` | 14 (Tumor) | E2H / H2E curriculum | 0.839 |
+| `SAM-DBSCAN_FLARE-Multi-Class0-...3d.ipynb` | 0 (all) | Entropy curriculum + 3D eval | 0.975 (train) |
 
-## How It Works
+## Our Reproduction
 
-SEMIR takes a 3D CT scan and **grows regions from seed points**. Each region expands until it hits a tissue boundary (where intensity changes sharply), producing ~1,000 supernodes that each cover a meaningful tissue region.
-
-A few-shot boundary search (5 labeled examples) finds the exact threshold where supernode boundaries align with real tissue boundaries. A GINE then classifies each supernode as tumor or background, and predictions are lifted back to voxels.
-
-## Pipeline
-
-```
-Raw CT → Liver crop → merge_and_cut (Rust binary tensor, ~1K supernodes)
-→ Few-shot boundary search (6 params, Eq. 1) → Voxel reassignment
-→ Feature extraction (7 node + 6 edge) → 3-layer GINE → Voxel lifting
-```
-
-## Repository Structure
+### File Structure
 
 ```
-notebooks/
-  v18_paper_exact.ipynb          -- Paper-exact SEMIR (current)
-  v16_luke_pipeline.ipynb        -- v16b: Luke's band-flood + GINE (val Dice 0.59)
-
-scripts/
-  v18_paper_exact.py             -- Same as notebook, script form
-
-fastloops/                       -- Rust crate: merge_and_cut (paper's binary tensor)
-fastloops_band/                  -- Rust crate: band_build (Luke's learned bands)
-
-results/
-  v18_paper_exact/               -- Current run
-  v16b_band_protected/           -- Best previous (val Dice 0.59)
-
-docs/                            -- Papers + presentations
-archive/                         -- All previous experiments (v1-v17)
+FLARE_AUSAM.ipynb     # Unified notebook (Sections 1-9)
+run_flare.py          # Standalone runner — all shared code + training functions
+run_remaining.py      # Runner for pending sections (S3, S5, S6)
+flare_sam_finetune.py # Initial single-stage fine-tuning script
+FLARE.zip             # Original notebooks + coordinate files
 ```
 
-## Results
+### Key Implementation Differences from Original
 
-| Version | Approach | Nodes | Oracle | Val Dice | Status |
-|---------|----------|-------|--------|----------|--------|
-| v16b | band_build + protection | 240K | 0.98 | **0.59** | Best so far |
-| v18 | **paper-exact merge_and_cut** | ~1K | TBD | TBD | Running |
-| Paper | SEMIR (reference) | 1,075 | — | 0.891 | Target |
+1. **SAM API**: Updated from deprecated `point_annotations` to `input_points` (4D tensor: batch, point_batch_size, num_points, 2) + `input_labels`
+2. **DDP sync**: Added `dist.broadcast` for the `improved` flag so all ranks agree on early-stop/expand decisions (fixes NCCL watchdog crashes)
+3. **Label handling**: Original notebooks invert labels; we use `(labels > 0).astype(uint8)` directly (organ=1, background=0)
+4. **2 GPUs** (L40S) instead of original's 4 GPUs
 
-## Key Findings
+### Reproduction Status
 
-1. **Graph size is the bottleneck.** 240K-node graphs cap GINE at 0.59 Dice despite 0.98 oracle. The paper gets 0.891 on ~1K nodes where 3 hops covers the entire graph.
+| Section | Notebook | Class | Method | Original Dice | Our Dice | Status |
+|---|---|---|---|---|---|---|
+| S2 | paper1-aggregation | 12 (Duodenum) | Single-stage baseline | -- | **0.873** | Done |
+| S3 | paper1 | 4 (Pancreas) | E2H curriculum | 0.822 | -- | Pending (fixed) |
+| S3 | paper1 | 4 (Pancreas) | H2E curriculum | 0.822 | -- | Pending (fixed) |
+| S5 | paper1-aggregation | 1 (Liver) | Train base model | -- | 0.970 (val) | Trained, needs test eval |
+| S5 | paper1-aggregation | 12 (Duodenum) | Transfer from Liver | -- | -- | Pending |
+| S6 | Tumor | 14 (Tumor) | H2E curriculum | 0.839 | -- | Pending |
+| S7 | paper1-sam2 | 1 (Liver) | SAM2 Hiera | 0.941 | -- | Pending (needs `sam2` pkg) |
+| S8 | Multi-Class0-3d | 0 (all) | 3D volume eval | 0.975 (train) | -- | Blocked (no NIfTI data) |
 
-2. **merge_and_cut and band_build are the same algorithm** with different merge predicates. `merge_and_cut`: `|I_seed - I_neighbor| ≤ ψ` (paper-exact). `band_build`: `band_of[I_seed] == band_of[I_neighbor]` (learned non-uniform bands). Luke's 196-band dictionary fragmented into 1.6M single-voxel supernodes because the bands were too narrow.
+### How to Run
 
-3. **Boundary alignment is the real objective.** The paper's few-shot search (Eq. 1) maximizes boundary Dice — not oracle, not compression. This is what makes ~1K nodes meaningful.
+```bash
+# Full pipeline (S3 + S5 + S6 sequentially)
+nohup /home/ud3d4/.conda/envs/llmft/bin/python -u run_remaining.py \
+    > /scratch/ud3d4/acm_data/FLARE/runs/remaining_run.log 2>&1 &
 
-4. **Deleted voxels must be reassigned** to nearest survivor. Without this, oracle drops from 0.87 to 0.34.
+# Or run individual sections via the standalone script
+conda run -n llmft python flare_sam_finetune.py --class_id 12 --epochs 250
 
-5. **A hybrid approach is promising:** coarser `band_build` dictionary (~20-30 bands) could combine Luke's non-uniform boundaries with actual merging.
+# Test evaluation only (if model exists)
+conda run -n llmft python flare_sam_finetune.py --class_id 12 --test_only
+```
 
-## Data
+### Data
 
-- **LiTS**: 131 training volumes (118 with tumor, 13 liver-only), .npy
-- **Pancreas (MSD Task07)**: 281 volumes, .nii.gz
+FLARE per-class data at `/scratch/ud3d4/acm_data/FLARE/`:
+- `class_{0-14}_images.npy` — 256x256x3 RGB uint8 axial CT slices
+- `class_{0-14}_labels.npy` — 256x256 binary masks
 
-## Environment
+15 classes: Liver (1), R.Kidney (2), Spleen (3), Pancreas (4), Aorta (5), IVC (6), R.Adrenal (7), L.Adrenal (8), Gallbladder (9), Esophagus (10), Stomach (11), Duodenum (12), L.Kidney (13), Tumor (14), Background (0).
+
+### Dependencies
+
+```
+torch>=2.5, transformers, monai, scikit-learn, scikit-image, scipy
+# For SAM2 section: pip install sam2
+```
+
+### Environment
 
 ```
 conda env: llmft
-Python 3.11, PyTorch 2.5.1+cu121, PyG 2.7
-GPU: NVIDIA L40S (49GB)
+Python 3.11, PyTorch 2.5.1+cu121
+GPU: 2x NVIDIA L40S (48GB each)
 ```

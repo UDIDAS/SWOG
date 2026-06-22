@@ -1,3 +1,8 @@
-results
-docs
-.claude
+__pycache__/
+*.pyc
+.claude/
+nohup.out
+*.so
+*.egg-info/
+results/
+docs/
