@@ -6,3 +6,6 @@ nohup.out
 *.egg-info/
 results/
 docs/
+FLARE.zip
+fastloops
+archive
