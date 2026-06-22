@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.claude/
+nohup.out
+*.so
+*.egg-info/
+results/
+docs/
+FLARE.zip
+fastloops
+archive
