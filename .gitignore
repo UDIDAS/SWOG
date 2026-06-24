@@ -4,8 +4,8 @@ __pycache__/
 nohup.out
 *.so
 *.egg-info/
-results/
 docs/
+*.docx
 FLARE.zip
 fastloops
 archive
