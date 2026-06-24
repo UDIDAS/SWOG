@@ -327,6 +327,7 @@ def traditional_increments_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va,
                     pct_idx += 1
                     current_frac = percentages[pct_idx]
                     no_imp_for_pct = 0
+                    no_imp = 0  # Reset global counter — give new data level full patience
                     if rank == 0:
                         print(f"  >> Stepping to {current_frac*100:.1f}% (step {pct_idx+1}/{len(percentages)})")
         dist.barrier()
