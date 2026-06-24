@@ -57,7 +57,7 @@ The `FLARE.zip` file contains 5 notebooks, each exploring a different aspect of 
 | S5-Transfer | Transfer learning | Duodenum (class 12) | Take Liver-trained SAM and fine-tune on Duodenum -- tests if organ-to-organ transfer helps | -- | 0.890 |
 | S6-H2E | H2E curriculum | Tumor (class 14) | Entropy-based curriculum on tumors -- trains on high-entropy slices first | 0.839 | 0.717 |
 | R2-Trad | Traditional Increments | Tumor (class 14) | Fixed percentage steps (14.8% -> 30% -> ... -> 100%) with random sampling at each step | 0.839 | 0.797 |
-| R2-E2H | E2H curriculum | Tumor (class 14) | Entropy-based curriculum on tumors -- trains on low-entropy slices first | 0.839 | ~0.751 |
+| R2-E2H | E2H curriculum | Tumor (class 14) | Entropy-based curriculum on tumors -- trains on low-entropy slices first | 0.839 | 0.768 |
 
 **Reading the table**: Each row is an experiment where SAM was fine-tuned to segment one specific structure. "Original Dice" is the score from the original notebooks. "Our Dice" is what our reproduction achieved on a held-out test set that the model never saw during training. Higher is better.
 
