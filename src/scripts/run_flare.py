@@ -236,7 +236,203 @@ def run_training(cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c, subset_idx=None):
     port = find_free_port()
     mp.spawn(train_worker, args=(WORLD_SIZE,port,cfg,x_tr,y_tr,x_va,y_va,tr_c,va_c,subset_idx), nprocs=WORLD_SIZE, join=True)
 
-def evaluate_test(model_path, x_te, y_te, te_c):
+# ── Traditional With Increments (exact Tumor notebook strategy) ──
+def traditional_increments_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c, percentages):
+    """Train with fixed percentage steps. When val loss plateaus at one level, move to next.
+    This is the strategy that produced the best Tumor result (Dice 0.839) in the original notebook.
+    """
+    setup_ddp(rank, world_size, port)
+    device = torch.device(f"cuda:{rank}")
+    processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
+    sam = SamModel.from_pretrained("facebook/sam-vit-base").to(device)
+    if cfg.get("pretrained_path") and os.path.exists(cfg["pretrained_path"]):
+        state = torch.load(cfg["pretrained_path"], map_location=device)
+        sam.load_state_dict({k.replace("module.",""): v for k,v in state.items()}, strict=False)
+    sam = DDP(sam, device_ids=[rank], output_device=rank, find_unused_parameters=True)
+    loss_fn = DiceLoss(to_onehot_y=False, sigmoid=False)
+    optimizer = Adam(sam.parameters(), lr=cfg.get("lr", 1e-5))
+    scaler = GradScaler("cuda")
+    train_ds = FLAREDataset(x_tr, y_tr, tr_c)
+    val_ds = FLAREDataset(x_va, y_va, va_c)
+    n_train = len(train_ds)
+
+    early_stopping_patience = 10
+    percentage_switch_patience = 5
+    pct_idx = 0
+    current_frac = percentages[pct_idx]
+    best_val_loss = float("inf")
+    no_imp = 0
+    no_imp_for_pct = 0
+    bs = cfg.get("batch_size", 5)
+    save_path = cfg["model_save_path"]
+    csv_path = save_path.replace(".pth", "_metrics.csv")
+
+    if rank == 0:
+        print(f"  Traditional increments: {len(percentages)} steps, starting at {current_frac*100:.1f}%")
+        with open(csv_path, "w", newline="") as f:
+            csv.writer(f).writerow(["Epoch","TrLoss","VaLoss","TrDice","VaDice","TrIoU","VaIoU","PctData"])
+
+    for epoch in range(cfg.get("epochs", 1000)):
+        # Select random subset at current percentage
+        num_samples = max(1, int(n_train * current_frac))
+        indices = np.random.RandomState(epoch).choice(n_train, num_samples, replace=False).tolist()
+        sub = Subset(train_ds, indices)
+
+        ts = DistributedSampler(sub, num_replicas=world_size, rank=rank, shuffle=True); ts.set_epoch(epoch)
+        tl = DataLoader(sub, batch_size=bs, sampler=ts, collate_fn=collate_fn)
+        sam.train(); ep = {"loss":[],"dice":[],"iou":[]}
+        for ib,lb,cb in tl:
+            pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
+            optimizer.zero_grad()
+            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer); torch.nn.utils.clip_grad_norm_(sam.parameters(), max_norm=2.0)
+            scaler.step(optimizer); scaler.update()
+            ep["loss"].append(loss.item()); ep["dice"].append(compute_dice(pb,gt).item()); ep["iou"].append(compute_iou(pb,gt.bool()).item())
+        dist.barrier()
+
+        vs = DistributedSampler(val_ds, num_replicas=world_size, rank=rank); vs.set_epoch(epoch)
+        vl = DataLoader(val_ds, batch_size=bs, sampler=vs, collate_fn=collate_fn)
+        sam.eval(); ev = {"loss":[],"dice":[],"iou":[]}
+        with torch.no_grad():
+            for ib,lb,cb in vl:
+                pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
+                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+                ev["loss"].append(loss.item()); ev["dice"].append(compute_dice(pb,gt).item()); ev["iou"].append(compute_iou(pb,gt.bool()).item())
+
+        at = {m:np.mean(v) for m,v in ep.items()}; av = {m:np.mean(v) for m,v in ev.items()}
+
+        # Broadcast improved from rank 0
+        improved_t = torch.tensor([int(av["loss"] < best_val_loss)], device=device)
+        dist.broadcast(improved_t, src=0)
+        improved = bool(improved_t.item())
+
+        if rank == 0:
+            print(f"  E{epoch+1}: TrDice={at['dice']:.4f} VaDice={av['dice']:.4f} VaLoss={av['loss']:.4f} "
+                  f"Data={current_frac*100:.1f}% (step {pct_idx+1}/{len(percentages)})")
+            with open(csv_path,"a",newline="") as f:
+                csv.writer(f).writerow([epoch+1,at["loss"],av["loss"],at["dice"],av["dice"],at["iou"],av["iou"],current_frac*100])
+
+        if improved:
+            best_val_loss = av["loss"]; no_imp = 0; no_imp_for_pct = 0
+            if rank == 0: torch.save(sam.state_dict(), save_path)
+        else:
+            no_imp += 1; no_imp_for_pct += 1
+            if no_imp == early_stopping_patience:
+                if rank == 0: print(f"  Early stopping at epoch {epoch+1}")
+                break
+            # Switch to next percentage when stuck
+            if no_imp_for_pct == percentage_switch_patience:
+                if pct_idx < len(percentages) - 1:
+                    pct_idx += 1
+                    current_frac = percentages[pct_idx]
+                    no_imp_for_pct = 0
+                    if rank == 0:
+                        print(f"  >> Stepping to {current_frac*100:.1f}% (step {pct_idx+1}/{len(percentages)})")
+        dist.barrier()
+    dist.destroy_process_group()
+
+def run_traditional_increments(cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c, percentages=None):
+    """Launch Traditional With Increments training (exact Tumor notebook strategy)."""
+    if percentages is None:
+        # Default percentages from the original Tumor notebook
+        percentages = [14.80, 30.30, 40.44, 48.46, 55.50, 62.01,
+                       68.34, 74.50, 80.60, 86.60, 92.57, 98.44, 100.0]
+        percentages = [p/100.0 for p in percentages]
+    port = find_free_port()
+    mp.spawn(traditional_increments_worker,
+             args=(WORLD_SIZE, port, cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c, percentages),
+             nprocs=WORLD_SIZE, join=True)
+
+def visualize_predictions(images, gts, preds, dices, coords_list, save_path, title, n=3):
+    """Save figure showing best-n and worst-n predictions side by side."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    sorted_idx = np.argsort(dices)
+    worst = sorted_idx[:n]
+    best = sorted_idx[-n:][::-1]
+
+    fig, axes = plt.subplots(2 * n, 4, figsize=(20, 5 * n))
+    fig.suptitle(title, fontsize=16, fontweight="bold")
+
+    for row, (label, indices) in enumerate([("Best", best), ("Worst", worst)]):
+        for j, idx in enumerate(indices):
+            r = row * n + j
+            img = images[idx]
+            gt = gts[idx]
+            pred = preds[idx]
+            pts = coords_list[idx]
+
+            # Image with points
+            axes[r, 0].imshow(img)
+            if len(pts) > 0:
+                axes[r, 0].scatter([p[0] for p in pts], [p[1] for p in pts], c="red", marker="x", s=40)
+            axes[r, 0].set_title(f"{label} #{j+1} — Image + Points")
+            axes[r, 0].axis("off")
+
+            # Ground truth
+            axes[r, 1].imshow(gt, cmap="gray")
+            axes[r, 1].set_title("Ground Truth")
+            axes[r, 1].axis("off")
+
+            # Prediction
+            axes[r, 2].imshow(pred, cmap="gray")
+            axes[r, 2].set_title(f"Prediction (Dice={dices[idx]:.3f})")
+            axes[r, 2].axis("off")
+
+            # Overlay: GT in green, Pred in red, overlap in yellow
+            overlay = np.zeros((*gt.shape, 3))
+            overlay[..., 1] = gt       # green = GT
+            overlay[..., 0] = pred     # red = pred
+            axes[r, 3].imshow(overlay)
+            axes[r, 3].set_title("Overlay (G=GT, R=Pred)")
+            axes[r, 3].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  Visualization saved to {save_path}")
+
+
+def plot_training_curve(csv_path, save_path):
+    """Plot training/validation Dice and loss curves from metrics CSV."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import pandas as pd
+
+    if not os.path.exists(csv_path):
+        return
+    df = pd.read_csv(csv_path)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+    fig.suptitle(os.path.basename(csv_path).replace("_metrics.csv", ""), fontsize=14)
+
+    ax1.plot(df["Epoch"], df["TrLoss"], label="Train Loss", color="blue")
+    ax1.plot(df["Epoch"], df["VaLoss"], label="Val Loss", color="red")
+    ax1.set_xlabel("Epoch"); ax1.set_ylabel("Loss"); ax1.legend(); ax1.set_title("Loss")
+
+    ax2.plot(df["Epoch"], df["TrDice"], label="Train Dice", color="blue")
+    ax2.plot(df["Epoch"], df["VaDice"], label="Val Dice", color="red")
+    ax2.set_xlabel("Epoch"); ax2.set_ylabel("Dice"); ax2.legend(); ax2.set_title("Dice")
+    ax2.set_ylim(0, 1)
+
+    # If PctData column exists (curriculum), add it as secondary axis
+    if "PctData" in df.columns:
+        ax3 = ax2.twinx()
+        ax3.fill_between(df["Epoch"], 0, df["PctData"], alpha=0.1, color="green")
+        ax3.set_ylabel("% Data Used", color="green")
+        ax3.set_ylim(0, 105)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  Training curve saved to {save_path}")
+
+
+def evaluate_test(model_path, x_te, y_te, te_c, viz_tag=None):
+    """Test evaluation with optional visualization. viz_tag names the output files."""
     device = torch.device("cuda:0")
     processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
     sam = SamModel.from_pretrained("facebook/sam-vit-base")
@@ -246,16 +442,44 @@ def evaluate_test(model_path, x_te, y_te, te_c):
     sam.to(device).eval()
     loader = DataLoader(FLAREDataset(x_te, y_te, te_c), batch_size=1, collate_fn=collate_fn)
     results = {k:[] for k in ["dice","iou","acc","precision","sensitivity","specificity"]}
+
+    # Store predictions for visualization
+    all_images, all_gts, all_preds, all_coords = [], [], [], []
+
     with torch.no_grad():
         for ib,lb,cb in tqdm(loader, desc="Testing"):
             pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
             out = sam(pixel_values=pv, input_points=ip, input_labels=il, multimask_output=False)
             pred = torch.sigmoid(out.pred_masks.squeeze(1))
             if pred.shape != gt.shape: gt = torch.nn.functional.interpolate(gt, size=pred.shape[-2:], mode="nearest")
-            m = all_metrics((pred>0.5).float(), gt)
+            pred_bin = (pred>0.5).float()
+            m = all_metrics(pred_bin, gt)
             for k in results: results[k].append(m[k])
+
+            # Store for viz (keep on CPU, numpy)
+            all_images.append(ib[0] if isinstance(ib[0], np.ndarray) else ib[0].numpy())
+            all_gts.append(gt.squeeze().cpu().numpy())
+            all_preds.append(pred_bin.squeeze().cpu().numpy())
+            all_coords.append(cb[0])
+
     print(f"\n=== Test Results ({os.path.basename(model_path)}) ===")
     for k,v in results.items(): print(f"  {k}: {np.mean(v):.4f} +/- {np.std(v):.4f}")
+
+    # Visualization
+    tag = viz_tag or os.path.basename(model_path).replace(".pth", "")
+    viz_dir = os.path.join(OUTPUT_DIR, "viz")
+    os.makedirs(viz_dir, exist_ok=True)
+
+    visualize_predictions(
+        all_images, all_gts, all_preds, results["dice"], all_coords,
+        save_path=os.path.join(viz_dir, f"{tag}_predictions.png"),
+        title=f"{tag} — Best & Worst Predictions (Test Dice={np.mean(results['dice']):.4f})",
+    )
+
+    # Training curve
+    csv_path = model_path.replace(".pth", "_metrics.csv")
+    plot_training_curve(csv_path, os.path.join(viz_dir, f"{tag}_training_curve.png"))
+
     return {k: (np.mean(v), np.std(v)) for k,v in results.items()}
 
 # ── Curriculum helpers ──
@@ -311,8 +535,8 @@ def curriculum_train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va,
     pct, entropy_deriv, threshold, mean_d, std_d, orig_indices = \
         determine_initial_training_data(x_tr, entropies)
     k_val = 1.0
-    early_stopping_patience = 10   # notebook: 10
-    data_increment_patience = 5    # notebook: 5
+    early_stopping_patience = cfg.get("patience", 10)
+    data_increment_patience = cfg.get("data_increment_patience", 5)
     best_val_loss = float("inf")
     no_imp = 0
     bs = cfg.get("batch_size", 5)  # notebook: 5
