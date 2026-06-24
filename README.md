@@ -2,6 +2,37 @@
 
 Reimplementation of the AUSAM (Adaptive Unified Segmentation Anything Model) pipeline for the FLARE abdominal CT segmentation dataset. The original implementation spans 5 Jupyter notebooks -- this branch consolidates them into a unified pipeline with shared utilities and per-experiment sections.
 
+## The Task
+
+The FLARE (Fast and Low-resource semi-supervised Abdominal oRgan sEgmentation) dataset contains abdominal CT scans from multiple patients. Each 3D scan has been pre-sliced into 2D axial slices (256x256 RGB) and the pixels belonging to each organ or tumor have been manually annotated by experts.
+
+The segmentation task is: given a 2D CT slice, produce a binary mask that identifies exactly which pixels belong to a specific anatomical structure. Each "class" in the dataset corresponds to a different structure:
+
+| Class | Structure | Slices | Organ Fraction | Difficulty |
+|-------|-----------|--------|----------------|------------|
+| 1 | Liver | 19,664 | 5.76% | Easy -- large, high contrast |
+| 4 | Pancreas | 9,888 | 0.60% | Hard -- small, irregular shape, low contrast |
+| 12 | Duodenum | 2,070 | 0.39% | Hard -- very small, adjacent to pancreas |
+| 14 | Tumor | 9,911 | 0.87% | Hardest -- irregular, variable size (22-6917 px), no fixed position |
+
+When we say "Class 4 (Pancreas)", it means the model is trained and evaluated specifically on CT slices containing the pancreas, and its job is to correctly identify which pixels in each slice are pancreas tissue vs everything else (background, other organs, etc.).
+
+## What the Scores Mean
+
+All results are reported as **Dice coefficient** (also called F1 score for segmentation), which measures the overlap between the model's predicted mask and the expert-annotated ground truth mask:
+
+```
+Dice = (2 x |Predicted AND Ground Truth|) / (|Predicted| + |Ground Truth|)
+```
+
+- **Dice = 1.0**: Perfect overlap -- every pixel matches the expert annotation
+- **Dice = 0.9+**: Excellent -- minor boundary disagreements only
+- **Dice = 0.8-0.9**: Good -- captures the organ shape but with some boundary errors or small missed regions
+- **Dice = 0.7-0.8**: Moderate -- captures the rough location but with significant boundary/shape errors
+- **Dice < 0.5**: Poor -- model fails to locate or delineate the structure
+
+Accuracy alone is misleading for this task because organs are tiny (0.4-6% of pixels). A model that predicts "all background" gets 99%+ accuracy but Dice = 0. Dice forces the model to actually find and delineate the organ.
+
 ## Original Notebooks
 
 The `FLARE.zip` file contains 5 notebooks, each exploring a different aspect of SAM fine-tuning for abdominal CT segmentation:
@@ -16,25 +47,27 @@ The `FLARE.zip` file contains 5 notebooks, each exploring a different aspect of 
 
 ## Results
 
-| Section | Method | Class | Original | Ours | vs Target | Status |
-|---------|--------|-------|----------|------|-----------|--------|
-| S2 | Single-stage baseline | 12 (Duodenum) | -- | 0.873 | -- | Done |
-| S3-E2H | E2H curriculum | 4 (Pancreas) | 0.822 | 0.773 | 94% | Done |
-| S3-H2E | H2E curriculum | 4 (Pancreas) | 0.822 | 0.792 | 96% | Done |
-| **R2-H2E** | **H2E (patience=20)** | **4 (Pancreas)** | **0.822** | **0.839** | **BEAT** | **Done** |
-| **S5-Liver** | **Liver base model** | **1 (Liver)** | **0.941** | **0.965** | **BEAT** | **Done** |
-| S5-Transfer | Liver -> Duodenum | 12 (Duodenum) | -- | 0.890 | +1.7% | Done |
-| S6-H2E | H2E tumor | 14 (Tumor) | 0.839 | 0.717 | 85% | Done |
-| R2-Trad | Traditional Increments | 14 (Tumor) | 0.839 | 0.797 | 95% | Done |
-| R2-E2H | E2H tumor | 14 (Tumor) | 0.839 | ~0.751 | 90% | Done |
+| Section | Method | Target Structure | What was tested | Original Dice | Our Dice |
+|---------|--------|-----------------|-----------------|---------------|----------|
+| S2 | Single-stage fine-tune | Duodenum (class 12) | Baseline: train SAM on duodenum slices with DBSCAN point prompts, no curriculum or pretraining | -- | 0.873 |
+| S3-E2H | E2H curriculum | Pancreas (class 4) | Start training on easy (low-entropy) CT slices, progressively add harder ones | 0.822 | 0.773 |
+| S3-H2E | H2E curriculum | Pancreas (class 4) | Start training on hard (high-entropy) slices, progressively add easier ones | 0.822 | 0.792 |
+| **R2-H2E** | **H2E (patience=20)** | **Pancreas (class 4)** | **Same as S3-H2E but with more patience, allowing curriculum to reach 100% data** | **0.822** | **0.839 BEAT** |
+| **S5-Liver** | **Single-stage fine-tune** | **Liver (class 1)** | **Train SAM on liver slices -- large organ, high contrast, establishes strong base model** | **0.941** | **0.965 BEAT** |
+| S5-Transfer | Transfer learning | Duodenum (class 12) | Take Liver-trained SAM and fine-tune on Duodenum -- tests if organ-to-organ transfer helps | -- | 0.890 |
+| S6-H2E | H2E curriculum | Tumor (class 14) | Entropy-based curriculum on tumors -- trains on high-entropy slices first | 0.839 | 0.717 |
+| R2-Trad | Traditional Increments | Tumor (class 14) | Fixed percentage steps (14.8% -> 30% -> ... -> 100%) with random sampling at each step | 0.839 | 0.797 |
+| R2-E2H | E2H curriculum | Tumor (class 14) | Entropy-based curriculum on tumors -- trains on low-entropy slices first | 0.839 | ~0.751 |
+
+**Reading the table**: Each row is an experiment where SAM was fine-tuned to segment one specific structure. "Original Dice" is the score from the original notebooks. "Our Dice" is what our reproduction achieved on a held-out test set that the model never saw during training. Higher is better.
 
 ## Key Findings
 
-- **Pancreas target BEATEN (0.839 vs 0.822)**: Increasing curriculum patience from 10 to 20 and data increment from 5 to 3 allowed the curriculum to expand to 100% data, which was the missing ingredient.
-- **Liver target BEATEN (0.965 vs 0.941)**: SAM ViT-Base outperforms the original SAM2 Hiera on large organs.
-- **Tumor improved significantly (0.797 vs 0.717)**: Traditional Increments (random percentage steps) works better than entropy-based curriculum for tumors because entropy measures image complexity, not tumor difficulty.
-- **H2E consistently outperforms E2H**: Starting with hard samples builds more robust features.
-- **Transfer learning confirmed**: Liver pretraining boosted Duodenum from 0.873 to 0.890.
+- **Pancreas target BEATEN (0.839 vs 0.822)**: Increasing curriculum patience from 10 to 20 and data increment from 5 to 3 allowed the curriculum to expand to 100% data, which was the missing ingredient. The model needed to see all training examples to learn the full range of pancreas shapes.
+- **Liver target BEATEN (0.965 vs 0.941)**: SAM ViT-Base outperforms the original SAM2 Hiera on large organs. Liver occupies 5.76% of pixels with clear boundaries, so the standard SAM architecture handles it excellently.
+- **Tumor improved but not beaten (0.797 vs 0.839)**: Traditional Increments (random percentage steps) works much better than entropy-based curriculum for tumors (+8 points over H2E). Entropy measures image complexity, not tumor difficulty -- a high-entropy image might have complex anatomy but an easy tumor, so entropy-based ordering is the wrong signal for tumors. Random sampling preserves morphological diversity at every training stage.
+- **H2E consistently outperforms E2H on organs**: Starting with hard samples builds more robust features that transfer well when easier samples are added later.
+- **Transfer learning confirmed**: Liver pretraining boosted Duodenum from 0.873 to 0.890 (+1.7 points), validating that features learned from a large organ generalize to smaller ones.
 
 ## Implementation Notes
 
@@ -54,11 +87,11 @@ The original notebooks apply `bitwise_not` then `invert_black_white` to the labe
 
 **4. Configurable curriculum patience (tuning for 2 GPUs)**
 
-The original hardcodes `early_stopping_patience=10` and `data_increment_patience=5`. With 2 GPUs instead of 4, each epoch processes the same data but the curriculum has fewer expansion opportunities before early stopping. Making these configurable via the cfg dict allowed Round 2 to use `patience=20, increment=3`, which let the curriculum reach 100% data and beat the Pancreas target.
+The original hardcodes `early_stopping_patience=10` and `data_increment_patience=5`. With 2 GPUs instead of 4, the curriculum has fewer expansion opportunities before early stopping. Making these configurable via the cfg dict allowed Round 2 to use `patience=20, increment=3`, which let the curriculum reach 100% data and beat the Pancreas target.
 
 **5. 2 GPUs instead of 4 (hardware constraint)**
 
-The original notebooks use 4 GPUs. We use 2x NVIDIA L40S (48GB each). DDP splits data across GPUs, so effective throughput per epoch is the same but with different mini-batch dynamics (effective batch 10 vs 20). The main impact is on curriculum expansion -- fewer epochs before early-stop means less time for data to grow.
+The original notebooks use 4 GPUs. We use 2x NVIDIA L40S (48GB each). DDP splits data across GPUs, so each epoch sees the same total data but with different mini-batch dynamics (effective batch 10 vs 20). The main impact is on curriculum expansion -- with 2 GPUs and the original patience settings, the model early-stops before the curriculum can fully expand.
 
 ## Repository Structure
 
