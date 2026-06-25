@@ -17,9 +17,19 @@ All original notebook targets **beaten** using the same core method with minimal
 
 Sample segmentation results (best and worst predictions) and training curves are in [results/flare/](results/flare/).
 
-### LiTS Dataset
+### LiTS Dataset (Liver Tumor Segmentation)
 
-*(In progress)*
+131 abdominal CT scans, sliced into 7,153 tumor-bearing 2D slices (256x256). Pre-split: train 3,394 / val 485 / test 970.
+
+| Experiment | Method | Original Dice | Our Dice | Notes |
+|-----------|--------|---------------|----------|-------|
+| Exp 1 | Entropy curriculum (notebook exact: patience=10, increment=5) | 0.857 | **0.813** | 95% of target |
+| **Exp 2** | **Single-stage 100% data (AUSAM-RPSF)** | **0.927** | **0.901** | **97% of target, best single-stage** |
+| **Exp 3** | **Traditional Increments (13 steps to 100%)** | 0.927 | **0.896** | 97% of target, val peaked at 0.924 |
+
+Best result: **Exp 2 single-stage at Test Dice 0.901** (target 0.927). The original's best also came from 100% data training (AUSAM-RPSF), confirming that for LiTS tumors, full data utilization from epoch 1 outperforms progressive curriculum approaches.
+
+Sample segmentation results and training curves are in [results/lits/](results/lits/).
 
 ### Pancreas CT Dataset
 

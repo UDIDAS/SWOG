@@ -6,16 +6,26 @@ Reproduces the LiTS tumor segmentation experiments from:
   - SAM-DBSCAN_LiTS_Tumor (copy).ipynb
   - SAM-DBSCAN_LiTS_Tumor_TF_125pixels.ipynb
 
-LiTS (Liver Tumor Segmentation) dataset: 131 abdominal CT scans from
-different patients. Each 3D scan was sliced into 2D axial slices (256x256).
-Only slices containing tumors were kept, producing 7,153 tumor-bearing slices.
-These were pre-split into train (3,394) / val (485) / test (970).
+LiTS (Liver Tumor Segmentation) dataset: 131 abdominal CT scans.
+Each 3D scan sliced into 2D axial slices (256x256), tumor-bearing slices kept.
+Pre-split into train (3,394) / val (485) / test (970).
 
-Original best results:
-  - Tumor: Dice 0.927 (AUSAM-RPSF, 100% data, 78 epochs, 25.5h)
-  - Liver: Dice 0.963 (17 epochs, 12.24% data, 5.4h)
+Original notebook approach (single GPU, entropy curriculum):
+  - Cell 40: Entropy curriculum, patience=10, increment=5, epochs=1000
+  - Cell 42: Continue training to 100% data
+  - Test result: Dice 0.857
 
-Data: /scratch/ud3d4/acm_data/LiTS/splits/ (pre-split, 256x256x3 RGB float32)
+Original best results (from experiments_results_summary.csv):
+  - AUSAM-HPS (entropy 48.6%, single): Dice 0.875
+  - AUSAM-HPM (entropy 48.6%, multi):  Dice 0.902
+  - AUSAM-RPS (random, single):        Dice 0.903
+  - AUSAM-RPSF (100% full):            Dice 0.927
+  - Liver:                              Dice 0.963
+
+Our experiments:
+  Exp 1: Entropy curriculum (matches notebook Cell 40 exactly)
+  Exp 2: Single-stage 100% (matches AUSAM-RPSF — best original result)
+  Exp 3: Traditional Increments (best method from FLARE findings)
 """
 import sys, os
 sys.path.insert(0, "/home/ud3d4/Desktop/SWOG/src/scripts")
@@ -73,28 +83,42 @@ def go():
     te_c = get_lits_coords(y_test, "test")
     print(f"  Coords: train={len(tr_c)}, val={len(va_c)}, test={len(te_c)}")
 
-    # ── Exp 1: Single-stage 100% (AUSAM-RPSF) — target Dice 0.927 ──
+    # ══════════════════════════════════════════════════════════════════════
+    # Exp 1: Entropy Curriculum (matches notebook Cell 40 exactly)
+    # Original notebook: patience=10, increment=5, epochs=1000, single GPU
+    # We use DDP (2 GPU) with same patience/increment as the notebook
+    # ══════════════════════════════════════════════════════════════════════
     print("\n" + "="*70)
-    print("LiTS Exp 1: Single-Stage 100% Data (target: 0.927)")
+    print("LiTS Exp 1: Entropy Curriculum (notebook Cell 40)")
+    print("  Original: patience=10, increment=5, epochs=1000")
+    print("  Target: Dice 0.857 (notebook result)")
     print("="*70)
-    e1 = os.path.join(LITS_OUT, "lits_single_stage.pth")
+    e1 = os.path.join(LITS_OUT, "lits_entropy_curriculum.pth")
     if not os.path.exists(e1):
-        run_training({"model_save_path": e1, "epochs": 250, "batch_size": 5, "lr": 1e-5, "patience": 15},
-                     x_train, y_train, x_val, y_val, tr_c, va_c)
-    evaluate_test(e1, x_test, y_test, te_c, viz_tag="lits_single_stage")
+        run_curriculum({"model_save_path": e1, "epochs": 1000, "batch_size": 5, "lr": 1e-5,
+                        "patience": 10, "data_increment_patience": 5},
+                       x_train, y_train, x_val, y_val, tr_c, va_c, order="e2h")
+    evaluate_test(e1, x_test, y_test, te_c, viz_tag="lits_entropy_curriculum")
 
-    # ── Exp 2: H2E Curriculum — target Dice 0.902 ──
+    # ══════════════════════════════════════════════════════════════════════
+    # Exp 2: Single-stage 100% data (AUSAM-RPSF — best original result)
+    # Original: 100% data from epoch 1, no curriculum
+    # Target: Dice 0.927
+    # ══════════════════════════════════════════════════════════════════════
     print("\n" + "="*70)
-    print("LiTS Exp 2: H2E Curriculum (target: 0.902)")
+    print("LiTS Exp 2: Single-Stage 100% Data (AUSAM-RPSF)")
+    print("  Target: Dice 0.927 (best original result)")
     print("="*70)
-    e2 = os.path.join(LITS_OUT, "lits_h2e.pth")
+    e2 = os.path.join(LITS_OUT, "lits_single_stage.pth")
     if not os.path.exists(e2):
-        run_curriculum({"model_save_path": e2, "epochs": 1000, "batch_size": 5, "lr": 1e-5,
-                        "patience": 20, "data_increment_patience": 3},
-                       x_train, y_train, x_val, y_val, tr_c, va_c, order="h2e")
-    evaluate_test(e2, x_test, y_test, te_c, viz_tag="lits_h2e")
+        run_training({"model_save_path": e2, "epochs": 250, "batch_size": 5, "lr": 1e-5, "patience": 15},
+                     x_train, y_train, x_val, y_val, tr_c, va_c)
+    evaluate_test(e2, x_test, y_test, te_c, viz_tag="lits_single_stage")
 
-    # ── Exp 3: Traditional Increments ──
+    # ══════════════════════════════════════════════════════════════════════
+    # Exp 3: Traditional Increments (best method from FLARE Tumor)
+    # Fixed percentage steps with random sampling
+    # ══════════════════════════════════════════════════════════════════════
     print("\n" + "="*70)
     print("LiTS Exp 3: Traditional Increments")
     print("="*70)
