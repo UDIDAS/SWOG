@@ -31,9 +31,23 @@ Best result: **Exp 2 single-stage at Test Dice 0.901** (target 0.927). The origi
 
 Sample segmentation results and training curves are in [results/lits/](results/lits/).
 
-### Pancreas CT Dataset
+### Pancreas CT Dataset (MSD Task07)
 
-*(Pending)*
+281 abdominal CT scans with voxel-level organ (pancreas) and tumor (pancreatic cancer) labels. Sliced into 2D axial slices (256x256) with HU windowing [-100, 300]. Case-level split: train 196 / val 28 / test 57.
+
+| Target | v1 Dice | **v2 Dice** | Method | Key Change |
+|--------|---------|-------------|--------|------------|
+| **Organ** (pancreas) | 0.793 | **0.846** (+0.053) | H2E curriculum (patience=20) | Augmentation + box prompts |
+| **Tumor** (cancer) | 0.795 | **0.917** (+0.122) | Traditional Increments + transfer | Augmentation + box prompts |
+
+**v2 improvements that drove the gains:**
+
+1. **Data augmentation** — random horizontal flip + brightness jitter ±15 on RGB. The v1 organ model had an 18-point train/val Dice gap (0.88 vs 0.70), classic overfitting. Augmentation closed this gap.
+2. **Box prompts** — bounding box derived from GT mask passed alongside DBSCAN point prompts. SAM was pre-trained with box prompts; adding them gave a stronger spatial cue during fine-tuning.
+
+Training details: organ converged at epoch 157 (peak val Dice 0.846), tumor at epoch 96 (peak val Dice 0.935). Tumor used organ weights for transfer learning initialization.
+
+Per-case metrics and training curves are in [results/pancreas/](results/pancreas/). NIfTI deliverables (ct/gt/pred per case) are in `delivery_v2/`.
 
 ## How We Beat the Original Results
 
@@ -90,6 +104,10 @@ Changes from the original notebooks, with justification:
 
 **5. Traditional Increments no_improve reset** -- Reset no-improvement counter when stepping to the next percentage level, allowing the model to fully benefit from each data expansion step.
 
+**6. Data augmentation** -- Random horizontal flip (image + label + point coords) and brightness jitter ±15 on uint8 RGB. Eliminates the 18-point train/val Dice gap observed in Pancreas organ training.
+
+**7. Box prompts** -- Bounding box from GT mask (padded ±3px, scaled to SAM's 1024x1024 input) passed alongside DBSCAN point prompts. SAM was pre-trained with box prompts; using them during fine-tuning provides a stronger spatial cue and faster convergence.
+
 ## Repository Structure
 
 ```
@@ -97,14 +115,17 @@ results/
   flare/                           # FLARE segmentation results
     viz/                           # Best/worst prediction images + training curves
     metrics/                       # Per-epoch CSV metrics
+  lits/                            # LiTS segmentation results
+  pancreas/                        # Pancreas CT results (organ + tumor metrics, delivery manifest)
 
 src/notebooks/
   FLARE_AUSAM.ipynb                # Unified FLARE training notebook
   FLARE_AUSAM_Results.ipynb        # FLARE results visualization notebook
 
 src/scripts/
-  run_flare.py                     # All shared code + DDP training functions
+  run_flare.py                     # All shared code + DDP training functions (aug + box prompts)
   run_lits.py                      # LiTS reproduction runner
+  run_pancreas_nifti.py            # Pancreas CT train + NIfTI delivery pipeline
   run_remaining.py                 # FLARE Round 1 runner
   run_round2.py                    # FLARE Round 2 runner
   run_tumor_fix.py                 # Standalone Tumor Traditional rerun

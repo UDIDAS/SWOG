@@ -97,11 +97,26 @@ def generate_coordinates(masks, eps=5, min_samples=10):
 
 # ── Dataset ──
 class FLAREDataset(Dataset):
-    def __init__(self, images, labels, coordinates):
+    def __init__(self, images, labels, coordinates, augment=False):
         self.images, self.labels, self.coordinates = images, labels, coordinates
+        self.augment = augment
     def __len__(self): return len(self.images)
     def __getitem__(self, idx):
-        return self.images[idx], self.labels[idx], [(pt[2], pt[1]) for pt in self.coordinates if pt[0] == idx]
+        img = self.images[idx]
+        label = self.labels[idx]
+        coords = [(pt[2], pt[1]) for pt in self.coordinates if pt[0] == idx]
+        if self.augment:
+            # Random horizontal flip (image + label + coords)
+            if np.random.rand() < 0.5:
+                img = np.ascontiguousarray(img[:, ::-1])
+                label = np.ascontiguousarray(label[:, ::-1])
+                W = img.shape[1]
+                coords = [(W - 1 - x, y) for (x, y) in coords]
+            # Brightness jitter +/-15 on uint8 RGB
+            if isinstance(img, np.ndarray) and img.dtype == np.uint8:
+                shift = int(np.random.randint(-15, 16))
+                img = np.clip(img.astype(np.int16) + shift, 0, 255).astype(np.uint8)
+        return img, label, coords
 
 def collate_fn(batch):
     images, labels, coords = zip(*batch)
@@ -135,7 +150,7 @@ def setup_ddp(rank, world_size, port):
     os.environ["MASTER_PORT"] = str(port)
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
-def prepare_batch(images_batch, labels_batch, coords_batch, processor, device):
+def prepare_batch(images_batch, labels_batch, coords_batch, processor, device, use_boxes=False):
     imgs = [img.astype(np.float32) if isinstance(img, np.ndarray) else img for img in images_batch]
     imgs = [img if img.ndim == 3 and img.shape[-1] == 3 else np.stack([img]*3, axis=-1) for img in imgs]
     inputs = processor(images=imgs, return_tensors="pt", do_rescale=False)
@@ -164,10 +179,27 @@ def prepare_batch(images_batch, labels_batch, coords_batch, processor, device):
 
     gt_masks = torch.stack([torch.from_numpy(l).float().unsqueeze(0) if isinstance(l, np.ndarray)
                             else l.unsqueeze(0) for l in labels_batch]).to(device)
-    return pixel_values, input_points, input_labels, gt_masks
 
-def forward_sam(sam, pv, ip, il, gt, loss_fn):
-    out = sam(pixel_values=pv, input_points=ip, input_labels=il, multimask_output=False)
+    input_boxes = None
+    if use_boxes:
+        box_list = []
+        for lbl in labels_batch:
+            arr = lbl if isinstance(lbl, np.ndarray) else lbl.numpy()
+            ys, xs = np.where(arr > 0)
+            if len(xs) > 0:
+                H, W = arr.shape[-2], arr.shape[-1]
+                x1 = max(0, int(xs.min()) - 3); y1 = max(0, int(ys.min()) - 3)
+                x2 = min(W - 1, int(xs.max()) + 3); y2 = min(H - 1, int(ys.max()) + 3)
+                box = [x1 * SCALE, y1 * SCALE, x2 * SCALE, y2 * SCALE]
+            else:
+                box = [0.0, 0.0, 1023.0, 1023.0]
+            box_list.append([box])  # (num_boxes_per_image=1, 4)
+        input_boxes = torch.tensor(box_list, dtype=torch.float32).to(device)  # (B, 1, 4)
+
+    return pixel_values, input_points, input_labels, gt_masks, input_boxes
+
+def forward_sam(sam, pv, ip, il, gt, loss_fn, ib=None):
+    out = sam(pixel_values=pv, input_points=ip, input_labels=il, input_boxes=ib, multimask_output=False)
     pred = torch.sigmoid(out.pred_masks.squeeze(1))
     if pred.shape != gt.shape:
         gt = torch.nn.functional.interpolate(gt, size=pred.shape[-2:], mode="nearest")
@@ -187,8 +219,10 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c
     loss_fn = DiceLoss(to_onehot_y=False, sigmoid=False)
     optimizer = Adam(sam.parameters(), lr=cfg.get("lr", 1e-5))
     scaler = GradScaler("cuda")
-    train_ds = FLAREDataset(x_tr, y_tr, tr_c)
-    val_ds = FLAREDataset(x_va, y_va, va_c)
+    use_boxes = cfg.get("use_boxes", False)
+    augment = cfg.get("augment", False)
+    train_ds = FLAREDataset(x_tr, y_tr, tr_c, augment=augment)
+    val_ds = FLAREDataset(x_va, y_va, va_c, augment=False)
     best, no_imp = float("inf"), 0
     bs, pat = cfg.get("batch_size", 5), cfg.get("patience", 10)
     save_path = cfg["model_save_path"]
@@ -202,9 +236,9 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c
         tl = DataLoader(sub, batch_size=bs, sampler=ts, collate_fn=collate_fn)
         sam.train(); ep = {"loss":[], "dice":[], "iou":[]}
         for ib, lb, cb in tl:
-            pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
+            pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
             optimizer.zero_grad()
-            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn,ib=bx)
             scaler.scale(loss).backward(); scaler.step(optimizer); scaler.update()
             ep["loss"].append(loss.item()); ep["dice"].append(compute_dice(pb,gt).item()); ep["iou"].append(compute_iou(pb,gt.bool()).item())
         dist.barrier()
@@ -213,8 +247,8 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va, tr_c, va_c
         sam.eval(); ev = {"loss":[], "dice":[], "iou":[]}
         with torch.no_grad():
             for ib,lb,cb in vl:
-                pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
-                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+                pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
+                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn,ib=bx)
                 ev["loss"].append(loss.item()); ev["dice"].append(compute_dice(pb,gt).item()); ev["iou"].append(compute_iou(pb,gt.bool()).item())
         at = {k:np.mean(v) for k,v in ep.items()}; av = {k:np.mean(v) for k,v in ev.items()}
         if rank == 0:
@@ -252,8 +286,10 @@ def traditional_increments_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va,
     loss_fn = DiceLoss(to_onehot_y=False, sigmoid=False)
     optimizer = Adam(sam.parameters(), lr=cfg.get("lr", 1e-5))
     scaler = GradScaler("cuda")
-    train_ds = FLAREDataset(x_tr, y_tr, tr_c)
-    val_ds = FLAREDataset(x_va, y_va, va_c)
+    use_boxes = cfg.get("use_boxes", False)
+    augment = cfg.get("augment", False)
+    train_ds = FLAREDataset(x_tr, y_tr, tr_c, augment=augment)
+    val_ds = FLAREDataset(x_va, y_va, va_c, augment=False)
     n_train = len(train_ds)
 
     early_stopping_patience = 10
@@ -282,9 +318,9 @@ def traditional_increments_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va,
         tl = DataLoader(sub, batch_size=bs, sampler=ts, collate_fn=collate_fn)
         sam.train(); ep = {"loss":[],"dice":[],"iou":[]}
         for ib,lb,cb in tl:
-            pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
+            pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
             optimizer.zero_grad()
-            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn,ib=bx)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer); torch.nn.utils.clip_grad_norm_(sam.parameters(), max_norm=2.0)
             scaler.step(optimizer); scaler.update()
@@ -296,8 +332,8 @@ def traditional_increments_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va,
         sam.eval(); ev = {"loss":[],"dice":[],"iou":[]}
         with torch.no_grad():
             for ib,lb,cb in vl:
-                pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
-                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+                pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
+                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn,ib=bx)
                 ev["loss"].append(loss.item()); ev["dice"].append(compute_dice(pb,gt).item()); ev["iou"].append(compute_iou(pb,gt.bool()).item())
 
         at = {m:np.mean(v) for m,v in ep.items()}; av = {m:np.mean(v) for m,v in ev.items()}
@@ -432,7 +468,7 @@ def plot_training_curve(csv_path, save_path):
     print(f"  Training curve saved to {save_path}")
 
 
-def evaluate_test(model_path, x_te, y_te, te_c, viz_tag=None):
+def evaluate_test(model_path, x_te, y_te, te_c, viz_tag=None, use_boxes=False):
     """Test evaluation with optional visualization. viz_tag names the output files."""
     device = torch.device("cuda:0")
     processor = SamProcessor.from_pretrained("facebook/sam-vit-base")
@@ -449,8 +485,8 @@ def evaluate_test(model_path, x_te, y_te, te_c, viz_tag=None):
 
     with torch.no_grad():
         for ib,lb,cb in tqdm(loader, desc="Testing"):
-            pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
-            out = sam(pixel_values=pv, input_points=ip, input_labels=il, multimask_output=False)
+            pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
+            out = sam(pixel_values=pv, input_points=ip, input_labels=il, input_boxes=bx, multimask_output=False)
             pred = torch.sigmoid(out.pred_masks.squeeze(1))
             if pred.shape != gt.shape: gt = torch.nn.functional.interpolate(gt, size=pred.shape[-2:], mode="nearest")
             pred_bin = (pred>0.5).float()
@@ -529,8 +565,10 @@ def curriculum_train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va,
     loss_fn = DiceLoss(to_onehot_y=False, sigmoid=False)
     optimizer = Adam(sam.parameters(), lr=cfg.get("lr", 1e-5))
     scaler = GradScaler("cuda")
-    train_ds = FLAREDataset(x_tr, y_tr, tr_c)
-    val_ds = FLAREDataset(x_va, y_va, va_c)
+    use_boxes = cfg.get("use_boxes", False)
+    augment = cfg.get("augment", False)
+    train_ds = FLAREDataset(x_tr, y_tr, tr_c, augment=augment)
+    val_ds = FLAREDataset(x_va, y_va, va_c, augment=False)
 
     # ── Curriculum state (matching notebook exactly) ──
     pct, entropy_deriv, threshold, mean_d, std_d, orig_indices = \
@@ -560,9 +598,9 @@ def curriculum_train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va,
 
         sam.train(); ep = {"loss":[],"dice":[],"iou":[]}
         for ib,lb,cb in tl:
-            pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
+            pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
             optimizer.zero_grad()
-            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+            with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn,ib=bx)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer); torch.nn.utils.clip_grad_norm_(sam.parameters(), max_norm=2.0)
             scaler.step(optimizer); scaler.update()
@@ -574,8 +612,8 @@ def curriculum_train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va,
         sam.eval(); ev = {"loss":[],"dice":[],"iou":[]}
         with torch.no_grad():
             for ib,lb,cb in vl:
-                pv,ip,il,gt = prepare_batch(ib,lb,cb,processor,device)
-                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn)
+                pv,ip,il,gt,bx = prepare_batch(ib,lb,cb,processor,device,use_boxes=use_boxes)
+                with autocast("cuda"): loss,pb,gt = forward_sam(sam,pv,ip,il,gt,loss_fn,ib=bx)
                 ev["loss"].append(loss.item()); ev["dice"].append(compute_dice(pb,gt).item()); ev["iou"].append(compute_iou(pb,gt.bool()).item())
 
         at = {m:np.mean(v) for m,v in ep.items()}; av = {m:np.mean(v) for m,v in ev.items()}
