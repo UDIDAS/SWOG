@@ -49,6 +49,18 @@ Training details: organ converged at epoch 157 (peak val Dice 0.846), tumor at e
 
 Per-case metrics and training curves are in [results/pancreas/](results/pancreas/). NIfTI deliverables (ct/gt/pred per case) are in `delivery_v2/`.
 
+## 3D NIfTI Deliverables
+
+Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction:
+
+| Dataset | Cases | Organ Dice | Tumor Dice | Status |
+|---------|-------|------------|------------|--------|
+| **Pancreas** (MSD Task07) | 281 | **0.846** | **0.917** | Done |
+| **LiTS** (Liver Tumor) | 131 | — | *(training)* | In progress |
+| **FLARE** | — | — | — | Blocked (no per-patient NIfTI volumes in source data) |
+
+FLARE was distributed as pre-sliced 2D numpy arrays per organ class, not per-patient volumes. Per-patient NIfTI delivery requires the original un-sliced volumes, which are not available.
+
 ## How We Beat the Original Results
 
 Our reproduction uses the **same AUSAM method** with only necessary code fixes -- no architectural changes, no new loss functions, no additional data. The improvements came from three insights discovered during reproduction:
@@ -126,6 +138,7 @@ src/scripts/
   run_flare.py                     # All shared code + DDP training functions (aug + box prompts)
   run_lits.py                      # LiTS reproduction runner
   run_pancreas_nifti.py            # Pancreas CT train + NIfTI delivery pipeline
+  run_lits_nifti.py                # LiTS train + NIfTI delivery pipeline
   run_remaining.py                 # FLARE Round 1 runner
   run_round2.py                    # FLARE Round 2 runner
   run_tumor_fix.py                 # Standalone Tumor Traditional rerun
