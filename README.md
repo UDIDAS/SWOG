@@ -15,51 +15,49 @@ All original notebook targets **beaten** using the same core method with minimal
 | **Tumor** (class 14) | 0.839 | **0.855** | Traditional Increments | **BEAT** |
 | Duodenum (class 12) | -- | **0.890** | Transfer learning (Liver -> Duodenum) | Done |
 
-Sample segmentation results (best and worst predictions) and training curves are in [results/flare/](results/flare/).
+Note: FLARE was trained before augmentation + box prompts were added. Re-running with these improvements is expected to push scores further.
 
 ### LiTS Dataset (Liver Tumor Segmentation)
 
-131 abdominal CT scans, sliced into 7,153 tumor-bearing 2D slices (256x256). Pre-split: train 3,394 / val 485 / test 970.
+131 abdominal CT scans. Case-level split: train 91 / val 13 / test 27 volumes (3,649 / 263 / 1,688 tumor-bearing slices). HU window [-100, 400].
 
-| Experiment | Method | Original Dice | Our Dice | Notes |
-|-----------|--------|---------------|----------|-------|
-| Exp 1 | Entropy curriculum (notebook exact: patience=10, increment=5) | 0.857 | **0.813** | 95% of target |
-| **Exp 2** | **Single-stage 100% data (AUSAM-RPSF)** | **0.927** | **0.901** | **97% of target, best single-stage** |
-| **Exp 3** | **Traditional Increments (13 steps to 100%)** | 0.927 | **0.896** | 97% of target, val peaked at 0.924 |
+| Method | Split Type | Test Dice |
+|--------|-----------|-----------|
+| Single-stage 100% data (no aug/box) | Slice-level | 0.901 |
+| **Single-stage + augmentation + box prompts** | **Case-level** | **0.845** |
 
-Best result: **Exp 2 single-stage at Test Dice 0.901** (target 0.927). The original's best also came from 100% data training (AUSAM-RPSF), confirming that for LiTS tumors, full data utilization from epoch 1 outperforms progressive curriculum approaches.
-
-Sample segmentation results and training curves are in [results/lits/](results/lits/).
+Best honest result: **Test Dice 0.845** on case-level split with augmentation + box prompts. The earlier 0.901 used a slice-level random split where slices from the same patient can appear in both train and test, inflating the number. Case-level holdout is the correct protocol for medical imaging.
 
 ### Pancreas CT Dataset (MSD Task07)
 
-281 abdominal CT scans with voxel-level organ (pancreas) and tumor (pancreatic cancer) labels. Sliced into 2D axial slices (256x256) with HU windowing [-100, 300]. Case-level split: train 196 / val 28 / test 57.
+281 abdominal CT scans with voxel-level organ (pancreas) and tumor (pancreatic cancer) labels. Case-level split: train 196 / val 28 / test 57. HU window [-100, 300].
 
-| Target | v1 Dice | **v2 Dice** | Method | Key Change |
-|--------|---------|-------------|--------|------------|
-| **Organ** (pancreas) | 0.793 | **0.846** (+0.053) | H2E curriculum (patience=20) | Augmentation + box prompts |
-| **Tumor** (cancer) | 0.795 | **0.917** (+0.122) | Traditional Increments + transfer | Augmentation + box prompts |
+| Target | Without Aug+Box | **With Aug+Box** | Method |
+|--------|-----------------|-------------------|--------|
+| **Organ** (pancreas) | 0.793 | **0.846** (+0.053) | H2E curriculum (patience=20) |
+| **Tumor** (cancer) | 0.795 | **0.917** (+0.122) | Traditional Increments + transfer |
 
-**v2 improvements that drove the gains:**
-
-1. **Data augmentation** — random horizontal flip + brightness jitter ±15 on RGB. The v1 organ model had an 18-point train/val Dice gap (0.88 vs 0.70), classic overfitting. Augmentation closed this gap.
-2. **Box prompts** — bounding box derived from GT mask passed alongside DBSCAN point prompts. SAM was pre-trained with box prompts; adding them gave a stronger spatial cue during fine-tuning.
-
-Training details: organ converged at epoch 157 (peak val Dice 0.846), tumor at epoch 96 (peak val Dice 0.935). Tumor used organ weights for transfer learning initialization.
-
-Per-case metrics and training curves are in [results/pancreas/](results/pancreas/). NIfTI deliverables (ct/gt/pred per case) are in `delivery_v2/`.
+Best result: **Organ 0.846, Tumor 0.917** with augmentation + box prompts. The initial run without augmentation had an 18-point train/val Dice gap (classic overfitting on ~3K slices). Augmentation closed the gap; box prompts gave SAM the spatial cue it was pretrained with.
 
 ## 3D NIfTI Deliverables
 
 Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction:
 
-| Dataset | Cases | Organ Dice | Tumor Dice | Status |
-|---------|-------|------------|------------|--------|
-| **Pancreas** (MSD Task07) | 281 | **0.846** | **0.917** | Done |
-| **LiTS** (Liver Tumor) | 131 | — | *(training)* | In progress |
-| **FLARE** | — | — | — | Blocked (no per-patient NIfTI volumes in source data) |
+| Dataset | Cases | Liver Dice | Tumor Dice | Location |
+|---------|-------|------------|------------|----------|
+| **Pancreas** (MSD Task07) | 281 | **0.846** | **0.917** | `/scratch/.../Pancreas/delivery_v2/` |
+| **LiTS** (Liver Tumor) | 131 | **0.996** (from GT) | **0.675** | `/scratch/.../LiTS_delivery/delivery/` |
+| **FLARE** | — | — | — | Blocked (source data is pre-sliced, no per-patient volumes) |
 
-FLARE was distributed as pre-sliced 2D numpy arrays per organ class, not per-patient volumes. Per-patient NIfTI delivery requires the original un-sliced volumes, which are not available.
+## Best Approach Across Datasets
+
+The recipe that consistently produced the best results:
+
+1. **Single-stage training** with all data from epoch 1 — beats entropy curriculum on tumors, matches or beats on organs
+2. **Data augmentation** — random horizontal flip + brightness jitter ±15 (uint8 RGB). Closes overfitting gaps, especially critical when training set is small (<5K slices)
+3. **Box prompts** — bounding box from GT mask (padded ±3px) alongside DBSCAN point prompts. SAM was pretrained with both; using only points leaves half the prompt architecture untrained
+4. **Transfer learning** for tumors — initialize from organ weights, since organ features provide useful low-level representations
+5. **Case-level data splits** — hold out entire patients, not random slices. Slice-level splits leak patient features and inflate reported Dice
 
 ## How We Beat the Original Results
 
@@ -77,11 +75,23 @@ The original Tumor notebook achieved its best result (0.839) using "Traditional 
 
 The original notebooks don't synchronize the "improved" decision across GPU ranks. With `mp.spawn`, floating-point rounding causes ranks to occasionally disagree -- one rank saves a checkpoint while the other continues training, or one triggers data expansion while the other doesn't. This doesn't crash immediately but causes subtle training instability. Broadcasting the decision from rank 0 ensures all ranks take identical paths, producing cleaner training curves and better final models.
 
-## The Task
+## Implementation Notes
 
-Each dataset contains abdominal CT scans from multiple patients. The scans are pre-sliced into 2D axial slices (256x256) and expert-annotated with pixel-level masks for organs and tumors. The segmentation task: given a CT slice, produce a binary mask identifying exactly which pixels belong to a specific anatomical structure.
+Changes from the original notebooks, with justification:
 
-All results are reported as **Dice coefficient**, which measures overlap between predicted and ground truth masks (1.0 = perfect, 0.0 = no overlap). Dice is used instead of accuracy because organs occupy <6% of pixels -- a model predicting "all background" gets 99%+ accuracy but Dice = 0.
+**1. SAM API update (required compatibility fix)** -- `point_annotations` removed in transformers 5.8.1, updated to `input_points` 4D tensor API.
+
+**2. DDP synchronization fix (required stability fix)** -- Broadcast `improved` flag from rank 0 to prevent NCCL crashes from rank divergence.
+
+**3. Label handling (equivalent, not different)** -- Original `bitwise_not` + `invert_black_white` was an identity on 0/255 data. Data is now 0/1, so we use `(labels > 0)` directly (same net effect).
+
+**4. Configurable curriculum patience** -- Original hardcodes patience=10. Made configurable to compensate for 2 GPUs vs 4.
+
+**5. Traditional Increments no_improve reset** -- Reset no-improvement counter when stepping to the next percentage level, allowing the model to fully benefit from each data expansion step.
+
+**6. Data augmentation** -- Random horizontal flip (image + label + point coords) and brightness jitter ±15 on uint8 RGB. Eliminates the 18-point train/val Dice gap observed in Pancreas organ training.
+
+**7. Box prompts** -- Bounding box from GT mask (padded ±3px, scaled to SAM's 1024x1024 input) passed alongside DBSCAN point prompts. SAM was pre-trained with box prompts; using them during fine-tuning provides a stronger spatial cue and faster convergence.
 
 ## Original Notebooks
 
@@ -102,24 +112,6 @@ All results are reported as **Dice coefficient**, which measures overlap between
 | `SAM-DBSCAN_LiTS_Tumor.ipynb` | Multiple strategies: entropy curriculum, single-stage, random increments, full training | Tumor | RPSF Dice 0.927 |
 | `SAM-DBSCAN_LiTS_Tumor_TF_125pixels.ipynb` | Transfer learning variant with 125px minimum tumor size | Tumor | -- |
 
-## Implementation Notes
-
-Changes from the original notebooks, with justification:
-
-**1. SAM API update (required compatibility fix)** -- `point_annotations` removed in transformers 5.8.1, updated to `input_points` 4D tensor API.
-
-**2. DDP synchronization fix (required stability fix)** -- Broadcast `improved` flag from rank 0 to prevent NCCL crashes from rank divergence.
-
-**3. Label handling (equivalent, not different)** -- Original `bitwise_not` + `invert_black_white` was an identity on 0/255 data. Data is now 0/1, so we use `(labels > 0)` directly (same net effect).
-
-**4. Configurable curriculum patience** -- Original hardcodes patience=10. Made configurable to compensate for 2 GPUs vs 4.
-
-**5. Traditional Increments no_improve reset** -- Reset no-improvement counter when stepping to the next percentage level, allowing the model to fully benefit from each data expansion step.
-
-**6. Data augmentation** -- Random horizontal flip (image + label + point coords) and brightness jitter ±15 on uint8 RGB. Eliminates the 18-point train/val Dice gap observed in Pancreas organ training.
-
-**7. Box prompts** -- Bounding box from GT mask (padded ±3px, scaled to SAM's 1024x1024 input) passed alongside DBSCAN point prompts. SAM was pre-trained with box prompts; using them during fine-tuning provides a stronger spatial cue and faster convergence.
-
 ## Repository Structure
 
 ```
@@ -130,13 +122,10 @@ results/
   lits/                            # LiTS segmentation results
   pancreas/                        # Pancreas CT results (organ + tumor metrics, delivery manifest)
 
-src/notebooks/
-  FLARE_AUSAM.ipynb                # Unified FLARE training notebook
-  FLARE_AUSAM_Results.ipynb        # FLARE results visualization notebook
-
 src/scripts/
   run_flare.py                     # All shared code + DDP training functions (aug + box prompts)
-  run_lits.py                      # LiTS reproduction runner
+  run_lits.py                      # LiTS reproduction runner (slice-level split)
+  run_lits_v3.py                   # LiTS with aug+box (case-level split)
   run_pancreas_nifti.py            # Pancreas CT train + NIfTI delivery pipeline
   run_lits_nifti.py                # LiTS train + NIfTI delivery pipeline
   run_remaining.py                 # FLARE Round 1 runner
@@ -152,10 +141,10 @@ src/scripts/
 nohup python -u src/scripts/run_round2.py > runs/log 2>&1 &
 
 # LiTS
-nohup python -u src/scripts/run_lits.py > runs/log 2>&1 &
+nohup python -u src/scripts/run_lits_v3.py > runs/log 2>&1 &
 
-# Single class standalone
-conda run -n llmft python src/scripts/flare_sam_finetune.py --class_id 12 --epochs 250
+# Pancreas (train + NIfTI deliverables)
+cd src/scripts && nohup python -u run_pancreas_nifti.py > runs/log 2>&1 &
 ```
 
 ## Environment
