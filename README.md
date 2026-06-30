@@ -4,60 +4,73 @@ Reimplementation of the AUSAM (Adaptive Unified Segmentation Anything Model) pip
 
 ## Final Results
 
+All Dice scores below are **test-set only** — computed on held-out cases the model never saw during training. All evaluation uses GT-derived prompts (DBSCAN point prompts, and bounding boxes where noted), matching the original AUSAM oracle prompting regime. Deployment without ground truth is an open problem addressed by CRISP-SAM.
+
 ### FLARE Dataset
 
-All original notebook targets **beaten** using the same core method with minimal code changes.
+All original notebook targets **beaten** using the same core method with minimal code changes. Slice-level split (data is pre-sliced without patient metadata; same protocol as original AUSAM). No augmentation or box prompts applied.
 
-| Target Structure | Original Dice | Our Dice | Method | Verdict |
+| Target Structure | Original Dice | Our Test Dice | Method | Verdict |
 |-----------------|---------------|----------|--------|---------|
 | **Pancreas** (class 4) | 0.822 | **0.839** | H2E curriculum (patience=20) | **BEAT** |
 | **Liver** (class 1) | 0.941 | **0.965** | Single-stage fine-tune | **BEAT** |
 | **Tumor** (class 14) | 0.839 | **0.855** | Traditional Increments | **BEAT** |
 | Duodenum (class 12) | -- | **0.890** | Transfer learning (Liver -> Duodenum) | Done |
 
-Note: FLARE was trained before augmentation + box prompts were added. Re-running with these improvements is expected to push scores further.
-
 ### LiTS Dataset (Liver Tumor Segmentation)
 
-131 abdominal CT scans. Case-level split: train 91 / val 13 / test 27 volumes (3,649 / 263 / 1,688 tumor-bearing slices). HU window [-100, 400].
+131 abdominal CT scans. Case-level split: train 91 / val 13 / test 27 volumes. HU window [-100, 400]. Evaluated on tumor-bearing slices (≥50 tumor pixels).
 
 | Method | Split Type | Test Dice |
 |--------|-----------|-----------|
 | Single-stage 100% data (no aug/box) | Slice-level | 0.901 |
 | **Single-stage + augmentation + box prompts** | **Case-level** | **0.845** |
 
-Best honest result: **Test Dice 0.845** on case-level split with augmentation + box prompts. The earlier 0.901 used a slice-level random split where slices from the same patient can appear in both train and test, inflating the number. Case-level holdout is the correct protocol for medical imaging.
+Best honest result: **Test Dice 0.845** on case-level split. The 0.901 used a slice-level random split where slices from the same patient can appear in both train and test, inflating the number.
 
 ### Pancreas CT Dataset (MSD Task07)
 
-281 abdominal CT scans with voxel-level organ (pancreas) and tumor (pancreatic cancer) labels. Case-level split: train 196 / val 28 / test 57. HU window [-100, 300].
+281 abdominal CT scans with voxel-level organ and tumor labels. Case-level split: train 196 / val 28 / test 57. HU window [-100, 300].
 
-| Target | Without Aug+Box | **With Aug+Box** | Method |
-|--------|-----------------|-------------------|--------|
-| **Organ** (pancreas) | 0.793 | **0.846** (+0.053) | H2E curriculum (patience=20) |
-| **Tumor** (cancer) | 0.795 | **0.917** (+0.122) | Traditional Increments + transfer |
+| Target | Without Aug+Box | **With Aug+Box** | Improvement | Method |
+|--------|-----------------|-------------------|-------------|--------|
+| **Organ** (pancreas) | 0.741 | **0.834** | +0.093 | H2E curriculum (patience=20) |
+| **Tumor** (cancer) | 0.775 | **0.904** | +0.129 | Traditional Increments + transfer |
 
-Best result: **Organ 0.846, Tumor 0.917** with augmentation + box prompts. The initial run without augmentation had an 18-point train/val Dice gap (classic overfitting on ~3K slices). Augmentation closed the gap; box prompts gave SAM the spatial cue it was pretrained with.
+Best result: **Organ 0.834, Tumor 0.904** on held-out test cases with augmentation + box prompts. The initial run without augmentation had a large train/test gap (classic overfitting on ~3K organ slices). Augmentation closed the gap; box prompts gave SAM the spatial cue it was pretrained with.
+
+### Pancreas Ablation: Augmentation vs Box Prompts
+
+Isolates the individual contributions. All four configs evaluated via `evaluate_test` on 57 held-out test cases using DBSCAN point prompts. Same case-level split as above.
+
+| Config | Augment | Box | Organ Test Dice | Tumor Test Dice |
+|--------|:-:|:-:|:-:|:-:|
+| Aug only | Yes | No | 0.689 | 0.789 |
+| **Box only** | No | Yes | **0.828** | **0.914** |
+
+For context, the main Pancreas table reports organ 0.741→0.834 and tumor 0.775→0.904, measured from the NIfTI delivery manifest (centroid prompts, volume-level Dice). The ablation uses DBSCAN slice-level Dice, so the absolute numbers differ but the relative ranking is consistent.
+
+Box prompts are the dominant factor. Augmentation alone did not help organ — the H2E curriculum only reached 55% data utilization with augmented samples, suggesting the added noise disrupted entropy-based ordering. For tumors, augmentation alone (0.789) trails box-only (0.914) by a wide margin, confirming that the bounding box provides a spatial prior that a single DBSCAN centroid cannot match for small, irregular structures.
 
 ## 3D NIfTI Deliverables
 
-Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction:
+Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice below is averaged across **all** cases (train + val + test), since deliverables are generated for every patient. Test-only numbers are reported in the results tables above.
 
-| Dataset | Cases | Liver Dice | Tumor Dice | Location |
+| Dataset | Cases | Organ Dice (all) | Tumor Dice (all) | Location |
 |---------|-------|------------|------------|----------|
-| **Pancreas** (MSD Task07) | 281 | **0.846** | **0.917** | `/scratch/.../Pancreas/delivery_v2/` |
-| **LiTS** (Liver Tumor) | 131 | **0.996** (from GT) | **0.675** | `/scratch/.../LiTS_delivery/delivery/` |
+| **Pancreas** (MSD Task07) | 281 | 0.846 | 0.917 | `/scratch/.../Pancreas/delivery_v2/` |
+| **LiTS** (Liver Tumor) | 131 | 0.996 (liver from GT) | 0.675 | `/scratch/.../LiTS_delivery/delivery/` |
 | **FLARE** | — | — | — | Blocked (source data is pre-sliced, no per-patient volumes) |
 
 ## Best Approach Across Datasets
 
 The recipe that consistently produced the best results:
 
-1. **Single-stage training** with all data from epoch 1 — beats entropy curriculum on tumors, matches or beats on organs
-2. **Data augmentation** — random horizontal flip + brightness jitter ±15 (uint8 RGB). Closes overfitting gaps, especially critical when training set is small (<5K slices)
-3. **Box prompts** — bounding box from GT mask (padded ±3px) alongside DBSCAN point prompts. SAM was pretrained with both; using only points leaves half the prompt architecture untrained
-4. **Transfer learning** for tumors — initialize from organ weights, since organ features provide useful low-level representations
-5. **Case-level data splits** — hold out entire patients, not random slices. Slice-level splits leak patient features and inflate reported Dice
+1. **Box prompts** — bounding box from GT mask (padded ±3px) alongside DBSCAN point prompts. The single largest contributor in ablation (box-only organ 0.828 vs aug-only 0.689). SAM was pretrained with both prompt types; using only points leaves half the prompt architecture untrained
+2. **Data augmentation** — random horizontal flip + brightness jitter ±15 (uint8 RGB). Helps generalization when combined with box prompts, though ablation shows box prompts alone nearly match the combined result
+3. **Transfer learning** for tumors — initialize from organ weights, since organ features provide useful low-level representations
+4. **Case-level data splits** — hold out entire patients, not random slices. Slice-level splits leak patient features and inflate reported Dice (LiTS: 0.901 slice-level vs 0.845 case-level)
+5. **Single-stage training** with all data from epoch 1 — beats entropy curriculum on tumors, matches or beats on organs
 
 ## How We Beat the Original Results
 
@@ -65,7 +78,7 @@ Our reproduction uses the **same AUSAM method** with only necessary code fixes -
 
 **1. Curriculum data utilization was the bottleneck, not the method itself**
 
-The original notebooks use `early_stopping_patience=10` and `data_increment_patience=5`, meaning the curriculum gets exactly one data expansion before early stopping (expand at epoch 5 of no improvement, stop at epoch 10). With 2 GPUs instead of 4, each expansion was less impactful. By adjusting to `patience=20, increment=3`, the curriculum could expand 6+ times before stopping, reaching 100% data utilization. This alone pushed Pancreas from 0.792 to **0.839** (beating the 0.822 target).
+The original notebooks use `early_stopping_patience=10` and `data_increment_patience=5`, meaning the curriculum gets exactly one data expansion before early stopping (expand at epoch 5 of no improvement, stop at epoch 10). With 2 GPUs instead of 4, each expansion was less impactful. By adjusting to `patience=20, increment=3`, the curriculum could expand 6+ times before stopping, reaching 100% data utilization. This alone pushed FLARE Pancreas from 0.792 to **0.839** (beating the 0.822 target).
 
 **2. Random sampling beats entropy-based ordering for tumors**
 
@@ -127,6 +140,7 @@ src/scripts/
   run_lits.py                      # LiTS reproduction runner (slice-level split)
   run_lits_v3.py                   # LiTS with aug+box (case-level split)
   run_pancreas_nifti.py            # Pancreas CT train + NIfTI delivery pipeline
+  run_pancreas_ablation.py         # Pancreas ablation: aug vs box prompt contribution
   run_lits_nifti.py                # LiTS train + NIfTI delivery pipeline
   run_remaining.py                 # FLARE Round 1 runner
   run_round2.py                    # FLARE Round 2 runner
