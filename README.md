@@ -52,6 +52,21 @@ For context, the main Pancreas table reports organ 0.741→0.834 and tumor 0.775
 
 Box prompts are the dominant factor. Augmentation alone did not help organ — the H2E curriculum only reached 55% data utilization with augmented samples, suggesting the added noise disrupted entropy-based ordering. For tumors, augmentation alone (0.789) trails box-only (0.914) by a wide margin, confirming that the bounding box provides a spatial prior that a single DBSCAN centroid cannot match for small, irregular structures.
 
+### SAM3 Comparison (Pancreas CT)
+
+SAM3 (facebook/sam3, 840M params) tested as a potential backbone for CRISP-SAM. Unlike SAM1 which uses DBSCAN point + box prompts, SAM3 uses text + box prompts via a DETR-based architecture. All configs use GT-derived box prompts on the same case-level split as above.
+
+| Config | Encoder Strategy | Organ Dice | Tumor Dice |
+|--------|-----------------|:----------:|:----------:|
+| SAM1 box+points (reference) | Full finetune (93.7M) | 0.828 | **0.914** |
+| SAM3 full finetune | All 840M trainable | **0.861** | 0.888 |
+| SAM3 frozen encoder | Encoder frozen, decoder only | 0.826 | 0.853 |
+| SAM3 partial freeze (in progress) | Blocks 0-19 frozen, 20-31 + FPN + decoder trainable | — | — |
+
+SAM3 full finetune beats SAM1 on organ (+0.033) but loses on tumor (-0.026). Freezing the encoder entirely eliminates overfitting but underperforms both — SAM3's ViT-Large was pretrained on natural images and cannot learn CT-specific features without fine-tuning. The partial freeze experiment (discriminative LR, cosine annealing, Dice+focal loss) aims to find the middle ground.
+
+Key finding: SAM3's larger capacity helps organ segmentation but hurts tumor with limited data (~700 slices). For CRISP-SAM, the partial freeze approach is most relevant since the prompt generator must work with a stable encoder.
+
 ## 3D NIfTI Deliverables
 
 Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice below is averaged across **all** cases (train + val + test), since deliverables are generated for every patient. Test-only numbers are reported in the results tables above.
@@ -141,6 +156,7 @@ src/scripts/
   run_lits_v3.py                   # LiTS with aug+box (case-level split)
   run_pancreas_nifti.py            # Pancreas CT train + NIfTI delivery pipeline
   run_pancreas_ablation.py         # Pancreas ablation: aug vs box prompt contribution
+  run_pancreas_sam3.py             # SAM3 vs SAM1 comparison (full/frozen/partial freeze)
   run_lits_nifti.py                # LiTS train + NIfTI delivery pipeline
   run_remaining.py                 # FLARE Round 1 runner
   run_round2.py                    # FLARE Round 2 runner
