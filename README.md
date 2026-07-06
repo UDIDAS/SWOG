@@ -56,16 +56,21 @@ Box prompts are the dominant factor. Augmentation alone did not help organ — t
 
 SAM3 (facebook/sam3, 840M params) tested as a potential backbone for CRISP-SAM. Unlike SAM1 which uses DBSCAN point + box prompts, SAM3 uses text + box prompts via a DETR-based architecture. All configs use GT-derived box prompts on the same case-level split as above.
 
-| Config | Encoder Strategy | Organ Dice | Tumor Dice |
-|--------|-----------------|:----------:|:----------:|
-| SAM1 box+points (reference) | Full finetune (93.7M) | 0.828 | **0.914** |
-| SAM3 full finetune | All 840M trainable | **0.861** | 0.888 |
-| SAM3 frozen encoder | Encoder frozen, decoder only | 0.826 | 0.853 |
-| SAM3 partial freeze (in progress) | Blocks 0-19 frozen, 20-31 + FPN + decoder trainable | — | — |
+| Config | Encoder Strategy | Params Trained | Organ Dice | Tumor Dice |
+|--------|-----------------|:--------------:|:----------:|:----------:|
+| SAM1 box+points (reference) | Full finetune (93.7M) | 100% | 0.828 | **0.914** |
+| SAM3 full finetune | All 840M trainable | 100% | 0.861 | 0.888 |
+| SAM3 frozen encoder | Encoder frozen, decoder only | 46% | 0.826 | 0.853 |
+| **SAM3 partial freeze** | Blocks 0-19 frozen; 20-31 + FPN + decoder trainable | 67% | **0.866** | *in progress* |
 
-SAM3 full finetune beats SAM1 on organ (+0.033) but loses on tumor (-0.026). Freezing the encoder entirely eliminates overfitting but underperforms both — SAM3's ViT-Large was pretrained on natural images and cannot learn CT-specific features without fine-tuning. The partial freeze experiment (discriminative LR, cosine annealing, Dice+focal loss) aims to find the middle ground.
+SAM3 full finetune beats SAM1 on organ (+0.033) but loses on tumor (-0.026). Freezing the encoder entirely eliminates overfitting but underperforms both — SAM3's ViT-Large was pretrained on natural images and cannot learn CT-specific features without fine-tuning.
 
-Key finding: SAM3's larger capacity helps organ segmentation but hurts tumor with limited data (~700 slices). For CRISP-SAM, the partial freeze approach is most relevant since the prompt generator must work with a stable encoder.
+The **partial freeze** config is the best SAM3 strategy: it reaches organ Dice **0.866** (best of any SAM3 variant, beating SAM1 by +0.038) while keeping a healthy train-val gap (~0.03 vs full-finetune's 0.064 overfit). It freezes the low-level transformer blocks and patch/position embeddings, then fine-tunes the high-level blocks + FPN neck + decoder with **discriminative learning rates** (encoder 1e-5, decoder 1e-4), a **warmup + cosine-annealing** schedule, and a combined **Dice+Focal loss**. Nearly all validation gains arrived as the cosine schedule dropped the LR below 50%, confirming the schedule — not just the freeze — drives convergence.
+
+Key findings for CRISP-SAM:
+- **SAM3 wins on organ, SAM1 wins on tumor.** SAM3's larger capacity helps organ segmentation but is a liability on small structures (~700 tumor slices), where the lightweight SAM1 generalizes better.
+- **A frozen encoder does not work for CT** — the natural-image encoder must be partially adapted.
+- The partial-freeze SAM3 backbone is the recommended choice for organ-level work, since it provides a stable, CT-adapted encoder for the downstream prompt generator to build on.
 
 ## 3D NIfTI Deliverables
 
