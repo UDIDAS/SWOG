@@ -61,11 +61,11 @@ SAM3 (facebook/sam3, 840M params) tested as a potential backbone for CRISP-SAM. 
 | SAM1 box+points (reference) | Full finetune (93.7M) | 100% | 0.828 | **0.914** |
 | SAM3 full finetune | All 840M trainable | 100% | 0.861 | 0.888 |
 | SAM3 frozen encoder | Encoder frozen, decoder only | 46% | 0.826 | 0.853 |
-| **SAM3 partial freeze** | Blocks 0-19 frozen; 20-31 + FPN + decoder trainable | 67% | **0.866** | *in progress* |
+| **SAM3 partial freeze** | Blocks 0-19 frozen; 20-31 + FPN + decoder trainable | 67% | **0.866** | 0.894 |
 
 SAM3 full finetune beats SAM1 on organ (+0.033) but loses on tumor (-0.026). Freezing the encoder entirely eliminates overfitting but underperforms both — SAM3's ViT-Large was pretrained on natural images and cannot learn CT-specific features without fine-tuning.
 
-The **partial freeze** config is the best SAM3 strategy: it reaches organ Dice **0.866** (best of any SAM3 variant, beating SAM1 by +0.038) while keeping a healthy train-val gap (~0.03 vs full-finetune's 0.064 overfit). It freezes the low-level transformer blocks and patch/position embeddings, then fine-tunes the high-level blocks + FPN neck + decoder with **discriminative learning rates** (encoder 1e-5, decoder 1e-4), a **warmup + cosine-annealing** schedule, and a combined **Dice+Focal loss**. Nearly all validation gains arrived as the cosine schedule dropped the LR below 50%, confirming the schedule — not just the freeze — drives convergence.
+The **partial freeze** config is the best SAM3 strategy across both structures: organ Dice **0.866** (best of any SAM3 variant, beating SAM1 by +0.038) and tumor Dice **0.894** (best SAM3 tumor, beating v1's 0.888 and v2's 0.853), while keeping a healthy train-val gap (~0.03 vs full-finetune's 0.064 overfit). SAM1 still leads on tumor (0.914) — SAM3's larger capacity remains a liability on small structures even with the improved recipe. It freezes the low-level transformer blocks and patch/position embeddings, then fine-tunes the high-level blocks + FPN neck + decoder with **discriminative learning rates** (encoder 1e-5, decoder 1e-4), a **warmup + cosine-annealing** schedule, and a combined **Dice+Focal loss**. Nearly all validation gains arrived as the cosine schedule dropped the LR below 50%, confirming the schedule — not just the freeze — drives convergence.
 
 Key findings for CRISP-SAM:
 - **SAM3 wins on organ, SAM1 wins on tumor.** SAM3's larger capacity helps organ segmentation but is a liability on small structures (~700 tumor slices), where the lightweight SAM1 generalizes better.

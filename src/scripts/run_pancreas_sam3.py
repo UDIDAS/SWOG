@@ -42,7 +42,21 @@ os.makedirs(SAM3_DIR, exist_ok=True)
 
 SAM3_MODEL_ID = "facebook/sam3"
 SAM3_IMAGE_SIZE = 1008
-HF_TOKEN = os.environ.get("HF_TOKEN")
+def _load_hf_token():
+    """Token from env, else the standard HF cache file. Keeps secrets out of source."""
+    tok = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    if tok:
+        return tok.strip()
+    for p in (os.path.expanduser("~/.cache/huggingface/token"),
+              os.path.expanduser("~/.huggingface/token")):
+        if os.path.exists(p):
+            with open(p) as f:
+                t = f.read().strip()
+            if t:
+                return t
+    return None
+
+HF_TOKEN = _load_hf_token()
 
 
 # ── Augmentation ──
@@ -849,13 +863,186 @@ def run_v3():
     print("DONE")
 
 
+import nibabel as nib
+from skimage.transform import resize as sk_resize
+
+SAM3_DELIVERY_DIR = "/scratch/ud3d4/acm_data/Pancreas/sam3_delivery"
+
+
+def _sam3_infer_slice(model, processor, rgb, mask256, device, text="visual"):
+    """Run SAM3 on one 256x256 RGB slice with a GT-derived box prompt.
+    Returns a 256x256 float probability map, or None if the mask is empty."""
+    box = bbox_from_mask(mask256, pad=3)  # [x1,y1,x2,y2] in 256-px space
+    if box is None:
+        return None
+    inputs = processor(
+        images=[rgb], text=[text],
+        input_boxes=[[box]], input_boxes_labels=[[1]],
+        return_tensors="pt",
+    )
+    pv = inputs["pixel_values"].to(device)
+    kw = {"pixel_values": pv}
+    for k in ("input_ids", "attention_mask", "input_boxes", "input_boxes_labels"):
+        if inputs.get(k) is not None:
+            kw[k] = inputs[k].to(device)
+    with torch.no_grad():
+        with autocast("cuda"):
+            outputs = model(**kw)
+        pred = extract_best_mask_soft(outputs.pred_masks, outputs.pred_logits)  # [1,1,h,w]
+        pred = torch.nn.functional.interpolate(
+            pred.float(), size=(256, 256), mode="bilinear", align_corners=False
+        )
+        prob = pred.sigmoid().squeeze().cpu().numpy()
+    return prob
+
+
+def _load_sam3_ckpt(ckpt_path, device):
+    model = Sam3Model.from_pretrained(SAM3_MODEL_ID, token=HF_TOKEN)
+    if os.path.exists(ckpt_path):
+        state = torch.load(ckpt_path, map_location=device)
+        model.load_state_dict({k.replace("module.", ""): v for k, v in state.items()}, strict=False)
+    model.to(device).eval()
+    return model
+
+
+def deliver_worker(rank, world_size):
+    """Generate per-case NIfTI deliverables for a shard of cases on GPU `rank`."""
+    device = torch.device(f"cuda:{rank}")
+    processor = Sam3Processor.from_pretrained(SAM3_MODEL_ID, token=HF_TOKEN)
+
+    organ_model = _load_sam3_ckpt(os.path.join(SAM3_DIR, "sam3_v3_organ.pth"), device)
+    tumor_model = _load_sam3_ckpt(os.path.join(SAM3_DIR, "sam3_v3_tumor.pth"), device)
+    if rank == 0:
+        print(f"  [GPU{rank}] loaded organ + tumor SAM3 models", flush=True)
+
+    all_cases = get_case_ids()
+    shard = all_cases[rank::world_size]
+    manifest = []
+
+    for ci, case_id in enumerate(shard):
+        case_dir = os.path.join(SAM3_DELIVERY_DIR, case_id)
+        os.makedirs(case_dir, exist_ok=True)
+
+        img_nii = nib.load(f"{PANCREAS_DIR}/imagesTr/{case_id}.nii.gz")
+        lbl_nii = nib.load(f"{PANCREAS_DIR}/labelsTr/{case_id}.nii.gz")
+        ct_data = img_nii.get_fdata()
+        gt_data = lbl_nii.get_fdata().astype(np.uint8)
+
+        ct_dest = os.path.join(case_dir, "ct.nii.gz")
+        if not os.path.exists(ct_dest):
+            os.symlink(f"{PANCREAS_DIR}/imagesTr/{case_id}.nii.gz", ct_dest)
+        gt_dest = os.path.join(case_dir, "gt.nii.gz")
+        if not os.path.exists(gt_dest):
+            nib.save(nib.Nifti1Image(gt_data, img_nii.affine, img_nii.header), gt_dest)
+
+        pred_combined = np.zeros(ct_data.shape, dtype=np.uint8)
+
+        for z in range(ct_data.shape[2]):
+            gt_slice = gt_data[:, :, z]
+            if gt_slice.max() == 0:
+                continue
+            orig_h, orig_w = gt_slice.shape
+            ct_resized = sk_resize(ct_data[:, :, z], (256, 256), preserve_range=True, anti_aliasing=True)
+            rgb = hu_to_rgb(ct_resized).astype(np.uint8)
+
+            organ_mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
+            organ256 = sk_resize((gt_slice == 1).astype(np.uint8), (256, 256), order=0, preserve_range=True).astype(np.uint8)
+            if organ256.sum() > 0:
+                prob = _sam3_infer_slice(organ_model, processor, rgb, organ256, device)
+                if prob is not None:
+                    organ_mask = (sk_resize(prob, (orig_h, orig_w), order=1, preserve_range=True) > 0.5).astype(np.uint8)
+
+            tumor_mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
+            tumor256 = sk_resize((gt_slice == 2).astype(np.uint8), (256, 256), order=0, preserve_range=True).astype(np.uint8)
+            if tumor256.sum() > 0:
+                prob = _sam3_infer_slice(tumor_model, processor, rgb, tumor256, device)
+                if prob is not None:
+                    tumor_mask = (sk_resize(prob, (orig_h, orig_w), order=1, preserve_range=True) > 0.5).astype(np.uint8)
+
+            combined = organ_mask.copy()
+            combined[tumor_mask > 0] = 2
+            pred_combined[:, :, z] = combined
+
+        nib.save(nib.Nifti1Image(pred_combined, img_nii.affine, img_nii.header),
+                 os.path.join(case_dir, "pred.nii.gz"))
+
+        spacing = img_nii.header.get_zooms()
+        voxel_vol_cm3 = float(np.prod(spacing)) / 1000
+        organ_dice = compute_dice(
+            torch.from_numpy((pred_combined == 1).astype(float)),
+            torch.from_numpy((gt_data == 1).astype(float))).item()
+        tumor_dice = (compute_dice(
+            torch.from_numpy((pred_combined == 2).astype(float)),
+            torch.from_numpy((gt_data == 2).astype(float))).item()
+            if 2 in gt_data else float("nan"))
+
+        manifest.append({
+            "case_id": case_id, "dataset": "pancreas",
+            "shape": f"{ct_data.shape[0]},{ct_data.shape[1]},{ct_data.shape[2]}",
+            "spacing_mm": f"{spacing[0]:.4f},{spacing[1]:.4f},{spacing[2]:.4f}",
+            "organ_dice": f"{organ_dice:.4f}",
+            "tumor_dice": f"{tumor_dice:.4f}" if not np.isnan(tumor_dice) else "N/A",
+            "gt_organ_cm3": f"{np.sum(gt_data == 1) * voxel_vol_cm3:.2f}",
+            "gt_tumor_cm3": f"{np.sum(gt_data == 2) * voxel_vol_cm3:.2f}",
+            "pred_organ_cm3": f"{np.sum(pred_combined == 1) * voxel_vol_cm3:.2f}",
+            "pred_tumor_cm3": f"{np.sum(pred_combined == 2) * voxel_vol_cm3:.2f}",
+        })
+        if rank == 0:
+            print(f"  [GPU{rank}] {ci+1}/{len(shard)} {case_id} organ={organ_dice:.3f} tumor={manifest[-1]['tumor_dice']}", flush=True)
+
+    part_path = os.path.join(SAM3_DELIVERY_DIR, f"manifest_rank{rank}.csv")
+    with open(part_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(manifest[0].keys()))
+        w.writeheader()
+        w.writerows(manifest)
+    print(f"  [GPU{rank}] done: {len(manifest)} cases -> {part_path}", flush=True)
+
+
+def generate_deliverables_v3():
+    """Multi-GPU: split 281 cases across all GPUs, generate SAM3 NIfTI deliverables."""
+    os.makedirs(SAM3_DELIVERY_DIR, exist_ok=True)
+    for name in ("sam3_v3_organ.pth", "sam3_v3_tumor.pth"):
+        p = os.path.join(SAM3_DIR, name)
+        assert os.path.exists(p), f"Missing checkpoint: {p}"
+    print(f"Generating SAM3 deliverables across {WORLD_SIZE} GPUs -> {SAM3_DELIVERY_DIR}", flush=True)
+
+    mp.spawn(deliver_worker, args=(WORLD_SIZE,), nprocs=WORLD_SIZE, join=True)
+
+    # Merge per-rank manifests
+    rows = []
+    for rank in range(WORLD_SIZE):
+        part = os.path.join(SAM3_DELIVERY_DIR, f"manifest_rank{rank}.csv")
+        if os.path.exists(part):
+            rows.extend(list(csv.DictReader(open(part))))
+    rows.sort(key=lambda r: r["case_id"])
+    manifest_path = os.path.join(SAM3_DELIVERY_DIR, "manifest.csv")
+    with open(manifest_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+
+    organ_dices = [float(r["organ_dice"]) for r in rows]
+    tumor_dices = [float(r["tumor_dice"]) for r in rows if r["tumor_dice"] != "N/A"]
+    print("\n" + "=" * 60)
+    print(f"SAM3 DELIVERABLES: {len(rows)} cases -> {SAM3_DELIVERY_DIR}")
+    print(f"Manifest: {manifest_path}")
+    print(f"Organ Dice (all cases): {np.mean(organ_dices):.4f} +/- {np.std(organ_dices):.4f}")
+    if tumor_dices:
+        print(f"Tumor Dice (all cases): {np.mean(tumor_dices):.4f} +/- {np.std(tumor_dices):.4f}")
+    print("=" * 60)
+    print("DONE")
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--v2", action="store_true", help="Run v2: frozen encoder + strong augmentation")
     parser.add_argument("--v3", action="store_true", help="Run v3: partial freeze + discriminative LR + cosine + focal")
+    parser.add_argument("--deliver", action="store_true", help="Generate NIfTI deliverables (multi-GPU) from v3 checkpoints")
     args = parser.parse_args()
-    if args.v3:
+    if args.deliver:
+        generate_deliverables_v3()
+    elif args.v3:
         run_v3()
     elif args.v2:
         run_v2()
