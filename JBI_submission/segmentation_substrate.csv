@@ -1,0 +1,9 @@
+dataset,structure,dice,method,split
+Pancreas (MSD Task07),Organ (pancreas),0.866,SAM3 v3 partial-freeze,281 / 57 test
+Pancreas (MSD Task07),Tumor,0.914,SAM1 box+points,281 / 57 test
+LiTS,Liver (organ),0.996,GT-derived (liver from label),131 / 27 test
+LiTS,Tumor,0.845,"SAM1 aug+box, case-level",131 / 27 test
+FLARE,Liver (organ),0.965,SAM2 single-stage,slice-level*
+FLARE,Pancreas (organ),0.839,H2E curriculum,slice-level*
+FLARE,Duodenum (organ),0.890,Transfer (liver->duod.),slice-level*
+FLARE,Tumor,0.855,Traditional increments,slice-level*
