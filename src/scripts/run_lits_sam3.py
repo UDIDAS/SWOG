@@ -19,12 +19,20 @@ import torch
 import torch.multiprocessing as mp
 from sklearn.model_selection import train_test_split
 
+import nibabel as nib
+
 # Reuse all SAM3 infrastructure from the Pancreas experiment
 from run_pancreas_sam3 import (
     train_worker_v3, evaluate_finetuned,
+    _sam3_infer_slice, _load_sam3_ckpt, bbox_from_mask,
     SAM3_MODEL_ID, HF_TOKEN,
 )
-from run_flare import find_free_port, WORLD_SIZE
+from run_flare import find_free_port, WORLD_SIZE, compute_dice
+from transformers import Sam3Processor
+import torch
+import csv
+
+LITS_DELIVERY_DIR = "/scratch/ud3d4/acm_data/LiTS/sam3_delivery"
 
 LITS_SPLITS = "/scratch/ud3d4/acm_data/LiTS/splits"
 LITS_RAW = "/scratch/ud3d4/acm_data/Data"   # ct/volume-N.npy, seg/segmentation-N.npy
@@ -160,13 +168,102 @@ def run_v3_caselevel():
     print("DONE")
 
 
+def deliver_worker_lits(rank, world_size):
+    """Generate per-case NIfTI (liver from GT + SAM3 tumor pred) for a shard of LiTS volumes."""
+    device = torch.device(f"cuda:{rank}")
+    processor = Sam3Processor.from_pretrained(SAM3_MODEL_ID, token=HF_TOKEN)
+    tumor_model = _load_sam3_ckpt(os.path.join(LITS_SAM3_DIR, "lits_sam3_v3_caselevel_tumor.pth"), device)
+    if rank == 0:
+        print(f"  [GPU{rank}] loaded SAM3 tumor model", flush=True)
+
+    vol_ids = get_volume_ids()
+    shard = vol_ids[rank::world_size]
+    affine = np.eye(4)
+    manifest = []
+
+    for ci, vid in enumerate(shard):
+        case_id = f"volume-{vid}"
+        case_dir = os.path.join(LITS_DELIVERY_DIR, case_id)
+        os.makedirs(case_dir, exist_ok=True)
+
+        ct = np.load(f"{LITS_RAW}/ct/volume-{vid}.npy")            # (Z,256,256) HU
+        seg = np.load(f"{LITS_RAW}/seg/segmentation-{vid}.npy").astype(np.uint8)  # 0/1/2
+        Z = ct.shape[0]
+
+        ct_vol = ct.transpose(1, 2, 0).astype(np.float32)         # (256,256,Z)
+        gt_vol = seg.transpose(1, 2, 0)
+        nib.save(nib.Nifti1Image(ct_vol, affine), os.path.join(case_dir, "ct.nii.gz"))
+        nib.save(nib.Nifti1Image(gt_vol, affine), os.path.join(case_dir, "gt.nii.gz"))
+
+        pred_slices = np.zeros_like(seg)                          # (Z,256,256)
+        for z in range(Z):
+            gt_slice = seg[z]
+            combined = np.zeros((256, 256), dtype=np.uint8)
+            combined[gt_slice == 1] = 1                           # liver from GT
+            tumor256 = (gt_slice == 2).astype(np.uint8)
+            if tumor256.sum() >= 50:
+                rgb = lits_hu_to_rgb(ct[z]).astype(np.uint8)
+                prob = _sam3_infer_slice(tumor_model, processor, rgb, tumor256, device)
+                if prob is not None:
+                    combined[(prob > 0.5)] = 2                     # tumor from SAM3 pred
+            pred_slices[z] = combined
+
+        nib.save(nib.Nifti1Image(pred_slices.transpose(1, 2, 0), affine),
+                 os.path.join(case_dir, "pred.nii.gz"))
+
+        tumor_dice = compute_dice(torch.from_numpy((pred_slices == 2).astype(float)),
+                                  torch.from_numpy((seg == 2).astype(float))).item() if (seg == 2).any() else float("nan")
+        liver_dice = compute_dice(torch.from_numpy((pred_slices >= 1).astype(float)),
+                                  torch.from_numpy((seg >= 1).astype(float))).item()
+        manifest.append({"case_id": case_id, "dataset": "lits", "shape": f"256,256,{Z}",
+                         "liver_dice": f"{liver_dice:.4f}",
+                         "tumor_dice": f"{tumor_dice:.4f}" if not np.isnan(tumor_dice) else "N/A"})
+        if rank == 0:
+            print(f"  [GPU{rank}] {ci+1}/{len(shard)} {case_id} tumor={manifest[-1]['tumor_dice']}", flush=True)
+
+    part = os.path.join(LITS_DELIVERY_DIR, f"manifest_rank{rank}.csv")
+    with open(part, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(manifest[0].keys())); w.writeheader(); w.writerows(manifest)
+    print(f"  [GPU{rank}] done: {len(manifest)} cases -> {part}", flush=True)
+
+
+def generate_lits_deliverables():
+    """Multi-GPU: split 131 LiTS volumes across GPUs, generate SAM3 NIfTI deliverables."""
+    os.makedirs(LITS_DELIVERY_DIR, exist_ok=True)
+    ckpt = os.path.join(LITS_SAM3_DIR, "lits_sam3_v3_caselevel_tumor.pth")
+    assert os.path.exists(ckpt), f"Missing checkpoint: {ckpt}"
+    print(f"Generating LiTS SAM3 deliverables across {WORLD_SIZE} GPUs -> {LITS_DELIVERY_DIR}", flush=True)
+    mp.spawn(deliver_worker_lits, args=(WORLD_SIZE,), nprocs=WORLD_SIZE, join=True)
+
+    rows = []
+    for rank in range(WORLD_SIZE):
+        part = os.path.join(LITS_DELIVERY_DIR, f"manifest_rank{rank}.csv")
+        if os.path.exists(part):
+            rows.extend(list(csv.DictReader(open(part))))
+    rows.sort(key=lambda r: int(r["case_id"].replace("volume-", "")))
+    with open(os.path.join(LITS_DELIVERY_DIR, "manifest.csv"), "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
+
+    liver = [float(r["liver_dice"]) for r in rows]
+    tumor = [float(r["tumor_dice"]) for r in rows if r["tumor_dice"] != "N/A"]
+    print("\n" + "=" * 60)
+    print(f"LiTS SAM3 DELIVERABLES: {len(rows)} cases -> {LITS_DELIVERY_DIR}")
+    print(f"Liver Dice (from GT): {np.mean(liver):.4f} +/- {np.std(liver):.4f}")
+    print(f"Tumor Dice (SAM3 v3): {np.mean(tumor):.4f} +/- {np.std(tumor):.4f}")
+    print("=" * 60)
+    print("DONE")
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--v3", action="store_true", help="Run v3 on the surviving slice-level split")
     parser.add_argument("--caselevel", action="store_true", help="Run v3 case-level from restored raw volumes")
+    parser.add_argument("--deliver", action="store_true", help="Generate NIfTI deliverables (multi-GPU)")
     args = parser.parse_args()
-    if args.caselevel:
+    if args.deliver:
+        generate_lits_deliverables()
+    elif args.caselevel:
         run_v3_caselevel()
     else:
         run_v3()

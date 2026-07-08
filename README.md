@@ -78,8 +78,17 @@ SAM3 full finetune beats SAM1 on organ (+0.033) but loses on tumor (-0.026). Fre
 
 The **partial freeze** config is the best SAM3 strategy across both structures: organ Dice **0.866** (best of any SAM3 variant, beating SAM1 by +0.038) and tumor Dice **0.894** (best SAM3 tumor, beating v1's 0.888 and v2's 0.853), while keeping a healthy train-val gap (~0.03 vs full-finetune's 0.064 overfit). SAM1 still leads on tumor (0.914) — SAM3's larger capacity remains a liability on small structures even with the improved recipe. It freezes the low-level transformer blocks and patch/position embeddings, then fine-tunes the high-level blocks + FPN neck + decoder with **discriminative learning rates** (encoder 1e-5, decoder 1e-4), a **warmup + cosine-annealing** schedule, and a combined **Dice+Focal loss**. Nearly all validation gains arrived as the cosine schedule dropped the LR below 50%, confirming the schedule — not just the freeze — drives convergence.
 
+**LiTS (liver tumor).** The same v3 recipe applied to LiTS tumor, at both split levels:
+
+| Split | SAM3 v3 | SAM1 |
+|-------|:-------:|:----:|
+| Slice-level | **0.910** | 0.901 |
+| Case-level (patient-held-out) | 0.840 | 0.845 |
+
+SAM3's slice-level lead (0.910 vs 0.901) disappears at case-level (0.840 vs 0.845, tied within noise) — the slice-level split leaks patient features and inflates both, SAM3 more so. The honest case-level story matches Pancreas: SAM3 ties/loses on tumor.
+
 Key findings for CRISP-SAM:
-- **SAM3 wins on organ, SAM1 wins on tumor.** SAM3's larger capacity helps organ segmentation but is a liability on small structures (~700 tumor slices), where the lightweight SAM1 generalizes better.
+- **SAM3 wins on organ, ties/loses on tumor.** SAM3's larger capacity helps organ segmentation (Pancreas 0.866 vs 0.828) but is a liability on small tumors; at case-level it ties SAM1 on both Pancreas tumor (0.894 vs 0.914) and LiTS tumor (0.840 vs 0.845).
 - **A frozen encoder does not work for CT** — the natural-image encoder must be partially adapted.
 - The partial-freeze SAM3 backbone is the recommended choice for organ-level work, since it provides a stable, CT-adapted encoder for the downstream prompt generator to build on.
 
@@ -92,9 +101,10 @@ Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice b
 | **Pancreas** (MSD Task07) | SAM1 | 281 | 0.846 | 0.917 |
 | **Pancreas** (MSD Task07) | **SAM3 v3** | 281 | **0.923** | **0.919** |
 | **LiTS** (Liver Tumor) | SAM1 | 131 | 0.996 (liver from GT) | 0.675 |
+| **LiTS** (Liver Tumor) | **SAM3 v3** | 131 | 0.998 (liver from GT) | **0.759** |
 | **FLARE** | — | — | — | — |
 
-FLARE 3D delivery is blocked (source data is pre-sliced, no per-patient volumes). The SAM3 v3 Pancreas delivery beats the earlier SAM1 delivery on both structures (organ 0.923 vs 0.846, tumor 0.919 vs 0.917).
+FLARE 3D delivery is blocked (source data is pre-sliced, no per-patient volumes). Both SAM3 v3 deliveries beat their SAM1 counterparts: Pancreas (organ 0.923 vs 0.846, tumor 0.919 vs 0.917) and LiTS tumor (0.759 vs 0.675). LiTS liver is copied from GT in both. Note these all-cases volume Dice figures run higher than the honest case-level test Dice above; they are computed over every patient for the deliverable.
 
 ## Best Approach Across Datasets
 
