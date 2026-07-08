@@ -92,6 +92,21 @@ Key findings for CRISP-SAM:
 - **A frozen encoder does not work for CT** — the natural-image encoder must be partially adapted.
 - The partial-freeze SAM3 backbone is the recommended choice for organ-level work, since it provides a stable, CT-adapted encoder for the downstream prompt generator to build on.
 
+### Case-level vs slice-level: why the split matters
+
+Two evaluation protocols appear across this work, and for medical imaging the difference is decisive:
+
+- **Slice-level split** randomly assigns individual 2D slices to train/test. Because a CT volume is a stack of near-identical contiguous slices, a patient's slices can land in *both* train and test — **data leakage** that inflates the score (the model is tested on near-duplicates of what it trained on).
+- **Case-level split** holds out whole patients. No leakage; this is the honest generalization number, and the only one that predicts deployment (a new, unseen patient) — exactly what CRISP-SAM targets.
+
+| Dataset | Structure | Slice-level | Case-level | Leak (Δ) |
+|---------|-----------|:-----------:|:----------:|:--------:|
+| **LiTS** | Tumor (SAM3 v3) | 0.910 | 0.840 | **0.070** |
+| **Pancreas** | Organ (SAM3 v3) | — | 0.866 | case-level throughout |
+| **Pancreas** | Tumor (SAM3 v3) | — | 0.894 | case-level throughout |
+
+The LiTS slice→case drop of ~0.07 **is the leakage made visible** — a property of the protocol, not the model. Pancreas was case-level from the start, so its numbers are already honest. The effect is amplified by the oracle box prompt: under slice leakage, the box points the model at a lesion whose neighbors it has effectively already seen. **Conclusion: report case-level Dice.** Volume-level (3D) aggregation is a separate axis — it reads higher than 2D slice-level simply because it pools whole structures, and can be computed under either split.
+
 ## 3D NIfTI Deliverables
 
 Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice below is averaged across **all** cases (train + val + test), since deliverables are generated for every patient. Test-only numbers are reported in the results tables above.
