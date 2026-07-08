@@ -56,12 +56,23 @@ Box prompts are the dominant factor. Augmentation alone did not help organ — t
 
 SAM3 (facebook/sam3, 840M params) tested as a potential backbone for CRISP-SAM. Unlike SAM1 which uses DBSCAN point + box prompts, SAM3 uses text + box prompts via a DETR-based architecture. All configs use GT-derived box prompts on the same case-level split as above.
 
+**2D slice-level test Dice** (held-out 57 cases, per-slice averaging):
+
 | Config | Encoder Strategy | Params Trained | Organ Dice | Tumor Dice |
 |--------|-----------------|:--------------:|:----------:|:----------:|
 | SAM1 box+points (reference) | Full finetune (93.7M) | 100% | 0.828 | **0.914** |
 | SAM3 full finetune | All 840M trainable | 100% | 0.861 | 0.888 |
 | SAM3 frozen encoder | Encoder frozen, decoder only | 46% | 0.826 | 0.853 |
 | **SAM3 partial freeze** | Blocks 0-19 frozen; 20-31 + FPN + decoder trainable | 67% | **0.866** | 0.894 |
+
+**3D volume-level Dice** (SAM3 v3 partial-freeze, reconstructed per-case volumes):
+
+| Aggregation | Organ Dice | Tumor Dice |
+|-------------|:----------:|:----------:|
+| Test only (57 held-out cases) | 0.899 ± 0.023 | 0.907 ± 0.032 |
+| All cases (281, train+val+test) | 0.923 ± 0.027 | 0.919 ± 0.028 |
+
+Volume-level Dice runs higher than slice-level because it aggregates over the whole 3D structure (dominated by larger central slices), whereas slice-level weights every slice equally, including small boundary slices that segment poorly. The 3D numbers come from the NIfTI delivery manifest.
 
 SAM3 full finetune beats SAM1 on organ (+0.033) but loses on tumor (-0.026). Freezing the encoder entirely eliminates overfitting but underperforms both — SAM3's ViT-Large was pretrained on natural images and cannot learn CT-specific features without fine-tuning.
 
@@ -76,11 +87,14 @@ Key findings for CRISP-SAM:
 
 Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice below is averaged across **all** cases (train + val + test), since deliverables are generated for every patient. Test-only numbers are reported in the results tables above.
 
-| Dataset | Cases | Organ Dice (all) | Tumor Dice (all) | Location |
-|---------|-------|------------|------------|----------|
-| **Pancreas** (MSD Task07) | 281 | 0.846 | 0.917 | `/scratch/.../Pancreas/delivery_v2/` |
-| **LiTS** (Liver Tumor) | 131 | 0.996 (liver from GT) | 0.675 | `/scratch/.../LiTS_delivery/delivery/` |
-| **FLARE** | — | — | — | Blocked (source data is pre-sliced, no per-patient volumes) |
+| Dataset | Model | Cases | Organ Dice (all) | Tumor Dice (all) |
+|---------|-------|-------|------------|------------|
+| **Pancreas** (MSD Task07) | SAM1 | 281 | 0.846 | 0.917 |
+| **Pancreas** (MSD Task07) | **SAM3 v3** | 281 | **0.923** | **0.919** |
+| **LiTS** (Liver Tumor) | SAM1 | 131 | 0.996 (liver from GT) | 0.675 |
+| **FLARE** | — | — | — | — |
+
+FLARE 3D delivery is blocked (source data is pre-sliced, no per-patient volumes). The SAM3 v3 Pancreas delivery beats the earlier SAM1 delivery on both structures (organ 0.923 vs 0.846, tumor 0.919 vs 0.917).
 
 ## Best Approach Across Datasets
 
