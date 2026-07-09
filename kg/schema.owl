@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:mm="http://example.org/mmkg/schema/"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/overlaps_organ">
+    <rdfs:label>overlaps_organ</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/Lesion"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Organ"/>
+  </owl:ObjectProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/is_tumor">
+    <rdfs:label>is_tumor</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/source_of_segmentation">
+    <rdfs:label>source_of_segmentation</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/LiverTumor">
+    <rdfs:label>Liver tumor</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Lesion"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/93870000"/>
+    <skos:exactMatch rdf:resource="http://purl.obolibrary.org/obo/NCIT_C3099"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_LiverTumor_93870000">
+        <mm:code>93870000</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Malignant neoplasm of liver</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/93870000"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_LiverTumor_C3099">
+        <mm:code>C3099</mm:code>
+        <mm:system>NCIt</mm:system>
+        <mm:display>Hepatocellular Carcinoma</mm:display>
+        <rdfs:seeAlso rdf:resource="http://purl.obolibrary.org/obo/NCIT_C3099"/>
+        <rdfs:isDefinedBy rdf:resource="https://ncithesaurus.nci.nih.gov"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/part_of">
+    <rdfs:label>part_of</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/AnatomicSite"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Organ"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/mapped_to_concept">
+    <rdfs:label>mapped_to_concept</rdfs:label>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/OntologyConcept"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/located_in">
+    <rdfs:label>located_in</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/Lesion"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/AnatomicSite"/>
+  </owl:ObjectProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/dataset">
+    <rdfs:label>dataset</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/OrganContainment">
+    <rdfs:label>Organ containment</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Observation"/>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Liver">
+    <rdfs:label>Liver</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Organ"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/10200004"/>
+    <skos:exactMatch rdf:resource="http://purl.obolibrary.org/obo/NCIT_C12392"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_Liver_10200004">
+        <mm:code>10200004</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Liver structure</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/10200004"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_Liver_C12392">
+        <mm:code>C12392</mm:code>
+        <mm:system>NCIt</mm:system>
+        <mm:display>Liver</mm:display>
+        <rdfs:seeAlso rdf:resource="http://purl.obolibrary.org/obo/NCIT_C12392"/>
+        <rdfs:isDefinedBy rdf:resource="https://ncithesaurus.nci.nih.gov"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/PancreaticHead">
+    <rdfs:label>Head of pancreas</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/AnatomicSite"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/362201006"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_PancreaticHead_362201006">
+        <mm:code>362201006</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Entire head of pancreas</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/362201006"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/LesionMultiplicity">
+    <rdfs:label>Lesion multiplicity</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Observation"/>
+  </owl:Class>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/depicts_organ">
+    <rdfs:label>depicts_organ</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/Series"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Organ"/>
+  </owl:ObjectProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/modality">
+    <rdfs:label>modality</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/PancreaticBody">
+    <rdfs:label>Body of pancreas</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/AnatomicSite"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/40133006"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_PancreaticBody_40133006">
+        <mm:code>40133006</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Structure of body of pancreas</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/40133006"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:AnnotationProperty rdf:about="http://example.org/mmkg/schema/code">
+    <rdfs:label>code</rdfs:label>
+  </owl:AnnotationProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/PancreaticTail">
+    <rdfs:label>Tail of pancreas</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/AnatomicSite"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/73239005"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_PancreaticTail_73239005">
+        <mm:code>73239005</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Structure of tail of pancreas</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/73239005"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:AnnotationProperty rdf:about="http://example.org/mmkg/schema/system">
+    <rdfs:label>system</rdfs:label>
+  </owl:AnnotationProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/TumorDiameter">
+    <rdfs:label>Tumor diameter</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Observation"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/263605001"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_TumorDiameter_263605001">
+        <mm:code>263605001</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Tumor size</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/263605001"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/CrossOrganExtension">
+    <rdfs:label>Cross-organ extension</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Observation"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/409771002"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_CrossOrganExtension_409771002">
+        <mm:code>409771002</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Tumour invasion by direct extension from organ of origin to adjacent organ</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/409771002"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:Ontology rdf:about="http://example.org/mmkg/schema">
+    <dcterms:title>Imaging Phenotype KG Schema (SAM3 segmentation hand-off)</dcterms:title>
+    <rdfs:comment>T-Box for imaging cases, organs, lesions and phenotypes derived from SAM3 segmentation. Domain classes carry skos:exactMatch to SNOMED CT / NCIt / FMA / RadLex concepts. Aligned with acm_mmkg schema.py v2.0 conventions.</rdfs:comment>
+    <owl:versionInfo>1.0</owl:versionInfo>
+  </owl:Ontology>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/has_series">
+    <rdfs:label>has_series</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/Study"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Series"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/has_study">
+    <rdfs:label>has_study</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/ImagingCase"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Study"/>
+  </owl:ObjectProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/TumorVolume">
+    <rdfs:label>Tumor volume</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Observation"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/258261001"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_TumorVolume_258261001">
+        <mm:code>258261001</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Tumour volume</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/258261001"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/diameter_mm">
+    <rdfs:label>diameter_mm</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/has_observation">
+    <rdfs:label>has_observation</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/Lesion"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Observation"/>
+  </owl:ObjectProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/PancreaticTumor">
+    <rdfs:label>Pancreatic tumor</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Lesion"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/372003004"/>
+    <skos:exactMatch rdf:resource="http://purl.obolibrary.org/obo/NCIT_C3305"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_PancreaticTumor_372003004">
+        <mm:code>372003004</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Primary malignant neoplasm of pancreas</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/372003004"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_PancreaticTumor_C3305">
+        <mm:code>C3305</mm:code>
+        <mm:system>NCIt</mm:system>
+        <mm:display>Pancreatic Neoplasm</mm:display>
+        <rdfs:seeAlso rdf:resource="http://purl.obolibrary.org/obo/NCIT_C3305"/>
+        <rdfs:isDefinedBy rdf:resource="https://ncithesaurus.nci.nih.gov"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/dice_score">
+    <rdfs:label>dice_score</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/TumorBurden">
+    <rdfs:label>Tumor burden</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Observation"/>
+    <skos:exactMatch rdf:resource="http://purl.obolibrary.org/obo/NCIT_C28384"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_TumorBurden_C28384">
+        <mm:code>C28384</mm:code>
+        <mm:system>NCIt</mm:system>
+        <mm:display>Tumor Burden</mm:display>
+        <rdfs:seeAlso rdf:resource="http://purl.obolibrary.org/obo/NCIT_C28384"/>
+        <rdfs:isDefinedBy rdf:resource="https://ncithesaurus.nci.nih.gov"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Pancreas">
+    <rdfs:label>Pancreas</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Organ"/>
+    <skos:exactMatch rdf:resource="http://snomed.info/id/15776009"/>
+    <skos:exactMatch rdf:resource="http://purl.obolibrary.org/obo/NCIT_C12393"/>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_Pancreas_15776009">
+        <mm:code>15776009</mm:code>
+        <mm:system>SNOMED CT</mm:system>
+        <mm:display>Pancreatic structure</mm:display>
+        <rdfs:seeAlso rdf:resource="http://snomed.info/id/15776009"/>
+        <rdfs:isDefinedBy rdf:resource="https://www.snomed.org/snomed-ct"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+    <mm:mapped_to_concept>
+      <mm:OntologyConcept rdf:about="http://example.org/mmkg/schema/concept_Pancreas_C12393">
+        <mm:code>C12393</mm:code>
+        <mm:system>NCIt</mm:system>
+        <mm:display>Pancreas</mm:display>
+        <rdfs:seeAlso rdf:resource="http://purl.obolibrary.org/obo/NCIT_C12393"/>
+        <rdfs:isDefinedBy rdf:resource="https://ncithesaurus.nci.nih.gov"/>
+      </mm:OntologyConcept>
+    </mm:mapped_to_concept>
+  </owl:Class>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/volume_cm3">
+    <rdfs:label>volume_cm3</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/lesion_count">
+    <rdfs:label>lesion_count</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:AnnotationProperty rdf:about="http://example.org/mmkg/schema/display">
+    <rdfs:label>display</rdfs:label>
+  </owl:AnnotationProperty>
+  <owl:ObjectProperty rdf:about="http://example.org/mmkg/schema/has_lesion">
+    <rdfs:label>has_lesion</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/mmkg/schema/Series"/>
+    <rdfs:range rdf:resource="http://example.org/mmkg/schema/Lesion"/>
+  </owl:ObjectProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/anatomic_location">
+    <rdfs:label>anatomic_location</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://example.org/mmkg/schema/case_id">
+    <rdfs:label>case_id</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/AnatomicSite">
+    <rdfs:label>AnatomicSite</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Anatomy"/>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/ImagingCase">
+    <rdfs:label>ImagingCase</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Anatomy">
+    <rdfs:label>Anatomy</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/OntologyConcept">
+    <rdfs:label>OntologyConcept</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Organ">
+    <rdfs:label>Organ</rdfs:label>
+    <rdfs:subClassOf rdf:resource="http://example.org/mmkg/schema/Anatomy"/>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Lesion">
+    <rdfs:label>Lesion</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Observation">
+    <rdfs:label>Observation</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Series">
+    <rdfs:label>Series</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://example.org/mmkg/schema/Study">
+    <rdfs:label>Study</rdfs:label>
+  </owl:Class>
+</rdf:RDF>
