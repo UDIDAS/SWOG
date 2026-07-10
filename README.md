@@ -107,6 +107,19 @@ Two evaluation protocols appear across this work, and for medical imaging the di
 
 The LiTS slice→case drop of ~0.07 **is the leakage made visible** — a property of the protocol, not the model. Pancreas was case-level from the start, so its numbers are already honest. The effect is amplified by the oracle box prompt: under slice leakage, the box points the model at a lesion whose neighbors it has effectively already seen. **Conclusion: report case-level Dice.** Volume-level (3D) aggregation is a separate axis — it reads higher than 2D slice-level simply because it pools whole structures, and can be computed under either split.
 
+### FLARE (SAM3 v3) — in progress / on hold
+
+The same v3 recipe applied to the four FLARE structures. FLARE is distributed pre-sliced with **no patient IDs**, so it is **slice-level only** (unavoidable leakage; not comparable to the case-level Pancreas/LiTS numbers). Test Dice (slice-level, held-out slices), all beating the original AUSAM baselines:
+
+| Structure | SAM3 v3 | Original AUSAM |
+|-----------|:-------:|:--------------:|
+| Duodenum | **0.913** | 0.890 |
+| Pancreas | **0.907** | 0.839 |
+| Tumor | **0.883** | 0.855 |
+| Liver | *pending* | 0.965 |
+
+**Status:** on hold — GPUs freed for other work. The liver structure had not finished, and the trained checkpoints were lost to a node-local scratch wipe. Class data is safe on Drive (`VKG datasets/FLARE/`); resuming re-pulls the data and retrains all four (reproducible), then generates per-structure NIfTI mask stacks. Deliverables for FLARE are per-structure slice stacks (not per-patient volumes, since there are no patient IDs).
+
 ## 3D NIfTI Deliverables
 
 Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice below is averaged across **all** cases (train + val + test), since deliverables are generated for every patient. Test-only numbers are reported in the results tables above.
@@ -120,6 +133,14 @@ Per-case `ct.nii.gz` / `gt.nii.gz` / `pred.nii.gz` for 3D reconstruction. Dice b
 | **FLARE** | — | — | — | — |
 
 FLARE 3D delivery is blocked (source data is pre-sliced, no per-patient volumes). Both SAM3 v3 deliveries beat their SAM1 counterparts: Pancreas (organ 0.923 vs 0.846, tumor 0.919 vs 0.917) and LiTS tumor (0.759 vs 0.675). LiTS liver is copied from GT in both. Note these all-cases volume Dice figures run higher than the honest case-level test Dice above; they are computed over every patient for the deliverable.
+
+## Knowledge-Graph Hand-off & Ontology Schema
+
+The SAM3 predictions feed a downstream PDAC multi-modal knowledge-graph platform. Two artifacts support this:
+
+**1. SSL segmentation hand-off bundle** (`src/scripts/build_ssl_handoff.py`). Per-case NIfTI (prediction + ground truth, multi-label 0=bg/1=organ/2=tumor, source affine + shape) plus a filled JSON per dataset (Pancreas 281 + LiTS 131 cases) carrying per-case stats (volume, diameter, extent, centroid), derived phenotypes (anatomic location, lesion count), and per-case Dice. Passes the platform's ingestion validator (Pancreas 23/0, LiTS 22/0). Predictions are box-prompted (semi-oracle) and LiTS liver is GT-derived — documented in the bundle's `model.notes` and notebook.
+
+**2. Imaging KG OWL schema** (`kg/schema.owl`, `src/scripts/build_imaging_schema.py`). T-Box for the imaging KG (ImagingCase → Study → Series; Organ, Lesion, AnatomicSite, Observation, OntologyConcept) with `skos:exactMatch` links to **verified SNOMED CT + NCIt** codes fetched live (e.g. Pancreas = SNOMED 15776009 / NCIt C12393; Pancreatic tumor = SNOMED 372003004 / NCIt C3305). Matches the `acm_mmkg` schema conventions. Opens in Protégé.
 
 ## Best Approach Across Datasets
 
@@ -194,13 +215,22 @@ results/
   lits/                            # LiTS segmentation results
   pancreas/                        # Pancreas CT results (organ + tumor metrics, delivery manifest)
 
+kg/
+  schema.owl                       # Imaging KG OWL schema (Protégé-openable)
+  ontology_mappings.json           # Class::term -> SNOMED CT / NCIt codes
+  README.md                        # Schema + mapping documentation
+
 src/scripts/
   run_flare.py                     # All shared code + DDP training functions (aug + box prompts)
   run_lits.py                      # LiTS reproduction runner (slice-level split)
   run_lits_v3.py                   # LiTS with aug+box (case-level split)
   run_pancreas_nifti.py            # Pancreas CT train + NIfTI delivery pipeline
   run_pancreas_ablation.py         # Pancreas ablation: aug vs box prompt contribution
-  run_pancreas_sam3.py             # SAM3 vs SAM1 comparison (full/frozen/partial freeze)
+  run_pancreas_sam3.py             # SAM3 vs SAM1 comparison (full/frozen/partial freeze) + delivery
+  run_lits_sam3.py                 # LiTS SAM3 v3 (slice + case level) + NIfTI delivery
+  run_flare_sam3.py                # FLARE SAM3 v3 (4 structures) + per-structure mask export
+  build_ssl_handoff.py             # SSL segmentation hand-off bundle (KG platform ingestion)
+  build_imaging_schema.py          # Imaging KG OWL schema + live SNOMED/NCIt ontology mapping
   run_lits_nifti.py                # LiTS train + NIfTI delivery pipeline
   run_remaining.py                 # FLARE Round 1 runner
   run_round2.py                    # FLARE Round 2 runner

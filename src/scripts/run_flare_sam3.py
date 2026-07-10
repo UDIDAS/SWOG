@@ -59,7 +59,7 @@ def split_class(im, lb):
 
 def v3_cfg(model_path):
     return {
-        "model_save_path": model_path, "epochs": 250, "batch_size": 2, "patience": 15,
+        "model_save_path": model_path, "epochs": 45, "batch_size": 2, "patience": 12,
         "strong_augment": True, "text_prompt": "visual",
         "freeze_blocks": 20, "encoder_lr": 1e-5, "decoder_lr": 1e-4,
         "warmup_epochs": 5, "cosine_T0": 20, "dice_weight": 0.7, "focal_weight": 0.3,
