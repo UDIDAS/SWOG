@@ -107,18 +107,18 @@ Two evaluation protocols appear across this work, and for medical imaging the di
 
 The LiTS slice→case drop of ~0.07 **is the leakage made visible** — a property of the protocol, not the model. Pancreas was case-level from the start, so its numbers are already honest. The effect is amplified by the oracle box prompt: under slice leakage, the box points the model at a lesion whose neighbors it has effectively already seen. **Conclusion: report case-level Dice.** Volume-level (3D) aggregation is a separate axis — it reads higher than 2D slice-level simply because it pools whole structures, and can be computed under either split.
 
-### FLARE (SAM3 v3) — in progress / on hold
+### FLARE (SAM3 v3) — complete
 
-The same v3 recipe applied to the four FLARE structures. FLARE is distributed pre-sliced with **no patient IDs**, so it is **slice-level only** (unavoidable leakage; not comparable to the case-level Pancreas/LiTS numbers). Test Dice (slice-level, held-out slices), all beating the original AUSAM baselines:
+The same v3 recipe applied to the four FLARE structures. FLARE is distributed pre-sliced with **no patient IDs**, so it is **slice-level only** (unavoidable leakage; not comparable to the case-level Pancreas/LiTS numbers). Test Dice (slice-level, held-out slices) — **all four beat the original AUSAM baselines**:
 
-| Structure | SAM3 v3 | Original AUSAM |
-|-----------|:-------:|:--------------:|
-| Duodenum | **0.913** | 0.890 |
-| Pancreas | **0.907** | 0.839 |
-| Tumor | **0.883** | 0.855 |
-| Liver | *pending* | 0.965 |
+| Structure | SAM3 v3 | Original AUSAM | Δ |
+|-----------|:-------:|:--------------:|:-:|
+| Duodenum | **0.913** | 0.890 | +0.023 |
+| Pancreas | **0.907** | 0.839 | +0.068 |
+| Tumor | **0.883** | 0.855 | +0.028 |
+| Liver | **0.973** | 0.965 | +0.008 |
 
-**Status:** on hold — GPUs freed for other work. The liver structure had not finished, and the trained checkpoints were lost to a node-local scratch wipe. Class data is safe on Drive (`VKG datasets/FLARE/`); resuming re-pulls the data and retrains all four (reproducible), then generates per-structure NIfTI mask stacks. Deliverables for FLARE are per-structure slice stacks (not per-patient volumes, since there are no patient IDs).
+Deliverables are per-structure NIfTI mask stacks (ct/gt/pred, held-out test slices) — not per-patient volumes, since FLARE has no patient IDs. Checkpoints + delivery are on Drive (`reconstruction resources/FLARE/`). Training capped at 45 epochs/structure (6000 slices max) for tractability.
 
 ## 3D NIfTI Deliverables
 
