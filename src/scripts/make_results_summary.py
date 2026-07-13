@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Consolidated PI update document — all real results in one shareable Word file."""
+"""Consolidated results summary — all real results in one shareable Word file."""
 import json
 from docx import Document
 from docx.shared import Pt, RGBColor
@@ -29,7 +29,7 @@ def tbl(headers, rows, bold_hdr=True, green_cols=None):
                 run.font.color.rgb = GREEN
     doc.add_paragraph(); return tb
 
-doc.add_heading('SAM3 Segmentation + VKG/IPKG — PI Update', level=0)
+doc.add_heading('SAM3 Segmentation + VKG/IPKG — Results Summary', level=0)
 s = doc.add_paragraph(); r = s.add_run(
     'Status of the imaging pipeline for the JBI/VKG work. Segmentation is complete across all three '
     'datasets (SAM3 beats every prior baseline). Five JBI result tables are filled from real experiments. '
@@ -127,5 +127,5 @@ P('Google Drive (reconstruction resources/): Pancreas + LiTS + FLARE predictions
   'checkpoints. JBI result JSONs + this document: local JBI_submission/ folder (untracked). '
   'Code: SWOG repo (src/scripts/, kg/).')
 
-out = "/home/ud3d4/Desktop/SWOG/JBI_submission/PI_update.docx"
+out = "/home/ud3d4/Desktop/SWOG/JBI_submission/results_summary.docx"
 doc.save(out); print("Saved:", out)
