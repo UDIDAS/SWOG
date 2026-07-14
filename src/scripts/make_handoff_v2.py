@@ -8,7 +8,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 
 BUNDLE = "/scratch/ud3d4/acm_data/ssl_handoff_ours"
 V2 = "/scratch/ud3d4/acm_data/handoff_v2"
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+HANDOFF = "/home/ud3d4/Desktop/SWOG/handoff"
 GREEN = RGBColor(0x1a, 0x7f, 0x37); RED = RGBColor(0xB0, 0x2A, 0x2A)
 os.makedirs(f"{V2}/ssl_predictions_lits_tumor_only", exist_ok=True)
 os.makedirs(f"{V2}/inference", exist_ok=True)
@@ -26,10 +26,10 @@ print(f"LiTS tumor-only masks: {n}")
 # ---- copy inference deliverables ----
 shutil.copy("/home/ud3d4/Desktop/SWOG/src/scripts/infer_sam3.py", f"{V2}/inference/infer_sam3.py")
 shutil.copy("/scratch/ud3d4/acm_data/sam3_handoff_requirements.txt", f"{V2}/inference/requirements.txt")
-shutil.copy(f"{RES}/handoff_metrics_v2.json", f"{V2}/handoff_metrics_v2.json")
+shutil.copy(f"{HANDOFF}/handoff_metrics_v2.json", f"{V2}/handoff_metrics_v2.json")
 
 # ---- response document ----
-m = json.load(open(f"{RES}/handoff_metrics_v2.json"))["test_summary"]
+m = json.load(open(f"{HANDOFF}/handoff_metrics_v2.json"))["test_summary"]
 doc = Document(); doc.styles['Normal'].font.name = 'Calibri'; doc.styles['Normal'].font.size = Pt(10.5)
 def H(t, l=1): doc.add_heading(t, level=l)
 def P(t=""): p = doc.add_paragraph(); p.add_run(t); return p

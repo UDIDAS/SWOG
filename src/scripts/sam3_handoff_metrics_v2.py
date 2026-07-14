@@ -24,7 +24,7 @@ PANC_IMG = "/scratch/ud3d4/acm_data/Pancreas/imagesTr"
 PANC_LBL = "/scratch/ud3d4/acm_data/Pancreas/labelsTr"
 LITS = "/scratch/ud3d4/acm_data/Data"
 CKPT = "/scratch/ud3d4/acm_data/sam3_ckpts"
-OUT = "/home/ud3d4/Desktop/SWOG/JBI_submission/results/handoff_metrics_v2.json"
+OUT = "/home/ud3d4/Desktop/SWOG/handoff/handoff_metrics_v2.json"
 DEV = torch.device("cuda:0")
 
 
