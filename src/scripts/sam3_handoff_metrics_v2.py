@@ -104,9 +104,11 @@ def pred_volume(model, proc, ct, gt, label, lo, hi, mode):
 def case_metrics(pred, gt_bin, spacing):
     p, g = pred.astype(bool), gt_bin.astype(bool)
     d = dice(p, g); se, sp = sens_spec(p, g); hd, nsd = surface(p, g, spacing)
-    return {"dice": round(d, 4), "hd95_mm": None if hd != hd else round(hd, 2),
+    return {"dice": None if d != d else round(d, 4),
+            "hd95_mm": None if hd != hd else round(hd, 2),
             "nsd_2mm": None if nsd != nsd else round(nsd, 4),
-            "sensitivity": round(se, 4), "specificity": round(se and sp, 6) if sp == sp else None}
+            "sensitivity": None if se != se else round(se, 4),
+            "specificity": None if sp != sp else round(sp, 6)}
 
 
 def run():
@@ -153,7 +155,7 @@ def run():
         for c in cases.values():
             for m in vals:
                 v = c[key].get(m)
-                if v is not None:
+                if v is not None and v == v:  # filter None and NaN
                     vals[m].append(v)
         return {m: (round(float(np.mean(v)), 4) if v else None) for m, v in vals.items()}
 
