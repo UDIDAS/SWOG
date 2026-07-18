@@ -151,25 +151,27 @@ H('Table 11 — Cross-dataset integration', 2)
 t11 = D['table11']; gap = t11['observability_gap']; lodo = t11['leave_one_dataset_out']; mix = t11['mixing_index']
 conn = t11.get('connectivity', {})
 tbl(['Integration probe', 'Result', 'Verdict'],
-    [['KG cross-dataset connectivity (shared-schema concept graph)',
-      f"{conn.get('cross_dataset_edge_pct',{}).get('organ_overlap','?')}% -> "
-      f"{conn.get('cross_dataset_edge_pct',{}).get('kg_concept','?')}% cross-dataset edges", 'supports'],
-     ['Direct Pancreas<->LiTS links (disjoint anatomy)',
-      f"{conn.get('direct_pancreas_lits_edges',{}).get('organ_overlap','?')} -> "
-      f"{conn.get('direct_pancreas_lits_edges',{}).get('kg_concept','?')} (via shared ontology)", 'supports'],
-     ['Observability gap, cross-dataset retrieval', f"+{gap['cross']['dObs_nDCG']} nDCG (p<0.001)", 'supports'],
-     ['Observability gap, decomposition retrieval', f"+{gap['decomp']['dObs_nDCG']} nDCG (p<0.001)", 'supports'],
+    [['Observability gap, cross-dataset retrieval', f"+{gap['cross']['dObs_nDCG']} nDCG (p<0.001)", 'SIGNIFICANT'],
+     ['Observability gap, decomposition retrieval', f"+{gap['decomp']['dObs_nDCG']} nDCG (p<0.001)", 'SIGNIFICANT'],
      ['Leave-one-dataset-out (Pancreas / LiTS held)', f"100% served, nDCG≈{lodo['pancreas']['nDCG']}", 'holds'],
      ['Leave-one-dataset-out (FLARE held)', f"{lodo['flare']['served_pct']}% served, nDCG={lodo['flare']['nDCG']}", 'partial'],
+     ['KG connects disjoint-anatomy datasets (Pancreas<->LiTS)',
+      f"{conn.get('direct_pancreas_lits_edges',{}).get('organ_overlap','?')} -> "
+      f"{conn.get('direct_pancreas_lits_edges',{}).get('kg_concept','?')} direct links (15% of pairs)", 'qualitative'],
+     ['KG cross-dataset edge fraction (vs 55.5% random)',
+      f"{conn.get('cross_dataset_edge_pct',{}).get('organ_overlap','?')}% -> "
+      f"{conn.get('cross_dataset_edge_pct',{}).get('kg_concept','?')}% (below random)", 'modest'],
      ['Dataset-mixing index M vs. null', f"M={mix['M_observed']} vs {mix['null_mean']} (ΔM={mix['delta_M']})", 'below null (see note)']],
-    bold_rows=(0, 1, 2))
-P('Integration is supported by the KG shared-schema connectivity gain — the concept graph nearly '
-  'doubles cross-dataset edges (19.6%->34.1%) and creates 5,531 direct Pancreas<->LiTS links via '
-  'shared phenotype/ontology concepts (0 possible in an organ-overlap graph: those datasets share '
-  'no anatomy) — plus the cross-dataset retrieval gap and leave-one-dataset-out. The mixing index '
-  'sits below null on both graphs; that is NOT a failure — Pancreas-tumour and LiTS-tumour are '
-  'distinct clinical populations, so correctly they do not blend into one community. Integration '
-  'here means connected and cross-queryable, not dissolved.', color=GREY, size=9)
+    bold_rows=(0, 1))
+P('Integration rests on the cross-dataset retrieval gap (+0.071 nDCG, p<0.001, Holm) and '
+  'leave-one-dataset-out — those are the statistically significant legs. The shared-schema '
+  'connectivity is supporting, qualitative evidence: the KG concept graph links Pancreas and LiTS '
+  'cases (0 -> 5,531 direct links; 15% of possible pairs) that share no observed anatomy and thus '
+  'cannot connect in an organ-overlap graph. But it raises cross-dataset edges only to 34% (from '
+  '20%), still below the 55.5% random-mixing baseline — so it is a directional gain, not strong '
+  'mixing. The mixing index sits below null on both graphs; reported plainly, this is not a failure '
+  '— Pancreas-tumour and LiTS-tumour are distinct clinical populations that correctly do not blend. '
+  'Integration = connected and cross-queryable, not dissolved.', color=GREY, size=9)
 
 H('Table 12 — Expert-query coverage + cross-dataset execution', 2)
 try:
