@@ -1,0 +1,72 @@
+# ============================================================
+# OAKG AAAI 2027 — only code (src/, notebooks/) and text configs
+# are tracked. No PDFs, office docs, data, or large binaries.
+# ============================================================
+
+# --- Documents (never push) ---
+docs/
+*.pdf
+*.docx
+*.doc
+*.pptx
+*.ppt
+*.xlsx
+*.xls
+*.odt
+
+# --- Data & medical imaging volumes ---
+data/
+*.nii
+*.nii.gz
+*.dcm
+*.mha
+*.mhd
+*.raw
+*.h5
+*.hdf5
+
+# --- Model checkpoints & embeddings (regenerable / large) ---
+# Ignore contents but keep the directory scaffolding (.gitkeep).
+checkpoints/*
+embeddings/*
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.npz
+*.npy
+*.pkl
+*.joblib
+
+# --- Experiment outputs (regenerable from notebook + configs) ---
+# Ignore contents of results/ (and subdirs) but keep scaffolding.
+results/**
+*.csv
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# Keep directory scaffolding everywhere (must come last to win)
+!*/
+!**/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.python-version
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# --- Claude Code local settings ---
+.claude/
