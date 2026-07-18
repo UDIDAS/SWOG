@@ -63,8 +63,11 @@ tbl(['Stratum', 'Proposed', 'Coverage-blind', 'Δ (obs.)'],
     bold_rows=(1, 2))
 B('Table 5 (ladder): proposed tops it, nDCG 0.992. Table 8 (specificity controls): 100% vs 0% — '
   'the sharpest, non-circular result. Table 9: robust across sweeps.')
-B('Honest limits carried in the write-up: Table 7 (LOPO) is neutral; Table 11 mixing is below '
-  'null by design; Table 10 (expert-judged) needs clinician raters.')
+B('Table 11 (integration): the significant leg is the cross-dataset retrieval gap (+0.071 nDCG, '
+  'p<0.001); the KG shared-schema graph links disjoint-anatomy datasets (0->5,531 Pancreas<->LiTS '
+  'links) as supporting evidence; community mixing is below null (distinct clinical populations, '
+  'correctly not blended) — lean on the retrieval result, not the graph mixing.')
+B('Honest limits: Table 7 (LOPO) is neutral; Table 10 (expert-judged) needs clinician raters.')
 P('Shareable now: JBI_Tables_5to11_review_packet.docx (fill-ready values + plain-language rationale).',
   color=GREEN)
 
