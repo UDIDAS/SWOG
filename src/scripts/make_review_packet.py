@@ -160,6 +160,24 @@ tbl(['Integration probe', 'Result', 'Verdict'],
 P('Claim integration from the observability gap + hold-out retrieval, NOT from community mixing '
   '(the correction deliberately does not blend datasets that observe disjoint anatomy).', color=GREY, size=9)
 
+H('Table 12 — Expert-query coverage + cross-dataset execution', 2)
+try:
+    _t12 = json.load(open(f"{RES}/table12_coverage_matrix.json"))
+    _xq = json.load(open(f"{RES}/crossdataset_query_results.json"))["queries"]
+    P(f"The {_t12['n_queries']} expert queries span the phenotype × stratum space (within "
+      f"{_t12['strata']['A']}, cross-dataset {_t12['strata']['B']}, decomposition {_t12['strata']['C']}, "
+      f"adversarial {_t12['strata']['D']}); coverage complete = {_t12['coverage_complete']}.")
+    P('Cross-dataset queries B1–B7 were executed on the corpus. For every one, the proposed method '
+      'surfaces the intended cross-dataset source at a better rank than coverage-blind (silence '
+      'penalty). Rank of first target-source hit (proposed / coverage-blind):')
+    tbl(['Q', 'Direction', 'Proposed', 'Coverage-blind'],
+        [[q['code'], f"{q['query']['dataset']}→{q['target_dataset']}",
+          str(q['target_first_rank']['proposed']), str(q['target_first_rank']['coverage_blind'])]
+         for q in _xq if 'error' not in q])
+    P('Full per-query retrievals: Cross_dataset_query_execution.docx.', color=GREY, size=9)
+except Exception as _e:
+    P(f'[Table 12 / cross-dataset execution artifacts not found: {_e}]', color=GREY, size=9)
+
 # ---- Part 4: the two open items ----
 H('4. The two items that are still genuinely open', 1)
 P('Table 10 (expert-judged retrieval): needs two board-certified raters to score pooled top-k '
