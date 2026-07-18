@@ -40,7 +40,10 @@ FLARE_DELIVERY_DIR = "/scratch/ud3d4/acm_data/FLARE/sam3_delivery"
 os.makedirs(FLARE_SAM3_DIR, exist_ok=True)
 
 # class id -> structure name
-STRUCTURES = [(12, "duodenum"), (4, "pancreas"), (14, "tumor"), (1, "liver")]
+# Paper's coverage-regime set: 5 organs + pan-cancer lesion. New organs first (train),
+# then already-trained (skip+eval). Duodenum(12) is excluded (not in the paper's set).
+STRUCTURES = [(2, "right_kidney"), (3, "spleen"), (13, "left_kidney"),
+              (1, "liver"), (4, "pancreas"), (14, "tumor")]
 MAX_TRAIN = 6000  # cap training slices per structure to keep epochs tractable
 
 
@@ -98,7 +101,8 @@ def run_all():
     print("-" * 40)
     orig = {"liver": 0.965, "pancreas": 0.839, "tumor": 0.855, "duodenum": 0.890}
     for _, name in STRUCTURES:
-        print(f"{name:<15s} {results.get(name, float('nan')):>10.4f} {orig[name]:>12.3f}")
+        ob = orig.get(name)
+        print(f"{name:<15s} {results.get(name, float('nan')):>10.4f} {(f'{ob:.3f}' if ob else '—'):>12s}")
     print("=" * 70)
     print("DONE")
 
