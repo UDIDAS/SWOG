@@ -198,6 +198,14 @@ def build_queries_relevance(cases: pd.DataFrame, ref: pd.DataFrame, seed: int = 
     numeric_feats = [f for f, t in ftype.items() if t == "numeric"]
     thresholds = _fit_numeric_thresholds(cases, wide, numeric_feats)
 
+    # Organ-consistent relevance: a candidate can only be relevant to a query if
+    # it shares an annotated organ with the query case. This aligns relevance
+    # with OAKG's coverage model, so cross-organ "matches" a coverage-blind
+    # method produces (e.g. a liver-tumor case for a pancreas query) count as
+    # false positives rather than hits.
+    organ_set = {r.case_id: set(str(r.available_organs).split("|"))
+                 for r in cases.itertuples(index=False)}
+
     all_ids = cases["case_id"].tolist()
     test_ids = cases.loc[cases["split"].eq("test"), "case_id"].tolist()
 
@@ -243,6 +251,11 @@ def build_queries_relevance(cases: pd.DataFrame, ref: pd.DataFrame, seed: int = 
         })
         for cand in all_ids:
             if cand == qcase:
+                continue
+            # Organ-consistency gate: no shared annotated organ -> not relevant.
+            if organ_set[qcase].isdisjoint(organ_set[cand]):
+                rel_rows.append({"query_id": query_id, "candidate_id": cand,
+                                 "binary_relevance": 0, "graded_relevance": 0.0})
                 continue
             p_ok = all(holds(p, cand) for p in primary)
             s_count = sum(holds(p, cand) for p in secondary)
