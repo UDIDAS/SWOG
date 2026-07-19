@@ -23,27 +23,46 @@ import pandas as pd
 from .phenotypes import DatasetSpec, organ_phenotypes
 
 ACM = Path("/scratch/ud3d4/acm_data/ssl_handoff_ours")
-FLARE = Path("/scratch/ud3d4/acm_data/FLARE_Task2/sam3_delivery")
+FLARE_ROOT = Path("/scratch/ud3d4/acm_data/FLARE_Task2")
+FLARE_SAM = FLARE_ROOT / "sam3_delivery"
 FLARE_ORGANS = ("liver", "pancreas", "spleen", "left_kidney", "right_kidney")
+# Validated against per-organ GT (Dice=1.000): FLARE22 multi-label integers.
+FLARE_LABELS = {"liver": 1, "right_kidney": 2, "spleen": 3, "pancreas": 4, "left_kidney": 13}
+
+
+def _combined(dirs, organ_labels, tumor_labels=None):
+    return {"kind": "combined", "dirs": [Path(d) for d in dirs],
+            "organ_labels": organ_labels, "tumor_labels": tumor_labels or {}}
+
+
+def _per_organ(base_dir, suffix):
+    return {"kind": "per_organ", "base_dir": Path(base_dir), "suffix": suffix}
 
 
 def default_sources() -> list[dict]:
     return [
         {
-            "spec": DatasetSpec("Pancreas", ("pancreas",), layout="combined",
+            "spec": DatasetSpec("Pancreas", ("pancreas",),
                                 organ_labels={"pancreas": 1}, tumor_labels={"pancreas": 2}),
-            "gt_dir": ACM / "ground_truth" / "pancreas",
-            "pred_dir": ACM / "ssl_predictions" / "pancreas",
+            "ref": _combined([ACM / "ground_truth" / "pancreas"], {"pancreas": 1}, {"pancreas": 2}),
+            "pred": _combined([ACM / "ssl_predictions" / "pancreas"], {"pancreas": 1}, {"pancreas": 2}),
         },
         {
-            "spec": DatasetSpec("LiTS", ("liver",), layout="combined",
+            "spec": DatasetSpec("LiTS", ("liver",),
                                 organ_labels={"liver": 1}, tumor_labels={"liver": 2}),
-            "gt_dir": ACM / "ground_truth" / "lits",
-            "pred_dir": ACM / "ssl_predictions" / "lits",
+            "ref": _combined([ACM / "ground_truth" / "lits"], {"liver": 1}, {"liver": 2}),
+            "pred": _combined([ACM / "ssl_predictions" / "lits"], {"liver": 1}, {"liver": 2}),
         },
         {
-            "spec": DatasetSpec("FLARE", FLARE_ORGANS, layout="per_organ"),
-            "base_dir": FLARE,   # base/<organ>/<case>_{gt,pred}.nii.gz
+            # FLARE: 100 multi-organ GT cases (labelsTr + validation, 13-label),
+            # predictions for the 20 in sam3_delivery (per-organ binary). No tumor.
+            "spec": DatasetSpec("FLARE", FLARE_ORGANS),
+            "ref": [
+                _combined([FLARE_ROOT / "train_gt_label" / "labelsTr",
+                           FLARE_ROOT / "validation" / "Validation-Public-Labels"], FLARE_LABELS),
+                _per_organ(FLARE_SAM, "gt"),   # fallback for any sam3-only case
+            ],
+            "pred": _per_organ(FLARE_SAM, "pred"),
         },
     ]
 
@@ -56,32 +75,32 @@ def _read_mask(path: Path):
     return arr, spacing
 
 
+def _resolve(access, case_id: str, organs) -> dict[str, dict] | None:
+    """Load {organ: phenotypes} for one case via an access descriptor (or list of them)."""
+    for acc in (access if isinstance(access, list) else [access]):
+        if acc["kind"] == "combined":
+            path = next((d / f"{case_id}.nii.gz" for d in acc["dirs"]
+                         if (d / f"{case_id}.nii.gz").exists()), None)
+            if path is None:
+                continue
+            mask, sp = _read_mask(path)
+            return {o: organ_phenotypes(mask, sp, acc["organ_labels"][o], acc["tumor_labels"].get(o))
+                    for o in organs}
+        else:  # per_organ
+            base, suf = acc["base_dir"], acc["suffix"]
+            paths = {o: base / o / f"{case_id}_{suf}.nii.gz" for o in organs}
+            if not all(p.exists() for p in paths.values()):
+                continue
+            out = {}
+            for o, p in paths.items():
+                mask, sp = _read_mask(p)
+                out[o] = organ_phenotypes(mask, sp, organ_label=1, tumor_label=None)
+            return out
+    return None
+
+
 def _case_phenotypes(src: dict, case_id: str, track: str) -> dict[str, dict] | None:
-    """Return {organ: phenotype_dict} for one case/track, or None if masks absent."""
-    spec: DatasetSpec = src["spec"]
-    suffix = "gt" if track == "ref" else "pred"
-
-    if spec.layout == "combined":
-        d = src["gt_dir"] if track == "ref" else src["pred_dir"]
-        path = Path(d) / f"{case_id}.nii.gz"
-        if not path.exists():
-            return None
-        mask, sp = _read_mask(path)
-        return {
-            organ: organ_phenotypes(mask, sp, spec.organ_labels[organ],
-                                    spec.tumor_labels.get(organ))
-            for organ in spec.organs
-        }
-
-    # per_organ: one binary file per organ.
-    out: dict[str, dict] = {}
-    for organ in spec.organs:
-        path = Path(src["base_dir"]) / organ / f"{case_id}_{suffix}.nii.gz"
-        if not path.exists():
-            return None
-        mask, sp = _read_mask(path)
-        out[organ] = organ_phenotypes(mask, sp, organ_label=1, tumor_label=None)
-    return out
+    return _resolve(src[track], case_id, src["spec"].organs)
 
 
 def _feature_rows(spec: DatasetSpec, organ_ph: dict[str, dict]) -> list[tuple[str, str, str, float]]:
@@ -109,11 +128,17 @@ def _feature_rows(spec: DatasetSpec, organ_ph: dict[str, dict]) -> list[tuple[st
 
 
 def _case_ids(src: dict) -> list[str]:
-    spec: DatasetSpec = src["spec"]
-    if spec.layout == "combined":
-        return [p.name.replace(".nii.gz", "") for p in sorted(Path(src["gt_dir"]).glob("*.nii.gz"))]
-    anchor = Path(src["base_dir"]) / spec.organs[0]
-    return [p.name.replace("_gt.nii.gz", "") for p in sorted(anchor.glob("*_gt.nii.gz"))]
+    """Union of case ids reachable through the source's ref access descriptor(s)."""
+    ids: set[str] = set()
+    organs = src["spec"].organs
+    for acc in (src["ref"] if isinstance(src["ref"], list) else [src["ref"]]):
+        if acc["kind"] == "combined":
+            for d in acc["dirs"]:
+                ids |= {p.name.replace(".nii.gz", "") for p in Path(d).glob("*.nii.gz")}
+        else:
+            anchor = Path(acc["base_dir"]) / organs[0]
+            ids |= {p.name.replace(f"_{acc['suffix']}.nii.gz", "") for p in anchor.glob(f"*_{acc['suffix']}.nii.gz")}
+    return sorted(ids)
 
 
 def _assign_split(case_id: str, ratios=(0.55, 0.20, 0.25)) -> str:

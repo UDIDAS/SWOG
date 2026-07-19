@@ -11,52 +11,64 @@ mechanism adds value beyond simple missing-data handling (e.g. masked cosine).
 > Living section — refreshed every commit. Claims that fail to replicate are
 > removed and replaced by the validated alternative, not kept as history.
 
-**Benchmark (validated):** 432 real cases — 281 Pancreas + 131 LiTS (single-organ,
-organ+tumor) + 20 FLARE (multi-organ hub, 5-organ morphometry, no tumor).
-91 test queries, 17 features, patient-level splits. Env: `llmft` (Python 3.11).
-*In flight:* FLARE ref track enriching 20 → 100 cases (see Direction).
+**Benchmark (validated):** 512 real cases — 281 Pancreas + 131 LiTS (single-organ,
+organ+tumor) + 100 FLARE (multi-organ hub, 5-organ morphometry, no tumor;
+predictions for the 20 in `sam3_delivery`). 111 test queries, 17 features,
+patient-level splits (288/113/111). FLARE22 label map validated at Dice=1.000.
+Env: `llmft` (Python 3.11).
 
 **Acceptance test and supporting hypotheses** (nDCG@10, random masking, ref track;
 paired 95% bootstrap CI, Holm-corrected):
 
-| # | Hypothesis | Expected | Obtained | Verdict |
+| # | Hypothesis | Expected | Obtained (512-case) | Verdict |
 |---|---|---|---|---|
-| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **+0.283 [0.220, 0.348]**, p<0.001 | ✅ pass (strong) |
-| 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.471 > 0.427 (+0.044) — needs multi-organ | ✅ conditional |
-| 3 | OAKG > strong imputation baselines | ≥ zero/mean/missingness/Gower | beats Gower +0.195, mean +0.103; **tied** w/ zero-imp & missingness (ns) | ⚠️ partial |
-| 4 | Upstream degradation ref > pred | positive Δ | OAKG-product +0.017; masked cosine −0.045 | ✅ measured |
-| 5 | OAKG semantics: no unsupported negatives | ≈0 unsupported-neg rate | **0.000** vs closed-world 0.001; indeterminate 0.26 | ✅ pass |
-| 6 | Selective retrieval trades coverage for reliability | risk ↓ as served-rate ↓ | AURC 0.006; served-rate 0.99–1.0 (little abstention) | ⚠️ limited range |
+| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **+0.300 [0.237, 0.365]**, p<0.001; **significant in all 4 masking regimes** | ✅ pass (strong, robust) |
+| 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.407 > 0.322 (**+0.085**) | ✅ confirmed |
+| 3 | OAKG > strong imputation baselines | ≥ zero/mean/missingness/Gower | beats Gower +0.183, mean +0.039 (ns); **slightly below** zero-imp −0.025 & missingness −0.027 (both ns) | ❌ not met on aggregate |
+| 4 | Upstream degradation ref > pred | positive Δ | OAKG-product **−0.035** (pred > ref) — inverted | ⚠️ anomaly (partial pred coverage) |
+| 5 | OAKG semantics: no unsupported negatives | ≈0 unsupported-neg rate | **0.000** vs closed-world 0.014; indeterminate 0.43 | ✅ pass |
+| 6 | Selective retrieval trades coverage for reliability | risk ↓ as served-rate ↓ | AURC 0.000; served-rate flat at 1.0 | ❌ no abstention range |
+
+**Per-stratum — OAKG-product − masked cosine by masking regime** (nDCG@10, ref;
+the aggregate is a floor, this is the story — OAKG wins in *every* regime):
+
+| Masking regime | Δ nDCG@10 | 95% CI |
+|---|---|---|
+| uniform | +0.351 | [0.283, 0.419] |
+| random | +0.300 | [0.237, 0.365] |
+| asymmetric | +0.190 | [0.118, 0.265] |
+| dataset-style | +0.140 | [0.097, 0.186] |
 
 **Findings — what they mean:**
 
-- **The central claim holds.** OAKG beats masked cosine — the guidelines' "most
-  important simple baseline" — decisively and significantly. The graph-based
-  observability mechanism (support-restriction + γ-eligibility) adds value beyond
+- **The central claim holds and is now robust.** OAKG beats masked cosine — the
+  guidelines' "most important simple baseline" — significantly in *every* masking
+  regime (Δ +0.14 to +0.35), not just on average. The graph-based observability
+  mechanism (support-restriction + γ-eligibility) clearly adds value over
   restricting comparison to jointly-observed features.
-- **Honest nuance (hyp 3).** On *aggregate* random-masking nDCG, OAKG only *ties*
-  a well-behaved zero-imputed / missingness-indicator cosine. Its edge is
-  specifically over comparison-restriction (masked cosine) and mixed-similarity
-  (Gower) — not "graphs beat vectors everywhere."
-- **Where OAKG's real advantage lives (not in aggregate nDCG):** (a) structured
-  semantics — 0.000 unsupported-negative rate: OAKG abstains (U) on unobserved
-  anatomy instead of fabricating "absent"; (b) the harder strata (cross-dataset,
-  asymmetric), where imputation should hallucinate similarity across incompatible
-  coverage. Aggregate averages dilute both.
-- **The policy ablation only comes alive with multi-organ heterogeneity** — γ is
-  degenerate (0/1) for single-organ sources; FLARE's multi-organ cases are what
-  make product/lexicographic separate from similarity. This validates the
-  three-dataset MMKG design.
-- **Selective retrieval has little range here** — organ overlap almost always
-  exists, so the threshold policy rarely abstains (AURC≈0). Meaningful abstention
-  needs the higher-missingness / asymmetric regimes.
+- **Enrichment flipped hyp 3 (superseding the 432-case "tie").** With more FLARE
+  mass, a zero-imputed / missingness-indicator cosine now edges *slightly ahead*
+  of OAKG on aggregate nDCG (ns). So on raw ranking OAKG does **not** beat the
+  strongest imputation baselines. Its justification rests on: (a) masked-cosine
+  dominance across all strata, (b) structured-semantic honesty (0.000
+  unsupported-negative rate — OAKG abstains on unobserved anatomy instead of
+  asserting "absent"), and (c) the policy ablation — not aggregate superiority.
+- **Policy ablation is decisively alive** (+0.085, up from +0.044 at 20 FLARE):
+  weighting by shared evidence clearly helps once multi-organ cases are present.
+  Validation selects OAKG-lexicographic; product retained as ablation.
+- **Two anomalies to investigate (see Direction):** upstream degradation is
+  *inverted* (pred slightly beats ref) — an artifact of partial predicted
+  coverage (only 20/100 FLARE and tumor-only LiTS have preds, so ref/pred pools
+  differ); and selective retrieval has *no* range (organ overlap is near-
+  universal, so the threshold policy never abstains, AURC≈0).
 
 **Direction — where we are headed:**
 
-1. **Enrich FLARE ref track 20 → 100 cases** (13-label GT, mapping validated at
-   Dice=1.000) — more multi-organ mass to sharpen γ and cross-organ retrieval. *(in progress)*
-2. **Per-stratum deltas** — break OAKG−baseline out by matched / cross-dataset /
-   asymmetric direction; the aggregate is a floor, not the story.
+1. **Why is zero-imputation so strong?** Investigate whether the relevance
+   construction rewards imputed vectors; add cross-dataset-only strata where
+   imputation should hallucinate and OAKG's eligibility should separate.
+2. **Fix the upstream-degradation comparison** — restrict to cases with matched
+   ref+pred coverage so ref vs pred is apples-to-apples.
 3. **P1 neural baselines** — CompGCN + observed-region CT embeddings, hybrid
    image–graph retrieval (`run_neural_baselines`).
 4. **Full statistical protocol** — 10k paired bootstrap over queries + masking
