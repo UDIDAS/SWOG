@@ -60,7 +60,26 @@ Both drive `oakg.pipeline.run_all(config)`, which writes to `results/`:
 
 By default `Config.use_demo_data=True` runs a reproducible synthetic benchmark so
 the full pipeline executes anywhere. For the real study, set `use_demo_data=False`
-and place the five CSVs in `data/`:
+and place the five CSVs in `data/`.
+
+### Building the real benchmark from segmentation masks
+
+`oakg.build_benchmark` derives the five CSVs from paired ground-truth and
+predicted NIfTI masks. Each source dataset covers one organ (Pancreas → pancreas,
+LiTS → liver), so per-source organ coverage forms the heterogeneous observability
+structure. Reference (GT) masks define relevance and the `ref` track; predicted
+masks define the end-to-end `pred` track.
+
+```bash
+PYTHONPATH=src python -m oakg.build_benchmark --out data          # full
+PYTHONPATH=src python -m oakg.build_benchmark --out data --limit 8  # quick debug
+```
+
+Phenotypes (`oakg.phenotypes`): organ presence/volume, tumor presence, tumor
+burden (cm³), lesion multiplicity (connected components), and tumor-in-organ
+containment — aligned with the imaging-KG ontology (SNOMED CT / NCIt coded).
+
+The five CSVs it writes have this schema:
 
 | File | Columns |
 |------|---------|

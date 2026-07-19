@@ -63,6 +63,7 @@ from .neural import (
     select_hybrid_alpha,
 )
 from .tables import format_metric_ci, publication_table
+from .phenotypes import DatasetSpec, extract_phenotypes, voxel_volume_cm3
 
 __version__ = "0.1.0"
 
@@ -86,4 +87,5 @@ __all__ = [
     "load_npz_embeddings", "embedding_scores", "hybrid_scores", "select_hybrid_alpha",
     "apply_pairwise_observability_filter", "cross_backbone_gain",
     "publication_table", "format_metric_ci",
+    "DatasetSpec", "extract_phenotypes", "voxel_volume_cm3",
 ]

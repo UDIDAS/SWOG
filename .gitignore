@@ -47,8 +47,8 @@ results/**
 *.jpeg
 *.svg
 
-# Keep directory scaffolding everywhere (must come last to win)
-!*/
+# Keep only the .gitkeep scaffolding (NOT a blanket directory un-ignore, which
+# would leak files from fully-ignored dirs like data/ and docs/).
 !**/.gitkeep
 
 # --- Python ---

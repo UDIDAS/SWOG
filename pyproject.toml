@@ -16,6 +16,7 @@ dependencies = [
     "statsmodels>=0.14",
     "networkx>=3.0",
     "matplotlib>=3.7",
+    "nibabel>=5.0",
 ]
 
 [tool.setuptools.packages.find]

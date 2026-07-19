@@ -5,3 +5,4 @@ scikit-learn>=1.3
 statsmodels>=0.14
 networkx>=3.0
 matplotlib>=3.7
+nibabel>=5.0        # benchmark extraction from NIfTI masks (oakg.build_benchmark)

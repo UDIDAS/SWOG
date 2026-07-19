@@ -1,0 +1,19 @@
+# OAKG real-benchmark configuration (pancreas + LiTS, 412 paired cases).
+# Build the CSVs first:  PYTHONPATH=src python -m oakg.build_benchmark --out data
+# Then run:              PYTHONPATH=src python -m oakg.pipeline   (with use_demo_data false)
+
+seed: 2027
+top_k: 10
+organs: [liver, pancreas, spleen, left_kidney, right_kidney]
+
+use_demo_data: false
+n_demo_cases: 120            # ignored when use_demo_data is false
+
+run_wl_baseline: true
+run_neural_baselines: false  # enable once CompGCN/CT embeddings exist
+
+n_bootstrap: 10000           # full study setting
+
+data_dir: data
+results_dir: results
+embeddings_dir: embeddings
