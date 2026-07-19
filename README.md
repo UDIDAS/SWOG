@@ -65,10 +65,18 @@ and place the five CSVs in `data/`.
 ### Building the real benchmark from segmentation masks
 
 `oakg.build_benchmark` derives the five CSVs from paired ground-truth and
-predicted NIfTI masks. Each source dataset covers one organ (Pancreas → pancreas,
-LiTS → liver), so per-source organ coverage forms the heterogeneous observability
-structure. Reference (GT) masks define relevance and the `ref` track; predicted
-masks define the end-to-end `pred` track.
+predicted NIfTI masks across three heterogeneous sources:
+
+- **Pancreas** → pancreas organ + tumor (single-organ)
+- **LiTS** → liver organ + tumor (single-organ)
+- **FLARE** → 5-organ morphometry, no tumor (**multi-organ hub**)
+
+Per-source organ coverage forms the observability structure; the FLARE cases
+share organs with both single-organ datasets, so the shared-evidence coefficient
+γ is non-degenerate and cross-organ retrieval is possible (the OAKG ranking
+policies only differentiate once multi-organ cases are present). Reference (GT)
+masks define relevance and the `ref` track; predicted masks define the
+end-to-end `pred` track.
 
 ```bash
 PYTHONPATH=src python -m oakg.build_benchmark --out data          # full

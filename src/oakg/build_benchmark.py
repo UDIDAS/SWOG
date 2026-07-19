@@ -1,9 +1,12 @@
 """Build the five OAKG benchmark CSVs from paired GT/predicted segmentation masks.
 
-Reference (GT) masks populate ``phenotypes_ref.csv`` and define relevance;
-predicted (SSL/SAM3) masks populate ``phenotypes_pred.csv`` (end-to-end track).
-Each source dataset covers one organ, so per-source organ coverage is the
-heterogeneous observability structure OAKG operates on.
+Three heterogeneous sources populate one MMKG-shaped benchmark:
+  - Pancreas, LiTS: single-organ, organ + tumor observations.
+  - FLARE:          multi-organ (5 organs), organ morphometry only (no tumor).
+FLARE is the multi-organ hub: its cases share organs with both single-organ
+datasets, so the shared-evidence coefficient gamma becomes non-degenerate and
+cross-organ retrieval is possible. Reference (GT) masks populate the ref track
+and define relevance; predicted masks populate the end-to-end pred track.
 
 Run:  PYTHONPATH=src python -m oakg.build_benchmark --out data [--limit N]
 """
@@ -17,41 +20,100 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .phenotypes import DatasetSpec, extract_phenotypes
+from .phenotypes import DatasetSpec, organ_phenotypes
 
-# --- Source registry -------------------------------------------------------
 ACM = Path("/scratch/ud3d4/acm_data/ssl_handoff_ours")
+FLARE = Path("/scratch/ud3d4/acm_data/FLARE_Task2/sam3_delivery")
+FLARE_ORGANS = ("liver", "pancreas", "spleen", "left_kidney", "right_kidney")
 
 
 def default_sources() -> list[dict]:
     return [
         {
-            "spec": DatasetSpec("Pancreas", "pancreas", organ_label=1, tumor_label=2),
+            "spec": DatasetSpec("Pancreas", ("pancreas",), layout="combined",
+                                organ_labels={"pancreas": 1}, tumor_labels={"pancreas": 2}),
             "gt_dir": ACM / "ground_truth" / "pancreas",
             "pred_dir": ACM / "ssl_predictions" / "pancreas",
         },
         {
-            "spec": DatasetSpec("LiTS", "liver", organ_label=1, tumor_label=2),
+            "spec": DatasetSpec("LiTS", ("liver",), layout="combined",
+                                organ_labels={"liver": 1}, tumor_labels={"liver": 2}),
             "gt_dir": ACM / "ground_truth" / "lits",
             "pred_dir": ACM / "ssl_predictions" / "lits",
+        },
+        {
+            "spec": DatasetSpec("FLARE", FLARE_ORGANS, layout="per_organ"),
+            "base_dir": FLARE,   # base/<organ>/<case>_{gt,pred}.nii.gz
         },
     ]
 
 
-# Feature registry: how a phenotype dict maps to (feature, feature_type, support).
-# ``support=""`` -> globally observed; else supported by the named organ.
-def _feature_rows(pheno: dict, organ: str) -> list[tuple[str, str, str, float]]:
-    rows = [
-        ("has_tumor", "binary", "", pheno["tumor_present"]),
-        ("tumor_burden_cm3", "numeric", "", pheno["tumor_burden_cm3"]),
-        ("lesion_multiplicity", "numeric", "", pheno["lesion_multiplicity"]),
-        (f"{organ}_present", "binary", organ, pheno["organ_present"]),
-        (f"{organ}_tumor_present", "binary", organ, pheno["tumor_present"]),
-        (f"{organ}_tumor_containment", "binary", organ, pheno["tumor_containment"]),
-        (f"{organ}_volume_cm3", "numeric", organ, pheno["organ_volume_cm3"]),
-    ]
-    # Drop observations the mask could not define (None -> missing downstream).
+def _read_mask(path: Path):
+    import nibabel as nib
+    img = nib.load(str(path))
+    arr = np.asanyarray(img.dataobj)
+    spacing = tuple(float(z) for z in img.header.get_zooms()[:3])
+    return arr, spacing
+
+
+def _case_phenotypes(src: dict, case_id: str, track: str) -> dict[str, dict] | None:
+    """Return {organ: phenotype_dict} for one case/track, or None if masks absent."""
+    spec: DatasetSpec = src["spec"]
+    suffix = "gt" if track == "ref" else "pred"
+
+    if spec.layout == "combined":
+        d = src["gt_dir"] if track == "ref" else src["pred_dir"]
+        path = Path(d) / f"{case_id}.nii.gz"
+        if not path.exists():
+            return None
+        mask, sp = _read_mask(path)
+        return {
+            organ: organ_phenotypes(mask, sp, spec.organ_labels[organ],
+                                    spec.tumor_labels.get(organ))
+            for organ in spec.organs
+        }
+
+    # per_organ: one binary file per organ.
+    out: dict[str, dict] = {}
+    for organ in spec.organs:
+        path = Path(src["base_dir"]) / organ / f"{case_id}_{suffix}.nii.gz"
+        if not path.exists():
+            return None
+        mask, sp = _read_mask(path)
+        out[organ] = organ_phenotypes(mask, sp, organ_label=1, tumor_label=None)
+    return out
+
+
+def _feature_rows(spec: DatasetSpec, organ_ph: dict[str, dict]) -> list[tuple[str, str, str, float]]:
+    rows: list[tuple[str, str, str, float]] = []
+    for organ in spec.organs:
+        ph = organ_ph[organ]
+        rows.append((f"{organ}_present", "binary", organ, ph["present"]))
+        if ph["volume_cm3"] is not None:
+            rows.append((f"{organ}_volume_cm3", "numeric", organ, ph["volume_cm3"]))
+        if organ in spec.tumor_labels:
+            rows.append((f"{organ}_tumor_present", "binary", organ, ph["tumor_present"]))
+            if ph["tumor_containment"] is not None:
+                rows.append((f"{organ}_tumor_containment", "binary", organ, ph["tumor_containment"]))
+    if spec.has_tumor:
+        tumor_organs = [o for o in spec.organs if o in spec.tumor_labels]
+        has = any(organ_ph[o]["tumor_present"] for o in tumor_organs)
+        burden = sum(organ_ph[o]["tumor_burden_cm3"] or 0.0 for o in tumor_organs)
+        mult = sum(organ_ph[o]["lesion_multiplicity"] or 0.0 for o in tumor_organs)
+        rows += [
+            ("has_tumor", "binary", "", float(has)),
+            ("tumor_burden_cm3", "numeric", "", float(burden)),
+            ("lesion_multiplicity", "numeric", "", float(mult)),
+        ]
     return [(f, t, s, float(v)) for (f, t, s, v) in rows if v is not None]
+
+
+def _case_ids(src: dict) -> list[str]:
+    spec: DatasetSpec = src["spec"]
+    if spec.layout == "combined":
+        return [p.name.replace(".nii.gz", "") for p in sorted(Path(src["gt_dir"]).glob("*.nii.gz"))]
+    anchor = Path(src["base_dir"]) / spec.organs[0]
+    return [p.name.replace("_gt.nii.gz", "") for p in sorted(anchor.glob("*_gt.nii.gz"))]
 
 
 def _assign_split(case_id: str, ratios=(0.55, 0.20, 0.25)) -> str:
@@ -64,70 +126,52 @@ def _assign_split(case_id: str, ratios=(0.55, 0.20, 0.25)) -> str:
     return "test"
 
 
-def _read_mask(path: Path):
-    import nibabel as nib
-    img = nib.load(str(path))
-    arr = np.asanyarray(img.dataobj)
-    spacing = tuple(float(z) for z in img.header.get_zooms()[:3])
-    return arr, spacing
-
-
 def build_phenotype_frames(sources: list[dict], limit: int | None = None):
     case_rows, ref_rows, pred_rows = [], [], []
     for src in sources:
         spec: DatasetSpec = src["spec"]
-        gt_files = sorted(Path(src["gt_dir"]).glob("*.nii.gz"))
+        ids = _case_ids(src)
         if limit:
-            gt_files = gt_files[:limit]
-        for gt_path in gt_files:
-            case_id = gt_path.name.replace(".nii.gz", "")
-            pred_path = Path(src["pred_dir"]) / gt_path.name
-
-            gt_arr, gt_sp = _read_mask(gt_path)
-            ref_ph = extract_phenotypes(gt_arr, gt_sp, spec)
-            for f, t, s, v in _feature_rows(ref_ph, spec.organ):
+            ids = ids[:limit]
+        for case_id in ids:
+            ref_ph = _case_phenotypes(src, case_id, "ref")
+            if ref_ph is None:
+                continue
+            for f, t, s, v in _feature_rows(spec, ref_ph):
                 ref_rows.append({"case_id": case_id, "feature": f, "value": v,
                                  "feature_type": t, "support_organs": s})
-
-            if pred_path.exists():
-                pr_arr, pr_sp = _read_mask(pred_path)
-                pred_ph = extract_phenotypes(pr_arr, pr_sp, spec)
-                for f, t, s, v in _feature_rows(pred_ph, spec.organ):
+            pred_ph = _case_phenotypes(src, case_id, "pred")
+            if pred_ph is not None:
+                for f, t, s, v in _feature_rows(spec, pred_ph):
                     pred_rows.append({"case_id": case_id, "feature": f, "value": v,
                                       "feature_type": t, "support_organs": s})
-
             case_rows.append({
                 "case_id": case_id,
                 "dataset": spec.name,
                 "split": _assign_split(case_id),
-                "available_organs": spec.organ,
+                "available_organs": "|".join(spec.organs),
             })
-    return (pd.DataFrame(case_rows),
-            pd.DataFrame(ref_rows),
-            pd.DataFrame(pred_rows))
+    return (pd.DataFrame(case_rows), pd.DataFrame(ref_rows), pd.DataFrame(pred_rows))
 
 
 # --- Queries and relevance (reference-defined) -----------------------------
-QUERYABLE_BINARY = ["has_tumor"]         # organ tumor-present features added per case
-NUMERIC_THRESHOLDS = {"lesion_multiplicity": 2.0}  # burden threshold fit below
-
-
-def build_queries_relevance(
-    cases: pd.DataFrame,
-    ref: pd.DataFrame,
-    seed: int = 2027,
-):
-    rng = np.random.default_rng(seed)
-    # Wide reference table: case_id x feature -> value.
-    wide = ref.pivot_table(index="case_id", columns="feature", values="value")
-    organ_of = dict(zip(cases["case_id"], cases["available_organs"]))
-    support_of = dict(zip(ref["feature"], ref["support_organs"]))
-
-    # Burden threshold fit on train+val only (leakage control).
+def _fit_numeric_thresholds(cases, wide, numeric_feats):
     fit_ids = cases.loc[cases["split"].isin(["train", "val"]), "case_id"]
-    burden = wide.reindex(fit_ids)["tumor_burden_cm3"].dropna()
-    burden_thr = float(np.quantile(burden, 0.55)) if len(burden) else 0.0
-    thresholds = {**NUMERIC_THRESHOLDS, "tumor_burden_cm3": burden_thr}
+    thr = {}
+    for f in numeric_feats:
+        vals = wide.reindex(fit_ids)[f].dropna() if f in wide.columns else pd.Series(dtype=float)
+        thr[f] = float(np.quantile(vals, 0.55)) if len(vals) else 0.0
+    thr["lesion_multiplicity"] = 2.0  # fixed clinically meaningful cut
+    return thr
+
+
+def build_queries_relevance(cases: pd.DataFrame, ref: pd.DataFrame, seed: int = 2027):
+    rng = np.random.default_rng(seed)
+    wide = ref.pivot_table(index="case_id", columns="feature", values="value")
+    ftype = dict(zip(ref["feature"], ref["feature_type"]))
+    support_of = dict(zip(ref["feature"], ref["support_organs"].fillna("")))
+    numeric_feats = [f for f, t in ftype.items() if t == "numeric"]
+    thresholds = _fit_numeric_thresholds(cases, wide, numeric_feats)
 
     all_ids = cases["case_id"].tolist()
     test_ids = cases.loc[cases["split"].eq("test"), "case_id"].tolist()
@@ -137,7 +181,7 @@ def build_queries_relevance(
         return [s] if s else []
 
     def make_predicate(feat: str, case_id: str) -> dict:
-        if feat in thresholds:
+        if ftype.get(feat) == "numeric":
             return {"feature": feat, "op": ">=", "value": thresholds[feat],
                     "support_organs": support_list(feat)}
         return {"feature": feat, "op": "==", "value": int(wide.at[case_id, feat]),
@@ -150,18 +194,16 @@ def build_queries_relevance(
         v = wide.at[cand_id, feat]
         if pd.isna(v):
             return False
-        if pred["op"] == ">=":
-            return v >= pred["value"]
-        return v == pred["value"]
+        return v >= pred["value"] if pred["op"] == ">=" else v == pred["value"]
 
     query_rows, rel_rows = [], []
     qid = 0
     for qcase in test_ids:
-        organ = organ_of[qcase]
-        # Candidate query features observed for this case.
-        pool = ["has_tumor", "tumor_burden_cm3", "lesion_multiplicity", f"{organ}_tumor_present"]
-        pool = [f for f in pool if f in wide.columns and not pd.isna(wide.at[qcase, f])]
-        if len(pool) < 1:
+        observed = [f for f in wide.columns if not pd.isna(wide.at[qcase, f])]
+        # Discriminative query features: numeric metrics + tumor-presence flags.
+        pool = [f for f in observed
+                if f in numeric_feats or f.endswith("_tumor_present") or f == "has_tumor"]
+        if not pool:
             continue
         n_pick = min(2, len(pool))
         chosen = rng.choice(pool, size=n_pick, replace=False).tolist()
@@ -194,7 +236,7 @@ def build_queries_relevance(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Build OAKG benchmark CSVs from masks.")
-    ap.add_argument("--out", default="data", help="output directory for the 5 CSVs")
+    ap.add_argument("--out", default="data")
     ap.add_argument("--limit", type=int, default=None, help="cap cases per dataset (debug)")
     ap.add_argument("--seed", type=int, default=2027)
     args = ap.parse_args()
@@ -205,6 +247,7 @@ def main() -> None:
     print("Extracting phenotypes from masks...")
     cases, ref, pred = build_phenotype_frames(sources, limit=args.limit)
     print(f"  cases={len(cases)}  ref_rows={len(ref)}  pred_rows={len(pred)}")
+    print("  by dataset:", cases["dataset"].value_counts().to_dict())
 
     print("Building queries and reference relevance...")
     queries, relevance, thresholds = build_queries_relevance(cases, ref, seed=args.seed)
@@ -220,6 +263,7 @@ def main() -> None:
         "n_cases": int(len(cases)),
         "split_counts": cases["split"].value_counts().to_dict(),
         "dataset_counts": cases["dataset"].value_counts().to_dict(),
+        "features": sorted(ref["feature"].unique().tolist()),
         "thresholds": thresholds,
         "seed": args.seed,
     }, indent=2))
