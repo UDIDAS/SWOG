@@ -68,6 +68,20 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   ranking OAKG is competitive-but-not-superior to imputation. Its distinctive
   value is the masked-cosine dominance, the policy ablation, and the semantics
   below — **not** beating a well-behaved imputed cosine.
+- **WL graph kernel is the strongest retriever** (now a first-class method).
+  Cosine over WL embeddings of the masked case-graph significantly beats OAKG
+  (+0.07–0.08) *and* zero-imputation (+0.06–0.14), on both ref and pred tracks
+  (paired, all SIG). A graph representation that structurally *omits* unobserved
+  evidence wins; OAKG's pairwise γ-eligibility adds little on top.
+- **Cross-backbone observability (Table D): +Obs gains are small/mixed.** Adding
+  OAKG eligibility to a backbone helps WL slightly (+0.011–0.014) but *hurts* the
+  phenotype backbone on the ref track (−0.038). Observability-awareness adds
+  little once the representation already drops unobserved evidence.
+- **Hard-distractor stratum — OAKG separates from imputation (promising).** On a
+  targeted stratum (broad queries, narrow relevant cases + broad distractors, so
+  imputed zeros mislead), **OAKG − zero-imputation = +0.185 [0.096, 0.272], SIG**;
+  WL +0.175 SIG; masked cosine collapses. This is the first clean OAKG-vs-
+  imputation separation — prototype only (n=15), to be built out as a proper stratum.
 - **Structured-semantic honesty is real.** OAKG's three-valued reasoning has a
   0.000 unsupported-negative rate: it abstains (U) on unobserved anatomy instead
   of asserting "absent" (closed-world's 0.014), at the cost of a 0.43 indeterminate
@@ -77,13 +91,21 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   tumor-only LiTS have preds); and selective retrieval has *no* range (organ
   overlap is near-universal, so the threshold policy never abstains, AURC≈0).
 
+**Data facts (for composition decisions):** FLARE per-case GT is capped at **100**
+(50 labelsTr + 50 validation; hard ceiling for public labels) and is **tumor-free**
+(FLARE22 = 13 organs, no tumor class). A FLARE tumor model exists but only as
+case-anonymized 2D slice stacks (no slice→patient index) — not usable per-case
+without re-deriving from source volumes. **Disjoint-coverage query–candidate
+pairs = 14,885** (26.2% of 56,721), *all* LiTS⊥Pancreas single-organ; FLARE shares
+all organs so contributes 0 disjoint pairs.
+
 **Direction — where we are headed:**
 
-1. **Fix the upstream-degradation comparison** — restrict to cases with matched
+1. **Build out the hard-distractor stratum** (highest priority) — the first clean
+   OAKG-vs-imputation separation; expand beyond the n=15 prototype (both organs,
+   more queries) for tight CIs and a proper benchmark stratum.
+2. **Fix the upstream-degradation comparison** — restrict to cases with matched
    ref+pred coverage so ref vs pred is apples-to-apples.
-2. **P1 neural baselines** — CompGCN + observed-region CT embeddings, hybrid
-   image–graph retrieval (`run_neural_baselines`); the graph/image structure is
-   where OAKG may separate from vector imputation.
 3. **Full statistical protocol** — 10k paired bootstrap over queries + masking
    seeds for the final tables.
 

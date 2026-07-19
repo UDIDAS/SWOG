@@ -151,3 +151,36 @@ def cross_backbone_gain(
         "n_queries": len(pair),
         f"Delta_obs_{metric}": float(diff.mean()) if len(diff) else np.nan,
     }
+
+
+# Cross-backbone Base -> +Obs method pairs (Section 9, Table D).
+CROSS_BACKBONE_PAIRS = [
+    ("Phenotype", "Zero imputation", "OAKG-product"),
+    ("WL graph", "WL", "WL+Obs"),
+]
+
+
+def cross_backbone_table(
+    results: pd.DataFrame,
+    metric: str = "nDCG@10",
+) -> pd.DataFrame:
+    """Table D: Base vs +Obs per backbone and track (Delta_obs)."""
+    rows = []
+    for track in sorted(results["track"].unique()):
+        sub = results[results["track"] == track]
+        for backbone, base, obs in CROSS_BACKBONE_PAIRS:
+            g = cross_backbone_gain(sub, f"{base} [{track}]", f"{obs} [{track}]", metric)
+            piv = sub.pivot_table(index="query_id", columns="method", values=metric)
+            bm, om = f"{base} [{track}]", f"{obs} [{track}]"
+            if bm not in piv.columns or om not in piv.columns:
+                continue
+            pair = piv[[bm, om]].dropna()
+            rows.append({
+                "backbone": backbone, "track": track,
+                "base_method": base, "obs_method": obs,
+                "base_nDCG@10": float(pair[bm].mean()) if len(pair) else np.nan,
+                "obs_nDCG@10": float(pair[om].mean()) if len(pair) else np.nan,
+                f"Delta_obs_{metric}": g[f"Delta_obs_{metric}"],
+                "n_queries": g["n_queries"],
+            })
+    return pd.DataFrame(rows)

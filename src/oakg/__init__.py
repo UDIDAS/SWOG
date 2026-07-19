@@ -57,11 +57,13 @@ from .graph import case_graph, wl_embeddings, wl_feature_dict
 from .neural import (
     apply_pairwise_observability_filter,
     cross_backbone_gain,
+    cross_backbone_table,
     embedding_scores,
     hybrid_scores,
     load_npz_embeddings,
     select_hybrid_alpha,
 )
+from .benchmark import evaluate_graph_methods
 from .tables import format_metric_ci, publication_table
 from .phenotypes import DatasetSpec, organ_phenotypes, voxel_volume_cm3
 

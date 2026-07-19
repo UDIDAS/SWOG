@@ -20,6 +20,7 @@ from .consistency import ranking_consistency
 from .data import Corpus, ExperimentData, load_data, validate_data
 from .diagnostics import query_diagnostics
 from .masking import apply_mask, build_default_realizations, make_random_mask, make_uniform_mask
+from .neural import cross_backbone_table
 from .selective import selective_curve
 from .semantics import structured_query_evaluation
 from .stats import choose_policy, upstream_degradation
@@ -64,6 +65,9 @@ def run_all(config: Config | None = None) -> PipelineOutputs:
         results[results["masking_regime"].eq("random")], track="ref"
     )
     policy_selection.to_csv(tdir / "ranking_policy_selection.csv", index=False)
+
+    # Section 9 (Table D): cross-backbone observability (Base vs +Obs).
+    cross_backbone_table(results).to_csv(tdir / "cross_backbone_observability.csv", index=False)
 
     # Section 7 (Figure 1): risk-coverage curve.
     curve_real = make_random_mask(data.cases, 0.60, config.seed + 60)
