@@ -77,11 +77,17 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   OAKG eligibility to a backbone helps WL slightly (+0.011–0.014) but *hurts* the
   phenotype backbone on the ref track (−0.038). Observability-awareness adds
   little once the representation already drops unobserved evidence.
-- **Hard-distractor stratum — OAKG separates from imputation (promising).** On a
-  targeted stratum (broad queries, narrow relevant cases + broad distractors, so
-  imputed zeros mislead), **OAKG − zero-imputation = +0.185 [0.096, 0.272], SIG**;
-  WL +0.175 SIG; masked cosine collapses. This is the first clean OAKG-vs-
-  imputation separation — prototype only (n=15), to be built out as a proper stratum.
+- **Hard-distractor stratum — OAKG separates from imputation.** On a stratum where
+  imputed zeros mislead (broad queries, narrow relevant + broad distractors),
+  OAKG − zero-imputation is significant: **+0.185 [0.096, 0.272]** (n=15 prototype),
+  holding at scale **+0.068 [0.028, 0.115]** (41 patient-level queries, ref).
+  Masked cosine collapses. First clean OAKG-vs-imputation separation.
+- **Real-GT FLARE cross-organ tumor stratum — OAKG > imputation (real labels).**
+  Using the actual class-14 tumor GT (merged with organs; slice-level, so
+  evaluation-only and reported as *paired deltas*), on 364 queries with the
+  cross-organ tumor phenotype: **OAKG − zero-imputation = +0.043 [0.019, 0.066],
+  SIG** (WL +0.068 SIG; masked cosine collapses −0.382). Confirms the separation on
+  *real ground-truth* tumor data, not predictions. Build: `oakg.build_tumor_stratum`.
 - **Structured-semantic honesty is real.** OAKG's three-valued reasoning has a
   0.000 unsupported-negative rate: it abstains (U) on unobserved anatomy instead
   of asserting "absent" (closed-world's 0.014), at the cost of a 0.43 indeterminate
@@ -91,13 +97,15 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   tumor-only LiTS have preds); and selective retrieval has *no* range (organ
   overlap is near-universal, so the threshold policy never abstains, AURC≈0).
 
-**Data facts (for composition decisions):** FLARE per-case GT is capped at **100**
-(50 labelsTr + 50 validation; hard ceiling for public labels) and is **tumor-free**
-(FLARE22 = 13 organs, no tumor class). A FLARE tumor model exists but only as
-case-anonymized 2D slice stacks (no slice→patient index) — not usable per-case
-without re-deriving from source volumes. **Disjoint-coverage query–candidate
-pairs = 14,885** (26.2% of 56,721), *all* LiTS⊥Pancreas single-organ; FLARE shares
-all organs so contributes 0 disjoint pairs.
+**Data facts (for composition decisions):** Patient-level FLARE GT is capped at
+**100** (50 labelsTr + 50 validation) and is **tumor-free** (FLARE22 = 13 organs,
+no tumor class). FLARE tumor GT *does* exist (class 14) but only as slice-level
+stacks with patient identity lost — usable as a real-GT **slice-level** stratum
+(above), not merged into the patient-level corpus. Predicted patient-level tumor
+was rejected: autonomous inference is noisy (107 false-positive blobs/case) and
+unmeasurable on FLARE (no GT to score) — real GT was preferred over unvalidatable
+predictions. **Disjoint-coverage query–candidate pairs = 14,885** (26.2% of
+56,721), *all* LiTS⊥Pancreas single-organ; FLARE shares all organs so contributes 0.
 
 **Direction — where we are headed:**
 
