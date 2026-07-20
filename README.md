@@ -115,6 +115,15 @@ unmeasurable on FLARE (no GT to score) — real GT was preferred over unvalidata
 predictions. **Disjoint-coverage query–candidate pairs = 14,885** (26.2% of
 56,721), *all* LiTS⊥Pancreas single-organ; FLARE shares all organs so contributes 0.
 
+**To upgrade tumor to patient-level:** we need per-patient FLARE volumes that carry
+a tumor label alongside the organs — i.e. `case_ct.nii.gz` + `case_seg.nii.gz` with
+labels `0=bg, 1–13 organs, 14=tumor`, patient IDs preserved. The direct source is
+the **FLARE 2023 pan-cancer challenge dataset** (13 organs + pan-cancer tumor,
+per-volume); the local class-14 slice stacks' per-patient source is **not on disk**
+(only the pre-sliced `.npy` remains). Those FLARE23 tumor cases would enter as
+*new* multi-organ+tumor patients (a different set than the 100 organ-only FLARE22
+cases), giving a patient-level cross-organ tumor stratum to replace the slice-level one.
+
 **Direction — where we are headed:**
 
 1. **Build out the hard-distractor stratum** (highest priority) — the first clean

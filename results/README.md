@@ -47,6 +47,8 @@ in the source). It is **evaluation-only** (thresholds frozen from the patient
 benchmark) and reported as **paired deltas** — absolute nDCG runs optimistic due
 to slice correlation, but paired comparisons stay valid. Kept separate from the
 patient-level corpus (`dataset = FLARE_tumor`). Built by `oakg.build_tumor_stratum`.
+To make this patient-level, we would need per-patient FLARE volumes with a tumor
+label (the **FLARE 2023 pan-cancer** dataset; see the main README "Data facts").
 
 ## The one-paragraph takeaway
 
