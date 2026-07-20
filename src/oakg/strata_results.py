@@ -30,7 +30,7 @@ from .neural import embedding_scores
 from .metrics import ndcg_at_k
 from .stats import paired_bootstrap_difference
 
-N_BOOT = 5000
+N_BOOT = 10000  # final study setting (matches pipeline)
 
 
 def _summary(df: pd.DataFrame, ref_method: str = "ZeroImp") -> pd.DataFrame:
