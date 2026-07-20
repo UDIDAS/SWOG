@@ -78,3 +78,6 @@ Thumbs.db
 
 # --- Claude Code local settings ---
 .claude/
+
+# Demo notebook outputs (keep real results/ intact)
+results_demo/
