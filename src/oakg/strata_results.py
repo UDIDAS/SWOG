@@ -20,7 +20,7 @@ import pandas as pd
 
 from .config import Config
 from .data import load_experiment_data, Corpus
-from .masking import make_uniform_mask, apply_mask
+from .masking import make_uniform_mask, make_random_mask, apply_mask
 from .benchmark import candidate_pool
 from .baselines import (zero_imputed_similarity, masked_cosine_similarity,
                         missing_indicator_similarity, mean_imputed_similarity)
@@ -132,14 +132,54 @@ def hard_distractor(out_dir, adversarial: bool):
     print("wrote", name)
 
 
+def backbone_comparison(out_dir, frac: float = 0.40):
+    """All retrieval backbones incl. CompGCN at one masking level (random, ref).
+
+    CompGCN is trained here (needs torch + torch_geometric); skipped gracefully if
+    unavailable. Observed-region CT is a separate 3D pipeline, not included.
+    """
+    cfg, data, corpus, real, X, M, wl = _load("data")  # uses uniform mask; re-mask below
+    real = make_random_mask(data.cases, frac, cfg.seed + int(frac * 100))
+    X, M = apply_mask(corpus.x_ref_full, corpus.m_ref_full, real, corpus)
+    wl_emb, _ = wl_embeddings(X, M, corpus); wl = {c: wl_emb[i] for i, c in enumerate(corpus.case_order)}
+    comp = None
+    try:
+        from .compgcn import compgcn_embeddings
+        split = {r.case_id: r.split for r in data.cases.itertuples(index=False)}
+        train_ids = [c for c in corpus.case_order if split[c] in ("train", "val")]
+        comp = compgcn_embeddings(X, M, corpus, train_ids, dim=32, epochs=200)
+    except Exception as e:
+        print("CompGCN skipped:", type(e).__name__, str(e)[:80])
+    recs = []
+    for q in data.queries.itertuples(index=False):
+        qc = q.query_case_id; cands = candidate_pool(qc, corpus)
+        cidx = np.array([corpus.case_to_row[c] for c in cands]); qidx = corpus.case_to_row[qc]
+        rel = data.relevance[data.relevance.query_id == q.query_id].set_index("candidate_id")
+        g = rel.reindex(cands)["graded_relevance"].fillna(0).to_numpy(float)
+        if g.sum() == 0:
+            continue
+        sc = _score_row(qc, cands, qidx, cidx, g, X, M, real, corpus, wl)
+        if comp is not None:
+            sc["CompGCN"] = embedding_scores(qc, cands, comp)
+        for m, s in sc.items():
+            v = np.isfinite(s)
+            recs.append({"query_id": q.query_id, "method": m,
+                         "nDCG@10": ndcg_at_k(g[v], s[v]) if v.sum() else np.nan})
+    _summary(pd.DataFrame(recs)).to_csv(out_dir / "backbone_comparison.csv", index=False)
+    print("wrote backbone_comparison.csv")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="results/strata")
+    ap.add_argument("--backbones", action="store_true", help="also train+compare CompGCN backbone")
     args = ap.parse_args()
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     hard_distractor(out, adversarial=False)
     hard_distractor(out, adversarial=True)
     tumor_stratum(out)
+    if args.backbones:
+        backbone_comparison(out)
     print("DONE")
 
 

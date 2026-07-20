@@ -40,6 +40,7 @@ ci_high, served_rate, sig` (paired 95% bootstrap).
 | `strata/hard_distractor.csv` | OAKG − ZeroImp **+0.068** [0.028, 0.115] SIG (41 patient-level queries) | On a stratum where imputed zeros mislead, OAKG's support-restriction separates from imputation. WL +0.064 SIG; masked cosine collapses. |
 | `strata/hard_distractor_adversarial.csv` | **OAKG-similarity +0.366** [0.220, 0.512] SIG; OAKG-product/lexicographic tie ZeroImp; threshold abstains | Distractors chosen to fool imputation. **Pure support-restriction (OAKG-similarity) is near-perfect; the γ-weighted policies BACKFIRE** (they down-weight narrow relevant cases). Key policy finding. |
 | `strata/flare_tumor_realgt.csv` | OAKG − ZeroImp **+0.043** [0.019, 0.066] SIG (364 queries) | Same separation on **real ground-truth** FLARE cross-organ tumor data. WL +0.068 SIG. |
+| `strata/backbone_comparison.csv` | WL 0.49 > CompGCN 0.43 ≈ ZeroImp 0.43 ≈ OAKG 0.41 ≫ MaskedCos 0.09 (random 40%, ref) | **CompGCN** (Section 8.2 relational graph encoder, trained here) lands mid-pack — statistically tied with WL/imputation/OAKG. Confirms: graph/vector methods cluster; masked cosine collapses. WL alone significantly beats imputation. **Observed-region CT (Section 8.3) not included** — it needs a 3D CT encoder over 512 volumes (heavier pipeline). |
 
 **Slice-level caveat (tumor stratum only):** `flare_tumor_realgt.csv` is built
 from real class-14 tumor GT, but at **slice granularity** (patient identity lost
