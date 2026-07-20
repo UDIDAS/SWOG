@@ -1,0 +1,7 @@
+method,nDCG@10,delta_vs_ZeroImp,ci_low,ci_high,served_rate,sig
+OAKG,0.9419,0.0677,0.0283,0.1146,1.0,SIG
+WL,0.9383,0.0641,0.0307,0.1053,1.0,SIG
+MissInd,0.8741,0.0,0.0,0.0,1.0,ns
+ZeroImp,0.8741,0.0,0.0,0.0,1.0,
+MeanImp,0.8426,-0.0315,-0.063,-0.0046,1.0,SIG
+MaskedCos,0.5298,-0.3443,-0.4269,-0.2592,1.0,SIG

@@ -38,18 +38,26 @@ embeddings/*
 *.pkl
 *.joblib
 
-# --- Experiment outputs (regenerable from notebook + configs) ---
-# Ignore contents of results/ (and subdirs) but keep scaffolding.
-results/**
+# --- Experiment outputs ---
 *.csv
 *.png
 *.jpg
 *.jpeg
 *.svg
+# Large raw per-query dumps: regenerable, kept out of git (multi-MB).
+results/query_level/
 
 # Keep only the .gitkeep scaffolding (NOT a blanket directory un-ignore, which
 # would leak files from fully-ignored dirs like data/ and docs/).
 !**/.gitkeep
+
+# Track the small, reviewable results so the team can see them on GitHub
+# (overrides the *.csv / *.png ignores above; all < ~150 KB).
+!results/README.md
+!results/config.json
+!results/tables/*.csv
+!results/figures/*.png
+!results/strata/*.csv
 
 # --- Python ---
 __pycache__/

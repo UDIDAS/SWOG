@@ -82,6 +82,14 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   OAKG − zero-imputation is significant: **+0.185 [0.096, 0.272]** (n=15 prototype),
   holding at scale **+0.068 [0.028, 0.115]** (41 patient-level queries, ref).
   Masked cosine collapses. First clean OAKG-vs-imputation separation.
+- **Policy finding — support-restriction wins, γ-weighting backfires.** On the
+  *adversarial* hard-distractor (distractors chosen to fool imputation),
+  **OAKG-similarity = 1.000 → +0.366 [0.220, 0.512] vs zero-imp, SIG** (perfect
+  discrimination), but **OAKG-product/lexicographic tie zero-imp** and threshold
+  *abstains*. The γ term down-weights narrow-coverage relevant cases — exactly the
+  ones that should rank high. **Primary policy should be OAKG-similarity** (pure
+  support-restriction); γ-product is an ablation that helps only on the broad
+  multi-organ benchmark. See `results/strata/hard_distractor_adversarial.csv`.
 - **Real-GT FLARE cross-organ tumor stratum — OAKG > imputation (real labels).**
   Using the actual class-14 tumor GT (merged with organs; slice-level, so
   evaluation-only and reported as *paired deltas*), on 364 queries with the
