@@ -124,6 +124,14 @@ per-volume); the local class-14 slice stacks' per-patient source is **not on dis
 *new* multi-organ+tumor patients (a different set than the 100 organ-only FLARE22
 cases), giving a patient-level cross-organ tumor stratum to replace the slice-level one.
 
+*Fetching FLARE23:* it is **not** on Google Drive (checked — only the slice-level
+`class_*.npy` is) and has **no open HuggingFace/Zenodo mirror**. The only source is
+the challenge platform, which requires **registration with real name/affiliation**:
+CodaLab `competitions/12239` (MICCAI FLARE 2023). After registering and accepting
+the data-use agreement, download the labeled training set and point
+`oakg.build_benchmark` at the per-volume masks (organs 1–13 + tumor 14). Note:
+`/scratch` currently has ~116 GB free, so fetch the labeled subset, not all 4000 cases.
+
 **Direction — where we are headed:**
 
 1. **Build out the hard-distractor stratum** (highest priority) — the first clean
@@ -160,7 +168,13 @@ pip install -r requirements.txt        # or: pip install -e .
 
 ## Reproducing every table and figure
 
-**Notebook:** open [`notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb`](notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb)
+**Tutorial (start here):** [`notebooks/OAKG_Tutorial_Walkthrough.ipynb`](notebooks/OAKG_Tutorial_Walkthrough.ipynb)
+is an interactive, meeting-ready walkthrough of the whole pipeline — input masks →
+phenotypes → MMKG schema → masking → OAKG scoring → evaluation → findings — with
+the design decisions that make up the novel contribution. Runs on demo data, so it
+executes anywhere.
+
+**Notebook (driver):** open [`notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb`](notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb)
 and run all cells.
 
 **Command line:**
