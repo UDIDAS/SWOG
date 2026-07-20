@@ -24,11 +24,9 @@ this snapshot. Current benchmark: **512 patient-level cases** (281 Pancreas +
 | `tables/ranking_consistency.csv` | **Table E** | Full-to-partial ranking consistency: Kendall τ, Spearman ρ, top-10 overlap (per track) |
 | `tables/structured_query_summary.csv` | **Table F** | Closed / open / OAKG three-valued semantics: T/F/U precision-recall-F1, macro-F1, indeterminate & unsupported-negative rates |
 | `figures/risk_coverage_curve.png` + `tables/risk_coverage_curve.csv` | **Figure 1** | Selective risk vs served-query coverage; AURC |
+| `figures/masking_stress.png` | **Figure 2** | nDCG@10 vs missing-coverage level (20/40/60/80%) for key methods, ref track |
 | `tables/upstream_degradation.csv` | Section 3 | ref−pred degradation (Δ_upstream) per method/metric/masking |
 | `tables/query_diagnostics.csv` | Section 11.1 | Per-query pool size, #relevant, prevalence, zero-relevant flags |
-
-**Figure 2 (masking stress: nDCG vs missing-coverage level)** — derivable from
-`retrieval_summary.csv` (random regime, by `missing_fraction`); plot pending.
 
 ## Supplementary strata (`strata/`) — the OAKG-vs-imputation story
 

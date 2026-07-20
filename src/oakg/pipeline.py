@@ -101,7 +101,33 @@ def run_all(config: Config | None = None) -> PipelineOutputs:
         tdir / "publication_ready_retrieval_table.csv", index=False
     )
 
+    # Figure 2: masking-stress — nDCG@10 vs missing-coverage level, key methods.
+    _plot_masking_stress(results, fdir / "masking_stress.png")
+
     return PipelineOutputs(data, corpus, results, summary, policy_selection)
+
+
+def _plot_masking_stress(results: pd.DataFrame, path) -> None:
+    """nDCG@10 vs random-masking missing fraction for key methods (ref track)."""
+    sub = results[(results.track == "ref") & (results.masking_regime == "random")].copy()
+    if sub.empty:
+        return
+    sub["missing"] = sub["mask_metadata"].apply(lambda m: json.loads(m).get("missing_fraction"))
+    methods = ["OAKG-similarity [ref]", "OAKG-product [ref]", "WL [ref]",
+               "Zero imputation [ref]", "Masked cosine [ref]"]
+    plt.figure(figsize=(6.5, 4.2))
+    for m in methods:
+        d = (sub[sub.method == m].groupby("missing")["nDCG@10"].mean().dropna())
+        if len(d):
+            plt.plot(d.index * 100, d.values, marker="o", label=m.replace(" [ref]", ""))
+    plt.xlabel("Missing anatomical coverage (%)")
+    plt.ylabel("nDCG@10")
+    plt.title("Masking stress (ref track)")
+    plt.grid(True, alpha=0.3)
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(path, dpi=150)
+    plt.close()
 
 
 def _consistency(x_full, m_full, full_real, part_real, track, data, corpus):
