@@ -81,3 +81,23 @@ Dataset-style & 0.361 & 0.249 & $\mathbf{+0.112}$ \\
 | `union_ablation_config.json` | policy, seeds, query convention, bins |
 
 `seed` indexes the masking realization within a regime (fraction / style / direction).
+
+## Supplementary — similarity policy (NOT the primary; documented for transparency)
+
+Files in `similarity_policy/`. We ran the same ablation under the `similarity`
+policy (rank by S only, no γ). **It is not a valid control here:** without γ, OAKG
+sends disjoint cross-dataset pairs to the bottom while OAKG-Union scores them via
+global features, so the two diverge even under uniform — the **negative control
+fails** (Δ = −0.158). Results (Δ_obs = OAKG − OAKG-Union):
+
+| Regime | OAKG | OAKG-Union | Δ_obs |
+|---|---|---|---|
+| uniform | 0.240 | 0.398 | −0.158 (control fails) |
+| asymmetric | 0.406 | 0.351 | +0.055 |
+| dataset-style | 0.322 | 0.248 | +0.073 |
+| random | 0.318 | 0.411 | −0.093 |
+| hard-distractor | 0.369 | 0.942 | −0.573 |
+
+Because the negative control fails under `similarity`, the **lexicographic**
+(validation-selected) policy above is the one used for the paper. This table is
+supplementary evidence for that choice, not a result table.

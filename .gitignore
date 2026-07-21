@@ -64,6 +64,8 @@ results/query_level/
 !results/union_ablation/*.csv
 !results/union_ablation/*.md
 !results/union_ablation/*.json
+!results/union_ablation/similarity_policy/*.csv
+!results/union_ablation/similarity_policy/*.json
 
 # --- Python ---
 __pycache__/
