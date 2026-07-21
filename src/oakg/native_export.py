@@ -1,6 +1,6 @@
 """Export native (unmasked) candidate-level scores for the cross-dataset analysis.
 
-Produces the four input CSVs the PI's oakg_benchmark.native_cross_dataset package
+Produces the four input CSVs the provided oakg_benchmark.native_cross_dataset package
 expects (cases, queries, relevance, scores), using the ORIGINAL annotation scopes
 (no additional masking) for 5 methods: OAKG, OAKG-Union, ZeroImputation,
 MissingnessIndicators, WL.

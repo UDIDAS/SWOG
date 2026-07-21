@@ -16,7 +16,7 @@ absent. Same-source is the built-in negative control (matched scope → OAKG=Uni
 ```bash
 # 1. export native candidate-level scores from OUR benchmark (this repo)
 PYTHONPATH=src python -m oakg.native_export --out results/native_inputs
-# 2. run the PI's analysis package (docs/OAKG_Native_Cross_Dataset_Analysis.zip)
+# 2. run the provided analysis package (docs/OAKG_Native_Cross_Dataset_Analysis.zip)
 PYTHONPATH=<pkg>/src python <pkg>/scripts/run_native_cross_dataset_analysis.py \
   --cases results/native_inputs/native_cases.csv \
   --queries results/native_inputs/native_queries.csv \
@@ -70,6 +70,6 @@ in beating imputation on raw cross-source nDCG.
 (incomparable counts/rates), `native_query_eligibility.csv` / `native_query_coverage.csv`
 / `native_query_level_metrics.csv`, and `native_*_table.tex` (paper-ready).
 
-Analysis code: the PI's `oakg_benchmark` package (docs/OAKG_Native_Cross_Dataset_Analysis.zip).
+Analysis code: the provided `oakg_benchmark` package (docs/OAKG_Native_Cross_Dataset_Analysis.zip).
 Score export: `src/oakg/native_export.py` (this repo). Inputs regenerate to
 `results/native_inputs/` (git-ignored; 12 MB scores).

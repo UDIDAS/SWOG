@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -22,8 +23,12 @@ import pandas as pd
 
 from .phenotypes import DatasetSpec, organ_phenotypes
 
-ACM = Path("/scratch/ud3d4/acm_data/ssl_handoff_ours")
-FLARE_ROOT = Path("/scratch/ud3d4/acm_data/FLARE_Task2")
+# Roots for the raw segmentation masks (not distributed with the repo). Override
+# with the OAKG_MASK_ROOT / OAKG_FLARE_ROOT environment variables to point at your
+# local copy of the ssl-handoff and FLARE_Task2 deliveries.
+_MASK_ROOT = Path(os.environ.get("OAKG_MASK_ROOT", "data_sources/ssl_handoff"))
+ACM = _MASK_ROOT
+FLARE_ROOT = Path(os.environ.get("OAKG_FLARE_ROOT", "data_sources/FLARE_Task2"))
 FLARE_SAM = FLARE_ROOT / "sam3_delivery"
 FLARE_ORGANS = ("liver", "pancreas", "spleen", "left_kidney", "right_kidney")
 # Validated against per-organ GT (Dice=1.000): FLARE22 multi-label integers.

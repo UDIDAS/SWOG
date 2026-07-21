@@ -27,7 +27,10 @@ import pandas as pd
 
 from .build_benchmark import build_queries_relevance
 
-DEFAULT_SRC = "/home/ud3d4/Desktop/SWOG/JBI_submission/results/flare_multiorgan_cases.json"
+import os
+# Path to the class-14 tumor-GT merge (produced upstream; not distributed with the
+# repo). Override with the OAKG_TUMOR_SRC environment variable.
+DEFAULT_SRC = os.environ.get("OAKG_TUMOR_SRC", "data_sources/flare_multiorgan_cases.json")
 ORGANS = ["liver", "right_kidney", "spleen", "pancreas", "left_kidney"]
 
 

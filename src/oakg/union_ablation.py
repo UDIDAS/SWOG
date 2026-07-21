@@ -13,7 +13,7 @@ masks, seeds, gamma) EXCEPT the treatment of one-sided anatomy:
 gamma is always computed from the ORIGINAL (masked) observation scopes for both
 methods. Component similarity, weights, and the ranking policy are our existing
 ones (group-mean of numeric + categorical components). Statistics (query-cluster
-+ seed bootstrap, sign-flip p, Holm) follow the PI's reference module.
++ seed bootstrap, sign-flip p, Holm) follow the provided reference module.
 
 Run:  PYTHONPATH=src python -m oakg.union_ablation --policy lexicographic --n-boot 10000
 """
@@ -179,7 +179,7 @@ def _hard_distractor_rows(data, corpus, config, nm, ranges, policy):
 
 
 # --------------------------------------------------------------------------
-# Statistics (ported from the PI reference module)
+# Statistics (ported from the reference module)
 # --------------------------------------------------------------------------
 def summarize_methods(ql: pd.DataFrame, n_boot=10000, seed=2027) -> pd.DataFrame:
     valid = ql.dropna(subset=["nDCG@10"]); rng = np.random.default_rng(seed); out = []
