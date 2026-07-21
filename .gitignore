@@ -66,6 +66,10 @@ results/query_level/
 !results/union_ablation/*.json
 !results/union_ablation/similarity_policy/*.csv
 !results/union_ablation/similarity_policy/*.json
+!results/native_cross_dataset/*.csv
+!results/native_cross_dataset/*.md
+!results/native_cross_dataset/*.tex
+# native_inputs/ (12 MB scores) stays ignored — regenerable via oakg.native_export
 
 # --- Python ---
 __pycache__/
