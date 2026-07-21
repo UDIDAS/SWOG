@@ -8,11 +8,11 @@
     "left_kidney",
     "right_kidney"
   ],
-  "use_demo_data": true,
+  "use_demo_data": false,
   "n_demo_cases": 120,
   "run_wl_baseline": true,
   "run_neural_baselines": false,
-  "n_bootstrap": 500,
+  "n_bootstrap": 10000,
   "data_dir": "data",
   "results_dir": "results",
   "embeddings_dir": "embeddings"
