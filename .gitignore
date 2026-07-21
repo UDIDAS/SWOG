@@ -93,3 +93,7 @@ Thumbs.db
 
 # Demo notebook outputs (keep real results/ intact)
 results_demo/
+
+# local scaffolding (kept off GitHub)
+checkpoints/
+embeddings/
