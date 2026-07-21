@@ -1,6 +1,6 @@
 # OAKG real-benchmark configuration (pancreas + LiTS, 412 paired cases).
-# Build the CSVs first:  PYTHONPATH=src python -m oakg.build_benchmark --out data
-# Then run:              PYTHONPATH=src python -m oakg.pipeline   (with use_demo_data false)
+# Build the CSVs first:  python -m oakg.build_benchmark --out data
+# Then run:              python -m oakg.pipeline   (with use_demo_data false)
 
 seed: 2027
 top_k: 10

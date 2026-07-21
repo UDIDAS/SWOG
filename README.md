@@ -153,17 +153,16 @@ the data-use agreement, download the labeled training set and point
 ## Repository layout
 
 ```
-configs/        experiment configuration (YAML); mirrors src/oakg/config.py
-data_schema/    schema notes for the five benchmark tables (see below)
+oakg/           the package: all experiment logic lives here
+configs/        experiment configuration (YAML); mirrors oakg/config.py
 notebooks/      thin driver notebook — imports oakg, reproduces all outputs
-src/oakg/       the package: all experiment logic lives here
+results/        query_level/, tables/, figures/ deliverables [partly git-ignored]
 embeddings/     precomputed CompGCN/CT embeddings (.npz)   [git-ignored]
-results/        query_level/, tables/, figures/ deliverables [git-ignored]
 checkpoints/    model checkpoints                            [git-ignored]
 docs/           guidelines / manuscript                      [git-ignored]
 ```
 
-Only code (`src/`, `notebooks/`) and text configs are version-controlled. Data,
+Only code (`oakg/`, `notebooks/`) and text configs are version-controlled. Data,
 embeddings, results, checkpoints, and documents (PDF/Word) are git-ignored.
 
 ## Environment
@@ -188,7 +187,7 @@ and run all cells.
 **Command line:**
 
 ```bash
-PYTHONPATH=src python -m oakg.pipeline
+python -m oakg.pipeline
 ```
 
 Both drive `oakg.pipeline.run_all(config)`, which writes to `results/`:
@@ -229,8 +228,8 @@ masks define relevance and the `ref` track; predicted masks define the
 end-to-end `pred` track.
 
 ```bash
-PYTHONPATH=src python -m oakg.build_benchmark --out data          # full
-PYTHONPATH=src python -m oakg.build_benchmark --out data --limit 8  # quick debug
+python -m oakg.build_benchmark --out data          # full
+python -m oakg.build_benchmark --out data --limit 8  # quick debug
 ```
 
 Phenotypes (`oakg.phenotypes`): organ presence/volume, tumor presence, tumor

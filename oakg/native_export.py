@@ -14,7 +14,7 @@ MissingnessIndicators, WL.
 
 Same-source pairs have matched scope so OAKG == OAKG-Union (built-in neg. control).
 
-Run:  PYTHONPATH=src python -m oakg.native_export --out results/native_inputs
+Run:  python -m oakg.native_export --out results/native_inputs
 """
 from __future__ import annotations
 

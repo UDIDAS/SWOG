@@ -11,7 +11,7 @@ ranking policy, queries, candidates, relevance, masks, seeds, γ).
   similarity is always returned.
 
 γ is computed from the **original (masked) observation scopes** for both methods.
-Implementation: `src/oakg/union_ablation.py` (adds `support_mode` + one-sided
+Implementation: `oakg/union_ablation.py` (adds `support_mode` + one-sided
 completion to our existing group-mean similarity — *not* the reference module's
 simplified similarity).
 
@@ -28,7 +28,7 @@ simplified similarity).
 ## Reproduce
 
 ```bash
-PYTHONPATH=src python -m oakg.union_ablation --policy lexicographic --n-boot 10000
+python -m oakg.union_ablation --policy lexicographic --n-boot 10000
 ```
 
 - **Ranking policy:** `lexicographic` — the **validation-selected** policy

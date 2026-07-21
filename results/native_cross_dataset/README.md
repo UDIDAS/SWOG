@@ -20,7 +20,7 @@ See `results/union_ablation/README.md` for the full distinction.
 
 ```bash
 # 1. export native candidate-level scores from OUR benchmark (this repo)
-PYTHONPATH=src python -m oakg.native_export --out results/native_inputs
+python -m oakg.native_export --out results/native_inputs
 # 2. run the provided analysis package (docs/OAKG_Native_Cross_Dataset_Analysis.zip)
 PYTHONPATH=<pkg>/src python <pkg>/scripts/run_native_cross_dataset_analysis.py \
   --cases results/native_inputs/native_cases.csv \
@@ -76,5 +76,5 @@ in beating imputation on raw cross-source nDCG.
 / `native_query_level_metrics.csv`, and `native_*_table.tex` (paper-ready).
 
 Analysis code: the provided `oakg_benchmark` package (docs/OAKG_Native_Cross_Dataset_Analysis.zip).
-Score export: `src/oakg/native_export.py` (this repo). Inputs regenerate to
+Score export: `oakg/native_export.py` (this repo). Inputs regenerate to
 `results/native_inputs/` (git-ignored; 12 MB scores).

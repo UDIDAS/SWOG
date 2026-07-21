@@ -5,8 +5,8 @@ raw per-query dumps under `query_level/` are git-ignored (regenerable, multi-MB)
 Everything here regenerates from `data/` via:
 
 ```bash
-PYTHONPATH=src python -m oakg.pipeline            # tables/ + figures/ + config.json
-PYTHONPATH=src python -m oakg.strata_results      # strata/
+python -m oakg.pipeline            # tables/ + figures/ + config.json
+python -m oakg.strata_results      # strata/
 ```
 
 `config.json` records the exact settings (seed, bootstrap count, paths) behind
@@ -66,9 +66,9 @@ and **runnable by anyone**:
 | `qualitative/imputation_vs_oakg.md` / `.csv` | **Where zero-imputation fails** — side-by-side on hard-distractor queries: imputation's top-5 vs OAKG's, ✓/✗ |
 
 ```bash
-PYTHONPATH=src python -m oakg.qualitative              # regenerate from queries.json
-PYTHONPATH=src python -m oakg.qualitative --queries my_queries.json
-PYTHONPATH=src python -m oakg.qualitative --contrast   # + the imputation-vs-OAKG contrast
+python -m oakg.qualitative              # regenerate from queries.json
+python -m oakg.qualitative --queries my_queries.json
+python -m oakg.qualitative --contrast   # + the imputation-vs-OAKG contrast
 ```
 
 Content-based retrieval (rank all cases by OAKG-product similarity to an anchor

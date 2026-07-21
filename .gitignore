@@ -97,3 +97,4 @@ results_demo/
 # local scaffolding (kept off GitHub)
 checkpoints/
 embeddings/
+data_schema/

@@ -4,8 +4,8 @@ Produces a small, GitHub-friendly artifact under results/qualitative/ so the tea
 can (a) view the example queries and their retrievals, and (b) run their own:
 edit results/qualitative/queries.json (or pass --queries) and re-run.
 
-    PYTHONPATH=src python -m oakg.qualitative            # default queries
-    PYTHONPATH=src python -m oakg.qualitative --queries my_queries.json
+    python -m oakg.qualitative            # default queries
+    python -m oakg.qualitative --queries my_queries.json
 
 Retrieval is content-based (rank all cases by OAKG-product similarity to a
 representative anchor case that satisfies the query); relevance is graded by how
@@ -131,7 +131,7 @@ def _write_markdown(df: pd.DataFrame, path: Path):
           "fraction matched. Regenerate / add your own queries:",
           "",
           "```bash",
-          "PYTHONPATH=src python -m oakg.qualitative        # edit results/qualitative/queries.json first",
+          "python -m oakg.qualitative        # edit results/qualitative/queries.json first",
           "```",
           "",
           f"Mean conditions-matched@5 = **{(df['conditions_matched']/df['n_conditions']).mean():.2f}**.",

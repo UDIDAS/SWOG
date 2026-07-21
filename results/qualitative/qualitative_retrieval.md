@@ -5,7 +5,7 @@ top-5 for each multi-condition query. ✓ = matches **all** conditions, else the
 fraction matched. Regenerate / add your own queries:
 
 ```bash
-PYTHONPATH=src python -m oakg.qualitative        # edit results/qualitative/queries.json first
+python -m oakg.qualitative        # edit results/qualitative/queries.json first
 ```
 
 Mean conditions-matched@5 = **0.86**.

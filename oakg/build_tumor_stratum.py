@@ -13,7 +13,7 @@ Methodological handling (the right way):
     faces the identical pool so paired comparisons remain valid.
   - Kept SEPARATE from the patient-level corpus (dataset name "FLARE_tumor").
 
-Run:  PYTHONPATH=src python -m oakg.build_tumor_stratum --out data_tumor
+Run:  python -m oakg.build_tumor_stratum --out data_tumor
 """
 from __future__ import annotations
 

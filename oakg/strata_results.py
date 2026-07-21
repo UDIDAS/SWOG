@@ -6,7 +6,7 @@ zero-imputation with 95% CI) for:
   - hard_distractor_adversarial.csv: adversarial construction, all OAKG policies
   - flare_tumor_realgt.csv         : real-GT FLARE cross-organ tumor stratum
 
-Run:  PYTHONPATH=src python -m oakg.strata_results --out results/strata
+Run:  python -m oakg.strata_results --out results/strata
 Requires the patient-level benchmark in data/ and (for the tumor table) the
 tumor stratum in data_tumor/ (see oakg.build_tumor_stratum).
 """

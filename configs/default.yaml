@@ -1,5 +1,5 @@
 # OAKG default experiment configuration.
-# Mirrors src/oakg/config.py::Config. Every threshold/seed/path fixed here so
+# Mirrors oakg/config.py::Config. Every threshold/seed/path fixed here so
 # results are reproducible. Switch use_demo_data to false and populate data/
 # with the five benchmark CSVs to run on the real FLARE benchmark.
 

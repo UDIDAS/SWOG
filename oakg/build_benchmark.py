@@ -8,7 +8,7 @@ datasets, so the shared-evidence coefficient gamma becomes non-degenerate and
 cross-organ retrieval is possible. Reference (GT) masks populate the ref track
 and define relevance; predicted masks populate the end-to-end pred track.
 
-Run:  PYTHONPATH=src python -m oakg.build_benchmark --out data [--limit N]
+Run:  python -m oakg.build_benchmark --out data [--limit N]
 """
 from __future__ import annotations
 

@@ -15,7 +15,7 @@ methods. Component similarity, weights, and the ranking policy are our existing
 ones (group-mean of numeric + categorical components). Statistics (query-cluster
 + seed bootstrap, sign-flip p, Holm) follow the provided reference module.
 
-Run:  PYTHONPATH=src python -m oakg.union_ablation --policy lexicographic --n-boot 10000
+Run:  python -m oakg.union_ablation --policy lexicographic --n-boot 10000
 """
 from __future__ import annotations
 
