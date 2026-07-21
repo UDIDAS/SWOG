@@ -58,6 +58,9 @@ results/query_level/
 !results/tables/*.csv
 !results/figures/*.png
 !results/strata/*.csv
+!results/qualitative/*.csv
+!results/qualitative/*.md
+!results/qualitative/*.json
 
 # --- Python ---
 __pycache__/

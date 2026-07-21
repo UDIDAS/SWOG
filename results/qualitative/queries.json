@@ -1,0 +1,180 @@
+[
+  {
+    "id": "Q1",
+    "need": "Pancreatic tumour, contained, in a large pancreas",
+    "conditions": [
+      {
+        "feature": "pancreas_tumor_present",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "pancreas_tumor_containment",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "pancreas_volume_cm3",
+        "op": ">=",
+        "value": 85
+      }
+    ]
+  },
+  {
+    "id": "Q2",
+    "need": "Liver tumour, multifocal, high tumour burden",
+    "conditions": [
+      {
+        "feature": "liver_tumor_present",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "lesion_multiplicity",
+        "op": ">=",
+        "value": 2
+      },
+      {
+        "feature": "tumor_burden_cm3",
+        "op": ">=",
+        "value": 6
+      }
+    ]
+  },
+  {
+    "id": "Q3",
+    "need": "Multi-organ: large spleen & liver, sizeable kidneys",
+    "conditions": [
+      {
+        "feature": "spleen_volume_cm3",
+        "op": ">=",
+        "value": 245
+      },
+      {
+        "feature": "liver_volume_cm3",
+        "op": ">=",
+        "value": 1152
+      },
+      {
+        "feature": "left_kidney_volume_cm3",
+        "op": ">=",
+        "value": 198
+      },
+      {
+        "feature": "right_kidney_volume_cm3",
+        "op": ">=",
+        "value": 198
+      }
+    ]
+  },
+  {
+    "id": "Q4",
+    "need": "Multi-organ: sizeable pancreas with balanced kidneys & spleen",
+    "conditions": [
+      {
+        "feature": "pancreas_volume_cm3",
+        "op": ">=",
+        "value": 85
+      },
+      {
+        "feature": "left_kidney_volume_cm3",
+        "op": ">=",
+        "value": 198
+      },
+      {
+        "feature": "right_kidney_volume_cm3",
+        "op": ">=",
+        "value": 198
+      },
+      {
+        "feature": "spleen_volume_cm3",
+        "op": ">=",
+        "value": 197
+      }
+    ]
+  },
+  {
+    "id": "Q5",
+    "need": "Any tumour, multifocal, above-median burden",
+    "conditions": [
+      {
+        "feature": "has_tumor",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "lesion_multiplicity",
+        "op": ">=",
+        "value": 2
+      },
+      {
+        "feature": "tumor_burden_cm3",
+        "op": ">=",
+        "value": 5
+      }
+    ]
+  },
+  {
+    "id": "Q6",
+    "need": "Pancreatic tumour, contained, low burden (early-stage)",
+    "conditions": [
+      {
+        "feature": "pancreas_tumor_present",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "pancreas_tumor_containment",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "tumor_burden_cm3",
+        "op": "<=",
+        "value": 5
+      }
+    ]
+  },
+  {
+    "id": "Q7",
+    "need": "Liver tumour, solitary lesion, above-median liver volume",
+    "conditions": [
+      {
+        "feature": "liver_tumor_present",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "lesion_multiplicity",
+        "op": "<=",
+        "value": 1
+      },
+      {
+        "feature": "liver_volume_cm3",
+        "op": ">=",
+        "value": 1002
+      }
+    ]
+  },
+  {
+    "id": "Q8",
+    "need": "Multi-organ with a pancreatic tumour present (cross-source)",
+    "conditions": [
+      {
+        "feature": "pancreas_present",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "pancreas_tumor_present",
+        "op": "==",
+        "value": 1
+      },
+      {
+        "feature": "pancreas_volume_cm3",
+        "op": ">=",
+        "value": 70
+      }
+    ]
+  }
+]

@@ -51,6 +51,26 @@ patient-level corpus (`dataset = FLARE_tumor`). Built by `oakg.build_tumor_strat
 To make this patient-level, we would need per-patient FLARE volumes with a tumor
 label (the **FLARE 2023 pan-cancer** dataset; see the main README "Data facts").
 
+## Qualitative retrieval examples (`qualitative/`)
+
+Complex multi-condition queries and OAKG's top-5 retrievals — browseable on GitHub
+and **runnable by anyone**:
+
+| File | What it is |
+|------|-----------|
+| `qualitative/qualitative_retrieval.md` | Human-readable table: each query → OAKG top-5 (✓ = all conditions matched) |
+| `qualitative/qualitative_retrieval.csv` | Same, with per-candidate matched-condition counts and the actual phenotype values |
+| `qualitative/queries.json` | The query definitions — **edit this to try your own**, then re-run |
+
+```bash
+PYTHONPATH=src python -m oakg.qualitative              # regenerate from queries.json
+PYTHONPATH=src python -m oakg.qualitative --queries my_queries.json
+```
+
+Content-based retrieval (rank all cases by OAKG-product similarity to an anchor
+case that satisfies the query); relevance graded by conditions matched. Current
+set: 8 queries, mean conditions-matched@5 = 0.86.
+
 ## The one-paragraph takeaway
 
 OAKG's **support-restriction** is the mechanism that matters: it beats masked

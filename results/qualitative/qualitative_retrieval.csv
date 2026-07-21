@@ -1,0 +1,41 @@
+query_id,need,n_conditions,anchor,rank,candidate,dataset,gamma,conditions_matched,query_feature_values
+Q1,"Pancreatic tumour, contained, in a large pancreas",3,pancreas_004,1,pancreas_124,Pancreas,1.0,3,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; pancreas_volume_cm3=102.0
+Q1,"Pancreatic tumour, contained, in a large pancreas",3,pancreas_004,2,pancreas_070,Pancreas,1.0,3,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; pancreas_volume_cm3=93.7
+Q1,"Pancreatic tumour, contained, in a large pancreas",3,pancreas_004,3,pancreas_364,Pancreas,1.0,3,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; pancreas_volume_cm3=95.0
+Q1,"Pancreatic tumour, contained, in a large pancreas",3,pancreas_004,4,pancreas_293,Pancreas,1.0,3,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; pancreas_volume_cm3=98.9
+Q1,"Pancreatic tumour, contained, in a large pancreas",3,pancreas_004,5,pancreas_102,Pancreas,1.0,3,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; pancreas_volume_cm3=99.5
+Q2,"Liver tumour, multifocal, high tumour burden",3,LiTs-004,1,LiTs-100,LiTS,1.0,3,liver_tumor_present=1.0; lesion_multiplicity=11.0; tumor_burden_cm3=395.5
+Q2,"Liver tumour, multifocal, high tumour burden",3,LiTs-004,2,LiTs-130,LiTS,1.0,3,liver_tumor_present=1.0; lesion_multiplicity=23.0; tumor_burden_cm3=346.2
+Q2,"Liver tumour, multifocal, high tumour burden",3,LiTs-004,3,LiTs-116,LiTS,1.0,2,liver_tumor_present=1.0; lesion_multiplicity=1.0; tumor_burden_cm3=154.2
+Q2,"Liver tumour, multifocal, high tumour burden",3,LiTs-004,4,LiTs-097,LiTS,1.0,3,liver_tumor_present=1.0; lesion_multiplicity=12.0; tumor_burden_cm3=186.6
+Q2,"Liver tumour, multifocal, high tumour burden",3,LiTs-004,5,LiTs-016,LiTS,1.0,3,liver_tumor_present=1.0; lesion_multiplicity=9.0; tumor_burden_cm3=96.4
+Q3,"Multi-organ: large spleen & liver, sizeable kidneys",4,FLARE22_Tr_0002,1,FLARETs_0013,FLARE,1.0,4,spleen_volume_cm3=264.9; liver_volume_cm3=1625.9; left_kidney_volume_cm3=230.7; right_kidney_volume_cm3=273.7
+Q3,"Multi-organ: large spleen & liver, sizeable kidneys",4,FLARE22_Tr_0002,2,FLARE22_Tr_0044,FLARE,1.0,4,spleen_volume_cm3=254.1; liver_volume_cm3=2206.1; left_kidney_volume_cm3=226.9; right_kidney_volume_cm3=248.8
+Q3,"Multi-organ: large spleen & liver, sizeable kidneys",4,FLARE22_Tr_0002,3,FLARETs_0048,FLARE,1.0,4,spleen_volume_cm3=268.3; liver_volume_cm3=1961.8; left_kidney_volume_cm3=233.3; right_kidney_volume_cm3=214.9
+Q3,"Multi-organ: large spleen & liver, sizeable kidneys",4,FLARE22_Tr_0002,4,FLARE22_Tr_0017,FLARE,1.0,4,spleen_volume_cm3=291.6; liver_volume_cm3=1976.0; left_kidney_volume_cm3=260.2; right_kidney_volume_cm3=259.6
+Q3,"Multi-organ: large spleen & liver, sizeable kidneys",4,FLARE22_Tr_0002,5,FLARE22_Tr_0018,FLARE,1.0,3,spleen_volume_cm3=159.9; liver_volume_cm3=1840.3; left_kidney_volume_cm3=242.7; right_kidney_volume_cm3=231.3
+Q4,Multi-organ: sizeable pancreas with balanced kidneys & spleen,4,FLARE22_Tr_0002,1,FLARETs_0013,FLARE,1.0,4,pancreas_volume_cm3=122.1; left_kidney_volume_cm3=230.7; right_kidney_volume_cm3=273.7; spleen_volume_cm3=264.9
+Q4,Multi-organ: sizeable pancreas with balanced kidneys & spleen,4,FLARE22_Tr_0002,2,FLARE22_Tr_0044,FLARE,1.0,4,pancreas_volume_cm3=122.6; left_kidney_volume_cm3=226.9; right_kidney_volume_cm3=248.8; spleen_volume_cm3=254.1
+Q4,Multi-organ: sizeable pancreas with balanced kidneys & spleen,4,FLARE22_Tr_0002,3,FLARETs_0048,FLARE,1.0,4,pancreas_volume_cm3=102.8; left_kidney_volume_cm3=233.3; right_kidney_volume_cm3=214.9; spleen_volume_cm3=268.3
+Q4,Multi-organ: sizeable pancreas with balanced kidneys & spleen,4,FLARE22_Tr_0002,4,FLARE22_Tr_0017,FLARE,1.0,4,pancreas_volume_cm3=148.4; left_kidney_volume_cm3=260.2; right_kidney_volume_cm3=259.6; spleen_volume_cm3=291.6
+Q4,Multi-organ: sizeable pancreas with balanced kidneys & spleen,4,FLARE22_Tr_0002,5,FLARE22_Tr_0018,FLARE,1.0,3,pancreas_volume_cm3=114.3; left_kidney_volume_cm3=242.7; right_kidney_volume_cm3=231.3; spleen_volume_cm3=159.9
+Q5,"Any tumour, multifocal, above-median burden",3,pancreas_021,1,pancreas_087,Pancreas,1.0,2,has_tumor=1.0; lesion_multiplicity=1.0; tumor_burden_cm3=10.4
+Q5,"Any tumour, multifocal, above-median burden",3,pancreas_021,2,pancreas_075,Pancreas,1.0,2,has_tumor=1.0; lesion_multiplicity=1.0; tumor_burden_cm3=10.4
+Q5,"Any tumour, multifocal, above-median burden",3,pancreas_021,3,pancreas_299,Pancreas,1.0,2,has_tumor=1.0; lesion_multiplicity=1.0; tumor_burden_cm3=6.2
+Q5,"Any tumour, multifocal, above-median burden",3,pancreas_021,4,pancreas_089,Pancreas,1.0,2,has_tumor=1.0; lesion_multiplicity=1.0; tumor_burden_cm3=5.8
+Q5,"Any tumour, multifocal, above-median burden",3,pancreas_021,5,pancreas_333,Pancreas,1.0,2,has_tumor=1.0; lesion_multiplicity=1.0; tumor_burden_cm3=11.4
+Q6,"Pancreatic tumour, contained, low burden (early-stage)",3,pancreas_029,1,pancreas_110,Pancreas,1.0,3,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; tumor_burden_cm3=2.6
+Q6,"Pancreatic tumour, contained, low burden (early-stage)",3,pancreas_029,2,pancreas_049,Pancreas,1.0,2,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; tumor_burden_cm3=7.7
+Q6,"Pancreatic tumour, contained, low burden (early-stage)",3,pancreas_029,3,pancreas_158,Pancreas,1.0,2,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; tumor_burden_cm3=11.8
+Q6,"Pancreatic tumour, contained, low burden (early-stage)",3,pancreas_029,4,pancreas_125,Pancreas,1.0,2,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; tumor_burden_cm3=7.8
+Q6,"Pancreatic tumour, contained, low burden (early-stage)",3,pancreas_029,5,pancreas_131,Pancreas,1.0,2,pancreas_tumor_present=1.0; pancreas_tumor_containment=1.0; tumor_burden_cm3=8.5
+Q7,"Liver tumour, solitary lesion, above-median liver volume",3,LiTs-012,1,LiTs-095,LiTS,1.0,3,liver_tumor_present=1.0; lesion_multiplicity=1.0; liver_volume_cm3=1027.2
+Q7,"Liver tumour, solitary lesion, above-median liver volume",3,LiTs-012,2,LiTs-127,LiTS,1.0,2,liver_tumor_present=1.0; lesion_multiplicity=1.0; liver_volume_cm3=987.1
+Q7,"Liver tumour, solitary lesion, above-median liver volume",3,LiTs-012,3,LiTs-112,LiTS,1.0,2,liver_tumor_present=1.0; lesion_multiplicity=4.0; liver_volume_cm3=1002.4
+Q7,"Liver tumour, solitary lesion, above-median liver volume",3,LiTs-012,4,LiTs-003,LiTS,1.0,2,liver_tumor_present=1.0; lesion_multiplicity=1.0; liver_volume_cm3=819.2
+Q7,"Liver tumour, solitary lesion, above-median liver volume",3,LiTs-012,5,LiTs-020,LiTS,1.0,1,liver_tumor_present=1.0; lesion_multiplicity=3.0; liver_volume_cm3=921.0
+Q8,Multi-organ with a pancreatic tumour present (cross-source),3,pancreas_004,1,pancreas_124,Pancreas,1.0,3,pancreas_present=1.0; pancreas_tumor_present=1.0; pancreas_volume_cm3=102.0
+Q8,Multi-organ with a pancreatic tumour present (cross-source),3,pancreas_004,2,pancreas_070,Pancreas,1.0,3,pancreas_present=1.0; pancreas_tumor_present=1.0; pancreas_volume_cm3=93.7
+Q8,Multi-organ with a pancreatic tumour present (cross-source),3,pancreas_004,3,pancreas_364,Pancreas,1.0,3,pancreas_present=1.0; pancreas_tumor_present=1.0; pancreas_volume_cm3=95.0
+Q8,Multi-organ with a pancreatic tumour present (cross-source),3,pancreas_004,4,pancreas_293,Pancreas,1.0,3,pancreas_present=1.0; pancreas_tumor_present=1.0; pancreas_volume_cm3=98.9
+Q8,Multi-organ with a pancreatic tumour present (cross-source),3,pancreas_004,5,pancreas_102,Pancreas,1.0,3,pancreas_present=1.0; pancreas_tumor_present=1.0; pancreas_volume_cm3=99.5
