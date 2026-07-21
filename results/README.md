@@ -61,15 +61,24 @@ and **runnable by anyone**:
 | `qualitative/qualitative_retrieval.md` | Human-readable table: each query → OAKG top-5 (✓ = all conditions matched) |
 | `qualitative/qualitative_retrieval.csv` | Same, with per-candidate matched-condition counts and the actual phenotype values |
 | `qualitative/queries.json` | The query definitions — **edit this to try your own**, then re-run |
+| `qualitative/imputation_vs_oakg.md` / `.csv` | **Where zero-imputation fails** — side-by-side on hard-distractor queries: imputation's top-5 vs OAKG's, ✓/✗ |
 
 ```bash
 PYTHONPATH=src python -m oakg.qualitative              # regenerate from queries.json
 PYTHONPATH=src python -m oakg.qualitative --queries my_queries.json
+PYTHONPATH=src python -m oakg.qualitative --contrast   # + the imputation-vs-OAKG contrast
 ```
 
 Content-based retrieval (rank all cases by OAKG-product similarity to an anchor
 case that satisfies the query); relevance graded by conditions matched. Current
 set: 8 queries, mean conditions-matched@5 = 0.86.
+
+**`imputation_vs_oakg`** isolates *where* imputation fails: on **hard-distractor**
+queries (a broad multi-organ query for a large target organ, with narrow true
+matches + broad small-target distractors), imputation ranks the broad distractors
+high because they share *other* organs — **top-5 relevant: imputation 0% vs OAKG
+100%**. Note this is the stratum where observability matters; on easy/natural
+queries imputation is competitive (see the aggregate tables).
 
 ## The one-paragraph takeaway
 
