@@ -21,6 +21,7 @@ this snapshot. Current benchmark: **512 patient-level cases** (281 Pancreas +
 | `tables/retrieval_summary.csv` | **Table B** | Same metrics, ref & pred tracks across all masking regimes (means; the raw material for A/B and the per-stratum deltas) |
 | `tables/ranking_policy_selection.csv` | **Table C** | OAKG policy ablation (similarity / product / threshold / lexicographic) by validation nDCG@10 + served rate |
 | `tables/cross_backbone_observability.csv` | **Table D** | Base vs +Obs per backbone (phenotype, WL): Δ_obs |
+| `union_ablation/` (see its README) | **OAKG vs OAKG-Union** | Observation-boundary ablation: intersection vs union-completion, per masking regime (asymmetric +0.068, dataset-style +0.112, both sig; uniform ≈0 control) |
 | `tables/ranking_consistency.csv` | **Table E** | Full-to-partial ranking consistency: Kendall τ, Spearman ρ, top-10 overlap (per track) |
 | `tables/structured_query_summary.csv` | **Table F** | Closed / open / OAKG three-valued semantics: T/F/U precision-recall-F1, macro-F1, indeterminate & unsupported-negative rates |
 | `figures/risk_coverage_curve.png` + `tables/risk_coverage_curve.csv` | **Figure 1** | Selective risk vs served-query coverage; AURC |

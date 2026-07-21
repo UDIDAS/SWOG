@@ -1,0 +1,13 @@
+{
+  "policy": "lexicographic",
+  "policy_note": "validation-selected (lexicographic; tied with product)",
+  "n_boot": 10000,
+  "n_queries_total": 111,
+  "query_convention": "zero-relevant queries -> nDCG NaN, excluded (106 evaluable of 111)",
+  "incomparable_policy": "bottom",
+  "lex_bins": [
+    0.25,
+    0.5,
+    0.75
+  ]
+}

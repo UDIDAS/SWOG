@@ -1,0 +1,2 @@
+regime,OAKG,OAKG_Union,delta_obs,ci_low,ci_high,p_value,n_queries,n_query_seed_rows,holm_p,significant_0_05
+hard_distractor,0.9418729944783383,0.9418729944783383,0.0,0.0,0.0,1.0,41,41,1.0,False

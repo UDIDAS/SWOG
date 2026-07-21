@@ -61,6 +61,9 @@ results/query_level/
 !results/qualitative/*.csv
 !results/qualitative/*.md
 !results/qualitative/*.json
+!results/union_ablation/*.csv
+!results/union_ablation/*.md
+!results/union_ablation/*.json
 
 # --- Python ---
 __pycache__/
