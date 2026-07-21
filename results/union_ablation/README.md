@@ -54,6 +54,29 @@ Dataset-style & 0.361 & 0.249 & $\mathbf{+0.112}$ \\
 \end{tabular}
 ```
 
+## Masking regimes (what each one is)
+
+Each case's real annotated organs are the starting point; a regime decides which
+to keep ("observe"). The ablation is about **one-sided anatomy** (organs seen on
+one side of a pair but not the other), so the regimes differ mainly in how much
+one-sidedness they create:
+
+- **Uniform** — nothing dropped; every case keeps its full annotation. Same-source
+  query/candidate scopes match, so there is essentially no one-sided anatomy — the
+  **negative control**.
+- **Random** — each case *independently* drops a random fraction (20/40/60/80%) of
+  its organs. Tests graceful degradation as evidence shrinks; one-sidedness is mild
+  and unsystematic.
+- **Dataset-style** — the whole corpus is restricted to one organ pattern at a time
+  (pancreas-only, liver-only, kidney-only, multi-organ), mimicking sources that
+  annotate different organs. Creates heavy, systematic one-sided coverage.
+- **Asymmetric** — the **query** and **candidate** sides are deliberately given
+  different breadth (query broad + candidate liver-only, or the reverse) — the
+  extreme one-sided case, by construction.
+
+So **dataset-style** and **asymmetric** are where the observation-boundary mechanism
+is actually stressed; **uniform** is the control; **random** is a mild middle ground.
+
 ## What it shows
 
 - **Negative control (uniform): Δ ≈ 0** — when query and candidates share observation

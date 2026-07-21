@@ -31,6 +31,14 @@ paired 95% bootstrap CI, Holm-corrected):
 | 5 | OAKG semantics: no unsupported negatives | ≈0 unsupported-neg rate | **0.000** vs closed-world 0.014; indeterminate 0.43 | ✅ pass |
 | 6 | Selective retrieval trades coverage for reliability | risk ↓ as served-rate ↓ | AURC 0.000; served-rate flat at 1.0 | ❌ no abstention range |
 
+**Masking regimes** (how partial observation is simulated — each hides different
+anatomy per case): **uniform** = keep full annotation (matched-scope control);
+**random** = each case independently drops a random fraction (20/40/60/80%) of its
+organs (evidence decreases); **dataset-style** = restrict the whole corpus to one
+organ pattern at a time (pancreas-only / liver-only / kidney-only / multi-organ,
+mimicking source-specific annotation); **asymmetric** = give the query and
+candidate sides different breadth (broad↔narrow, the extreme one-sided case).
+
 **Per-stratum — OAKG-product − masked cosine by masking regime** (nDCG@10, ref;
 the aggregate is a floor — OAKG wins in *every* regime):
 
