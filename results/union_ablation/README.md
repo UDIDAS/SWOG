@@ -15,6 +15,16 @@ Implementation: `src/oakg/union_ablation.py` (adds `support_mode` + one-sided
 completion to our existing group-mean similarity — *not* the reference module's
 simplified similarity).
 
+> **Not the same as the zero-imputation baseline.** OAKG-Union also fills a missing
+> organ with 0, but it is a *controlled twin* of OAKG, not the external baseline.
+> It (i) 0-fills **only one-sided organs inside the union** — organs *neither* case
+> observed are excluded, so it never rewards a "both-absent → 0=0" fake match the way
+> imputation does over the full vector; (ii) uses **OAKG's own group-mean similarity**,
+> not plain cosine; and (iii) **keeps γ and the ranking policy**. It changes exactly
+> one thing vs. OAKG — intersection→union at the boundary — which is what lets Δ_obs
+> isolate the boundary mechanism. Zero-imputation differs from OAKG in many ways at
+> once, so it answers a different question (external yardstick, not ablation).
+
 ## Reproduce
 
 ```bash

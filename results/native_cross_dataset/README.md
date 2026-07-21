@@ -11,6 +11,11 @@ observed organs (incomparable when no organ is shared → ranked at the bottom);
 OAKG-Union = similarity over the **union** with one-sided anatomy completed as
 absent. Same-source is the built-in negative control (matched scope → OAKG=Union).
 
+OAKG-Union is a *controlled twin* of OAKG (same γ, similarity, policy — only the
+boundary rule differs), **not** the zero-imputation baseline: it 0-fills only
+one-sided organs inside the union and never scores organs neither case observed.
+See `results/union_ablation/README.md` for the full distinction.
+
 ## How to reproduce
 
 ```bash
