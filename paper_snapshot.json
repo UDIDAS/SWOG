@@ -1,0 +1,104 @@
+{
+  "snapshot_version": 1,
+  "git_commit": "416a53ea82f7c6d9f657f85ad8f16893e3738ae2",
+  "primary_policy": "lexicographic",
+  "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
+  "query_convention": {
+    "ndcg_at_10": "graded relevance over 111 queries",
+    "binary_metrics": "binary relevance over 106 eligible queries"
+  },
+  "incomparable_policy": "bottom",
+  "bootstrap": {
+    "repetitions": 10000,
+    "unit": "query",
+    "paired": true,
+    "seed_resampling": "hierarchical within query"
+  },
+  "hypothesis_families": {
+    "observation_boundary": {
+      "comparisons": [
+        "uniform",
+        "random",
+        "asymmetric",
+        "dataset_style"
+      ],
+      "correction": "holm"
+    },
+    "masked_cosine": {
+      "comparisons": [
+        "uniform",
+        "random",
+        "asymmetric",
+        "dataset_style"
+      ],
+      "correction": "holm"
+    }
+  },
+  "tracked_files": [
+    {
+      "path": "results/config.json",
+      "sha256": "14d580469bc9adb2535f350acfa6dbb45d5ef5d67cdac024e816a49950339572",
+      "size_bytes": 350
+    },
+    {
+      "path": "results/tables/publication_ready_retrieval_table.csv",
+      "sha256": "5e96aceec23a1aa5d25b9bcece3da7445d15d18a46e500dbd87c5e454cdd3aa2",
+      "size_bytes": 12798
+    },
+    {
+      "path": "results/tables/ranking_policy_selection.csv",
+      "sha256": "1a9458d707800b664f2e51e918caa2924c78069888458b34209cd623513b1cdc",
+      "size_bytes": 237
+    },
+    {
+      "path": "results/tables/retrieval_summary.csv",
+      "sha256": "e1a3a87038a142171ce25a5e7b03219c868c8d84499d438a535a35579dc13a36",
+      "size_bytes": 39090
+    },
+    {
+      "path": "results/tables/structured_query_summary.csv",
+      "sha256": "d0bc89e3dafb5043823073f260c7d53a1750d7e2f6a4e4057d54e6a3810d82f0",
+      "size_bytes": 668
+    },
+    {
+      "path": "results/union_ablation/union_ablation_paired_comparison.csv",
+      "sha256": "5ff7c7a718e736598f34dc4808e6fe05d1772f5116a693396e825e63309ba32f",
+      "size_bytes": 735
+    },
+    {
+      "path": "results/union_ablation/union_ablation_method_summary.csv",
+      "sha256": "5471a3a79d8f13eadb2642369277dc7f3fd79fdac4e93f23a832e14adcde0dea",
+      "size_bytes": 739
+    },
+    {
+      "path": "results/native_cross_dataset/native_paired_effects.csv",
+      "sha256": "56b06acc07d9ab33d88a13f6fad28558c27fe861f761568cf553b601b5dd7a7e",
+      "size_bytes": 5561
+    },
+    {
+      "path": "results/native_cross_dataset/native_method_summary.csv",
+      "sha256": "0ecf1821dce9dbafd0a266ee02a90caa929d064a7ed41be4c8354b3567a2d1e7",
+      "size_bytes": 4448
+    },
+    {
+      "path": "results/native_cross_dataset/native_incomparability_summary.csv",
+      "sha256": "ed2127ee3d8f0fffa6a0a5fa71b4acc612e3e3a905056235904cf2f8236f9dc8",
+      "size_bytes": 3139
+    },
+    {
+      "path": "results/strata/hard_distractor.csv",
+      "sha256": "48ad086de78bcb6fee54e9da531ab54b326f6511e6820641a14bd2d757be4b88",
+      "size_bytes": 304
+    },
+    {
+      "path": "results/strata/hard_distractor_adversarial.csv",
+      "sha256": "be3b22e5b422dfd099288e679833188e2177e0f9da69173b19d7c9bcf333de26",
+      "size_bytes": 409
+    },
+    {
+      "path": "results/strata/flare_tumor_realgt.csv",
+      "sha256": "0e1d896dfae8c76eef2a8ae152adf26133eb0681e495abc86e5b681be00a69f6",
+      "size_bytes": 314
+    }
+  ]
+}

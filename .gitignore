@@ -100,3 +100,6 @@ results_demo/
 checkpoints/
 embeddings/
 data_schema/
+
+# finalization deliverable (root)
+!MANIFEST.csv
