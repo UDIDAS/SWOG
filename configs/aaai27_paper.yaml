@@ -1,0 +1,66 @@
+# OAKG AAAI 2027 — FROZEN paper configuration.
+#
+# This is THE config that reproduces the manuscript results. It is a superset:
+#   * the top-level keys drive `python -m oakg.pipeline --config configs/aaai27_paper.yaml`
+#   * the `evaluation:` / `paper_snapshot:` sections are read by the finalization
+#     tools (freeze_paper_snapshot.py) and are ignored by the pipeline.
+#
+# Reproduce the benchmark CSVs first:  python -m oakg.build_benchmark --out data
+# Then:                                make reproduce-paper
+
+# ---- pipeline Config (real data, full study) -------------------------------
+seed: 2027
+top_k: 10
+organs: [liver, pancreas, spleen, left_kidney, right_kidney]
+
+use_demo_data: false          # PAPER run (synthetic demo is a smoke test only)
+n_demo_cases: 120             # ignored when use_demo_data is false
+run_wl_baseline: true
+run_neural_baselines: false
+n_bootstrap: 10000            # full study setting
+
+data_dir: data
+results_dir: results
+embeddings_dir: embeddings
+
+# ---- evaluation protocol (read by the finalization tools) ------------------
+evaluation:
+  primary_policy: lexicographic
+  policy_selection_rule: >
+    Product and lexicographic tied on validation nDCG@10; lexicographic was
+    selected before test evaluation and remains fixed for all primary tables.
+    Product and similarity-only are reported as ablations. The primary policy is
+    NOT changed based on test hard-distractor performance.
+  query_convention:
+    ndcg_at_10: graded relevance over 111 queries
+    binary_metrics: binary relevance over 106 eligible queries
+  incomparable_policy: bottom
+  bootstrap:
+    repetitions: 10000
+    unit: query
+    paired: true
+    seed_resampling: hierarchical within query
+  hypothesis_families:
+    observation_boundary:
+      comparisons: [uniform, random, asymmetric, dataset_style]
+      correction: holm
+    masked_cosine:
+      comparisons: [uniform, random, asymmetric, dataset_style]
+      correction: holm
+
+# ---- files that back the paper tables (SHA-256'd into paper_snapshot.json) --
+paper_snapshot:
+  tracked_files:
+    - results/config.json
+    - results/tables/publication_ready_retrieval_table.csv
+    - results/tables/ranking_policy_selection.csv
+    - results/tables/retrieval_summary.csv
+    - results/tables/structured_query_summary.csv
+    - results/union_ablation/union_ablation_paired_comparison.csv
+    - results/union_ablation/union_ablation_method_summary.csv
+    - results/native_cross_dataset/native_paired_effects.csv
+    - results/native_cross_dataset/native_method_summary.csv
+    - results/native_cross_dataset/native_incomparability_summary.csv
+    - results/strata/hard_distractor.csv
+    - results/strata/hard_distractor_adversarial.csv
+    - results/strata/flare_tumor_realgt.csv

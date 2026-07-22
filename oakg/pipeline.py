@@ -149,6 +149,25 @@ def _plot_risk_coverage(rc: pd.DataFrame, path) -> None:
 
 
 if __name__ == "__main__":
-    out = run_all()
+    import argparse
+
+    ap = argparse.ArgumentParser(
+        description="Run the OAKG benchmark pipeline. With no --config this runs "
+                    "the DEMO smoke test on synthetic data (NOT the paper results).")
+    ap.add_argument("--config", default=None,
+                    help="YAML config. Use configs/aaai27_paper.yaml to reproduce "
+                         "the paper (real data, 10k bootstrap).")
+    args = ap.parse_args()
+    cfg = Config.from_yaml(args.config) if args.config else Config()
+
+    if cfg.use_demo_data:
+        print("=" * 74)
+        print("SMOKE TEST: synthetic demo data (n_bootstrap=%s). These are NOT the"
+              % cfg.n_bootstrap)
+        print("paper results. Reproduce the paper with:")
+        print("    python -m oakg.pipeline --config configs/aaai27_paper.yaml")
+        print("=" * 74)
+
+    out = run_all(cfg)
     print("Wrote deliverables to:", out.results.shape[0], "query-level rows")
     print(out.summary.sort_values("nDCG@10", ascending=False).head(10).to_string(index=False))

@@ -6,6 +6,7 @@ configuration, so nothing experiment-defining should be hard-coded elsewhere.
 """
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -74,6 +75,20 @@ class Config:
     def ensure_dirs(self) -> None:
         for d in (self.query_level_dir, self.tables_dir, self.figures_dir):
             d.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def from_yaml(cls, path) -> "Config":
+        """Build a Config from a YAML file, ignoring keys that are not Config
+        fields (e.g. the ``evaluation`` / ``paper_snapshot`` sections that the
+        finalization tools also read from the same paper config)."""
+        import yaml
+
+        raw = yaml.safe_load(Path(path).read_text()) or {}
+        names = {f.name for f in dataclasses.fields(cls)}
+        kwargs = {k: v for k, v in raw.items() if k in names}
+        if isinstance(kwargs.get("organs"), list):
+            kwargs["organs"] = tuple(kwargs["organs"])
+        return cls(**kwargs)
 
     def to_dict(self) -> dict:
         return {
