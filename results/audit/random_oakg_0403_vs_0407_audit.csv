@@ -1,0 +1,14 @@
+field,value_0.403_union,value_0.407_main
+exact number of queries,111 (444 query×seed rows),111 (444 query×seed rows)
+query-ID set hash,aeb7664de3f74cdb,aeb7664de3f74cdb
+query-set difference (either direction),none (identical),none (identical)
+candidate-pool definition,"candidate_pool(qc,corpus)","candidate_pool(qc,corpus)"
+relevance / eligibility rule,graded; queries with >=1 graded-relevant,graded; queries with >=1 graded-relevant
+incomparable-candidate handling,ranked at BOTTOM; ideal-DCG over FULL pool,DROPPED from ranking; ideal-DCG over ELIGIBLE only
+seeds / realizations,"random fracs .2/.4/.6/.8, seeds 2028-2031","random fracs .2/.4/.6/.8, seeds 2028-2031"
+seeds available per query,4,4
+averaging order,mean over 444 query×seed rows,mean over 444 query×seed rows
+ranking policy / params,lexicographic; bins 0.25/0.50/0.75,lexicographic; bins 0.25/0.50/0.75
+scoring function,_pair_similarity (group-mean),oakg_scores (group-mean)
+source file,results/union_ablation/union_ablation_method_summary.csv,results/tables/ranking_policy_selection.csv / retrieval_summary.csv
+recomputed mean nDCG@10,0.402694,0.407438

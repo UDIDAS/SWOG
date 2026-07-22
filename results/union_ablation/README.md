@@ -65,16 +65,18 @@ Dataset-style & 0.361 & 0.249 & $\mathbf{+0.112}$ \\
 ```
 
 > **These absolute nDCG@10 values are ablation-internal — cite the paired Δ, not
-> the columns.** This module is a self-contained *paired* OAKG-vs-OAKG-Union
-> comparison: both methods score **all evaluable queries with incomparable pairs
-> ranked at the bottom**, via the ablation's own group-mean similarity. That is a
-> different query set and code path from the main benchmark tables, which report
-> over **served queries only** and use `oakg.oakg.oakg_scores`. So the random OAKG
-> here (**0.4027**) is not the same quantity as the main-table / policy-selection
-> random OAKG (**0.4074**, ref, served-only): serving the harder incomparable
-> queries at the bottom drags the ablation mean down by ~0.005, exactly the
-> observed gap. Both are internally correct — only the **Δ_obs** column is meant
-> to be read across methods.
+> the columns.** Audited: the random OAKG here (**0.402694**) and the main-table /
+> policy-selection random OAKG (**0.407438**, ref) are computed over the **identical
+> query set** (same 111 queries, hash `aeb7664de3f74cdb`, same 4 random seeds, same
+> lexicographic policy, same group-mean similarity, all 444 query×seed rows served).
+> The **only** difference is **incomparable-candidate handling**: the main pipeline
+> **drops** incomparable candidates from the ranked list, so its ideal-DCG is taken
+> over eligible candidates only; this module **ranks incomparable candidates at the
+> bottom** (per the declared `incomparable_policy: bottom`), so its ideal-DCG is
+> over the full pool. The two agree on 426/444 rows and differ on **18 queries**
+> that have a relevant-but-incomparable candidate (mean gap +0.117 there). Full
+> field-by-field audit: [`results/audit/`](../audit/). The paired **Δ_obs** is
+> unaffected (both methods use bottom-ranking), so it remains the quantity to cite.
 
 ## Masking regimes (what each one is)
 
