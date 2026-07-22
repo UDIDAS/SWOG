@@ -103,3 +103,8 @@ data_schema/
 
 # finalization deliverable (root)
 !MANIFEST.csv
+
+# standalone benchmark definitions (reviewable, redistributable)
+!benchmark/*.csv
+!benchmark/*.json
+!benchmark/*.md

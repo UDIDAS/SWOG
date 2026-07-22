@@ -1,0 +1,67 @@
+{
+ "base_seed": 2027,
+ "organ_vocabulary": [
+  "liver",
+  "pancreas",
+  "spleen",
+  "left_kidney",
+  "right_kidney"
+ ],
+ "realizations": [
+  {
+   "regime": "uniform",
+   "seed": 2027,
+   "note": "no additional masking (native scopes)"
+  },
+  {
+   "regime": "random",
+   "missing_fraction": 0.2,
+   "seed": 2028
+  },
+  {
+   "regime": "random",
+   "missing_fraction": 0.4,
+   "seed": 2029
+  },
+  {
+   "regime": "random",
+   "missing_fraction": 0.6,
+   "seed": 2030
+  },
+  {
+   "regime": "random",
+   "missing_fraction": 0.8,
+   "seed": 2031
+  },
+  {
+   "regime": "dataset_style",
+   "style": "pancreas_only",
+   "seed": 2027
+  },
+  {
+   "regime": "dataset_style",
+   "style": "liver_only",
+   "seed": 2027
+  },
+  {
+   "regime": "dataset_style",
+   "style": "kidney_only",
+   "seed": 2027
+  },
+  {
+   "regime": "dataset_style",
+   "style": "multi_organ",
+   "seed": 2027
+  },
+  {
+   "regime": "asymmetric",
+   "direction": "broad_to_narrow",
+   "seed": 2027
+  },
+  {
+   "regime": "asymmetric",
+   "direction": "narrow_to_broad",
+   "seed": 2027
+  }
+ ]
+}

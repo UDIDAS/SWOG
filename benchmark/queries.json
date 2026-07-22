@@ -1,0 +1,2684 @@
+[
+ {
+  "query_id": "Q0000",
+  "query_case_id": "pancreas_001",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0001",
+  "query_case_id": "pancreas_012",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0002",
+  "query_case_id": "pancreas_042",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0003",
+  "query_case_id": "pancreas_058",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0004",
+  "query_case_id": "pancreas_077",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0005",
+  "query_case_id": "pancreas_080",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0006",
+  "query_case_id": "pancreas_081",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0007",
+  "query_case_id": "pancreas_084",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0008",
+  "query_case_id": "pancreas_086",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0009",
+  "query_case_id": "pancreas_089",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0010",
+  "query_case_id": "pancreas_091",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0011",
+  "query_case_id": "pancreas_092",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0012",
+  "query_case_id": "pancreas_094",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0013",
+  "query_case_id": "pancreas_104",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0014",
+  "query_case_id": "pancreas_110",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0015",
+  "query_case_id": "pancreas_113",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0016",
+  "query_case_id": "pancreas_114",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0017",
+  "query_case_id": "pancreas_117",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0018",
+  "query_case_id": "pancreas_119",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0019",
+  "query_case_id": "pancreas_120",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0020",
+  "query_case_id": "pancreas_124",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0021",
+  "query_case_id": "pancreas_130",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0022",
+  "query_case_id": "pancreas_131",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0023",
+  "query_case_id": "pancreas_159",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0024",
+  "query_case_id": "pancreas_169",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0025",
+  "query_case_id": "pancreas_186",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0026",
+  "query_case_id": "pancreas_193",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0027",
+  "query_case_id": "pancreas_199",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0028",
+  "query_case_id": "pancreas_204",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0029",
+  "query_case_id": "pancreas_207",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0030",
+  "query_case_id": "pancreas_213",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0031",
+  "query_case_id": "pancreas_214",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0032",
+  "query_case_id": "pancreas_229",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0033",
+  "query_case_id": "pancreas_244",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0034",
+  "query_case_id": "pancreas_246",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0035",
+  "query_case_id": "pancreas_255",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0036",
+  "query_case_id": "pancreas_258",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0037",
+  "query_case_id": "pancreas_266",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0038",
+  "query_case_id": "pancreas_269",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0039",
+  "query_case_id": "pancreas_280",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0040",
+  "query_case_id": "pancreas_283",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0041",
+  "query_case_id": "pancreas_289",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0042",
+  "query_case_id": "pancreas_294",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0043",
+  "query_case_id": "pancreas_297",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0044",
+  "query_case_id": "pancreas_300",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0045",
+  "query_case_id": "pancreas_303",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0046",
+  "query_case_id": "pancreas_304",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0047",
+  "query_case_id": "pancreas_315",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0048",
+  "query_case_id": "pancreas_328",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0049",
+  "query_case_id": "pancreas_329",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0050",
+  "query_case_id": "pancreas_334",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0051",
+  "query_case_id": "pancreas_345",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0052",
+  "query_case_id": "pancreas_364",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0053",
+  "query_case_id": "pancreas_366",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0054",
+  "query_case_id": "pancreas_372",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0055",
+  "query_case_id": "pancreas_377",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0056",
+  "query_case_id": "pancreas_386",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0057",
+  "query_case_id": "pancreas_387",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0058",
+  "query_case_id": "pancreas_391",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0059",
+  "query_case_id": "pancreas_409",
+  "source": "msd_pancreas",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0060",
+  "query_case_id": "LiTs-014",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0061",
+  "query_case_id": "LiTs-015",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0062",
+  "query_case_id": "LiTs-021",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0063",
+  "query_case_id": "LiTs-022",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0064",
+  "query_case_id": "LiTs-024",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0065",
+  "query_case_id": "LiTs-041",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 0,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0066",
+  "query_case_id": "LiTs-044",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0067",
+  "query_case_id": "LiTs-045",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0068",
+  "query_case_id": "LiTs-046",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0069",
+  "query_case_id": "LiTs-047",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0070",
+  "query_case_id": "LiTs-059",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0071",
+  "query_case_id": "LiTs-066",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0072",
+  "query_case_id": "LiTs-067",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0073",
+  "query_case_id": "LiTs-076",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0074",
+  "query_case_id": "LiTs-082",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0075",
+  "query_case_id": "LiTs-083",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0076",
+  "query_case_id": "LiTs-086",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0077",
+  "query_case_id": "LiTs-087",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 0,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0078",
+  "query_case_id": "LiTs-089",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "lesion_multiplicity",
+    "op": ">=",
+    "value": 2.0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 0,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0079",
+  "query_case_id": "LiTs-102",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0080",
+  "query_case_id": "LiTs-104",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0081",
+  "query_case_id": "LiTs-105",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 0,
+    "support_organs": []
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "tumor_burden_cm3",
+    "op": ">=",
+    "value": 5.990931657024643,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0082",
+  "query_case_id": "LiTs-111",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0083",
+  "query_case_id": "LiTs-128",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0084",
+  "query_case_id": "LiTs-130",
+  "source": "lits",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_tumor_present",
+    "op": "==",
+    "value": 1,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "has_tumor",
+    "op": "==",
+    "value": 1,
+    "support_organs": []
+   }
+  ]
+ },
+ {
+  "query_id": "Q0085",
+  "query_case_id": "FLARE22_Tr_0006",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0086",
+  "query_case_id": "FLARE22_Tr_0010",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0087",
+  "query_case_id": "FLARE22_Tr_0011",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0088",
+  "query_case_id": "FLARE22_Tr_0014",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0089",
+  "query_case_id": "FLARE22_Tr_0018",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0090",
+  "query_case_id": "FLARE22_Tr_0021",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0091",
+  "query_case_id": "FLARE22_Tr_0025",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0092",
+  "query_case_id": "FLARE22_Tr_0028",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0093",
+  "query_case_id": "FLARE22_Tr_0031",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0094",
+  "query_case_id": "FLARE22_Tr_0036",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0095",
+  "query_case_id": "FLARE22_Tr_0038",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0096",
+  "query_case_id": "FLARE22_Tr_0043",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0097",
+  "query_case_id": "FLARE22_Tr_0045",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0098",
+  "query_case_id": "FLARE22_Tr_0050",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0099",
+  "query_case_id": "FLARETs_0003",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0100",
+  "query_case_id": "FLARETs_0006",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0101",
+  "query_case_id": "FLARETs_0021",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0102",
+  "query_case_id": "FLARETs_0023",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0103",
+  "query_case_id": "FLARETs_0024",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0104",
+  "query_case_id": "FLARETs_0033",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0105",
+  "query_case_id": "FLARETs_0034",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0106",
+  "query_case_id": "FLARETs_0035",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0107",
+  "query_case_id": "FLARETs_0036",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "spleen_volume_cm3",
+    "op": ">=",
+    "value": 228.884711574649,
+    "support_organs": [
+     "spleen"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0108",
+  "query_case_id": "FLARETs_0039",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "right_kidney_volume_cm3",
+    "op": ">=",
+    "value": 214.93070526859233,
+    "support_organs": [
+     "right_kidney"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0109",
+  "query_case_id": "FLARETs_0044",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "pancreas_volume_cm3",
+    "op": ">=",
+    "value": 84.94360296936036,
+    "support_organs": [
+     "pancreas"
+    ]
+   }
+  ]
+ },
+ {
+  "query_id": "Q0110",
+  "query_case_id": "FLARETs_0050",
+  "source": "flare22",
+  "split": "test",
+  "primary_predicates": [
+   {
+    "feature": "liver_volume_cm3",
+    "op": ">=",
+    "value": 1037.8759910386284,
+    "support_organs": [
+     "liver"
+    ]
+   }
+  ],
+  "secondary_predicates": [
+   {
+    "feature": "left_kidney_volume_cm3",
+    "op": ">=",
+    "value": 209.29190206683143,
+    "support_organs": [
+     "left_kidney"
+    ]
+   }
+  ]
+ }
+]

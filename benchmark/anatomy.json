@@ -1,0 +1,71 @@
+{
+ "organ_vocabulary": [
+  "liver",
+  "pancreas",
+  "spleen",
+  "left_kidney",
+  "right_kidney"
+ ],
+ "native_observation_scopes": {
+  "msd_pancreas": [
+   "pancreas"
+  ],
+  "lits": [
+   "liver"
+  ],
+  "flare22": [
+   "left_kidney",
+   "liver",
+   "pancreas",
+   "right_kidney",
+   "spleen"
+  ]
+ },
+ "support_sets": {
+  "pancreas_present": [
+   "pancreas"
+  ],
+  "pancreas_volume_cm3": [
+   "pancreas"
+  ],
+  "pancreas_tumor_present": [
+   "pancreas"
+  ],
+  "pancreas_tumor_containment": [
+   "pancreas"
+  ],
+  "has_tumor": [],
+  "tumor_burden_cm3": [],
+  "lesion_multiplicity": [],
+  "liver_present": [
+   "liver"
+  ],
+  "liver_volume_cm3": [
+   "liver"
+  ],
+  "liver_tumor_present": [
+   "liver"
+  ],
+  "liver_tumor_containment": [
+   "liver"
+  ],
+  "spleen_present": [
+   "spleen"
+  ],
+  "spleen_volume_cm3": [
+   "spleen"
+  ],
+  "left_kidney_present": [
+   "left_kidney"
+  ],
+  "left_kidney_volume_cm3": [
+   "left_kidney"
+  ],
+  "right_kidney_present": [
+   "right_kidney"
+  ],
+  "right_kidney_volume_cm3": [
+   "right_kidney"
+  ]
+ }
+}

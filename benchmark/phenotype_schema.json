@@ -1,0 +1,98 @@
+{
+ "pancreas_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "pancreas"
+  ]
+ },
+ "pancreas_volume_cm3": {
+  "feature_type": "numeric",
+  "support_organs": [
+   "pancreas"
+  ]
+ },
+ "pancreas_tumor_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "pancreas"
+  ]
+ },
+ "pancreas_tumor_containment": {
+  "feature_type": "binary",
+  "support_organs": [
+   "pancreas"
+  ]
+ },
+ "has_tumor": {
+  "feature_type": "binary",
+  "support_organs": []
+ },
+ "tumor_burden_cm3": {
+  "feature_type": "numeric",
+  "support_organs": []
+ },
+ "lesion_multiplicity": {
+  "feature_type": "numeric",
+  "support_organs": []
+ },
+ "liver_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "liver"
+  ]
+ },
+ "liver_volume_cm3": {
+  "feature_type": "numeric",
+  "support_organs": [
+   "liver"
+  ]
+ },
+ "liver_tumor_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "liver"
+  ]
+ },
+ "liver_tumor_containment": {
+  "feature_type": "binary",
+  "support_organs": [
+   "liver"
+  ]
+ },
+ "spleen_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "spleen"
+  ]
+ },
+ "spleen_volume_cm3": {
+  "feature_type": "numeric",
+  "support_organs": [
+   "spleen"
+  ]
+ },
+ "left_kidney_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "left_kidney"
+  ]
+ },
+ "left_kidney_volume_cm3": {
+  "feature_type": "numeric",
+  "support_organs": [
+   "left_kidney"
+  ]
+ },
+ "right_kidney_present": {
+  "feature_type": "binary",
+  "support_organs": [
+   "right_kidney"
+  ]
+ },
+ "right_kidney_volume_cm3": {
+  "feature_type": "numeric",
+  "support_organs": [
+   "right_kidney"
+  ]
+ }
+}
