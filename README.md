@@ -26,8 +26,8 @@ paired 95% bootstrap CI, Holm-corrected):
 
 | # | Hypothesis | Expected | Obtained (512-case) | Verdict |
 |---|---|---|---|---|
-| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **+0.303 [0.239, 0.368]**, p<0.001; **significant in all 4 masking regimes and all 4 missingness levels** | ✅ pass (strong, robust) |
-| 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.407 > 0.322 (**+0.085**) | ✅ confirmed |
+| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **significant in all 4 masking regimes (+0.165 … +0.352) and all 4 missingness levels (+0.206 … +0.362)**, p<0.001 | ✅ pass (strong, robust) |
+| 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.403 > 0.318 (**+0.085**) | ✅ confirmed |
 | 3 | OAKG > strong imputation baselines | ≥ zero/mean/missingness/Gower | beats Gower +0.213, mean +0.034 (ns); **never beats** zero-imp / missingness-indicators, **significantly worse at 80% missing** (see below) | ❌ **not met (settled)** |
 | 4 | Upstream degradation ref > pred | positive Δ | OAKG-product **−0.035** (pred > ref) — inverted | ⚠️ anomaly (partial pred coverage) |
 | 5 | OAKG semantics: no unsupported negatives | ≈0 unsupported-neg rate | **0.000** vs closed-world 0.014; indeterminate 0.43 | ✅ pass |
@@ -43,25 +43,36 @@ organ pattern at a time (pancreas-only / liver-only / kidney-only / multi-organ,
 mimicking source-specific annotation); **asymmetric** = give the query and
 candidate sides different breadth (broad↔narrow, the extreme one-sided case).
 
+**Evaluation convention — incomparable candidates are ranked at the bottom.** When
+OAKG cannot compare a candidate (it shares no observed organ with the query), that
+candidate is **kept in the pool and ranked at the bottom**, not dropped — so nDCG's
+ideal-DCG is taken over the *full* candidate pool (`incomparable_policy: bottom`).
+This is applied identically in the main benchmark, the OAKG-Union ablation, and the
+native analysis, so every OAKG number is one consistent quantity (e.g. random-regime
+OAKG-lexicographic is 0.403 in all of them). Dropping incomparable candidates instead
+would inflate nDCG in the one-sided regimes (asymmetric, dataset-style), where OAKG
+would otherwise get a free pass on relevant candidates it declined to rank; see
+[results/audit/](results/audit/) for the field-by-field 0.403-vs-0.407 audit.
+
 **Per-stratum — OAKG-product − masked cosine by masking regime** (nDCG@10, ref;
 the aggregate is a floor — OAKG wins in *every* regime):
 
 | Masking regime | Δ nDCG@10 | 95% CI |
 |---|---|---|
 | uniform | +0.352 | [0.284, 0.420] |
-| random | +0.303 | [0.239, 0.368] |
-| asymmetric | +0.190 | [0.120, 0.263] |
-| dataset-style | +0.144 | [0.100, 0.190] |
+| random | +0.298 | [0.264, 0.333] |
+| dataset-style | +0.219 | [0.180, 0.258] |
+| asymmetric | +0.165 | [0.112, 0.219] |
 
 **By missingness level — OAKG-product vs baselines** (nDCG@10, ref): OAKG beats
 masked cosine at every level, but never beats imputation and loses at 80%:
 
 | missing | vs masked-cosine | vs zero-imp | vs missingness-ind |
 |---|---|---|---|
-| 20% | **+0.359** ✓ | −0.036 (ns) | −0.038 (ns) |
-| 40% | **+0.320** ✓ | −0.015 (ns) | −0.017 (ns) |
-| 60% | **+0.320** ✓ | −0.018 (ns) | −0.021 (ns) |
-| 80% | **+0.233** ✓ | **−0.054** ✗ | **−0.057** ✗ |
+| 20% | **+0.362** ✓ | −0.026 (ns) | −0.028 (ns) |
+| 40% | **+0.332** ✓ | −0.032 (ns) | −0.034 (ns) |
+| 60% | **+0.291** ✓ | −0.021 (ns) | −0.024 (ns) |
+| 80% | **+0.206** ✓ | **−0.068** ✗ | **−0.070** ✗ |
 
 **Findings — what they mean:**
 

@@ -68,6 +68,9 @@ def test_policy_selection_tie():
     lex = _val(ps, "mean_metric", method="OAKG-lexicographic [ref]")
     prod = _val(ps, "mean_metric", method="OAKG-product [ref]")
     assert lex == pytest.approx(prod, abs=1e-9)
+    # incomparable_policy=bottom: main lexicographic == union-ablation random OAKG
+    assert lex == pytest.approx(0.402694, abs=TOL)
+    assert lex > _val(ps, "mean_metric", method="OAKG-similarity [ref]")
 
 
 # ---- cross-file invariant: unmasked OAKG is one number everywhere ----------

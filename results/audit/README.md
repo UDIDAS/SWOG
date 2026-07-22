@@ -48,12 +48,15 @@ relevant-but-incomparable candidate (`random_oakg_affected_queries.csv`; mean ga
 ## Consequence
 
 The declared frozen policy is `incomparable_policy: bottom`, which the union
-ablation implements and the main pipeline does **not** (it drops). Reconciling to
-one consistent pipeline means adopting bottom-ranking in the main pipeline too,
-which would move the main random OAKG from 0.407438 to 0.402694 and shift other
-main-table OAKG cells by a similar small margin. This is a headline-number change
-and is left as an explicit decision (see repo discussion), not applied unilaterally.
-The paired **Δ_obs** in the union ablation is unaffected by the convention.
+ablation implements and the main pipeline did **not** (it dropped). **Resolved:**
+the main pipeline now ranks incomparable candidates at the bottom (commit that
+adds this folder's follow-up), so the main random OAKG moved from 0.407438 to
+**0.402694**, identical to the union ablation. Other main-table OAKG cells shifted
+too — small under uniform/random (~0.005) but larger under the one-sided regimes
+(asymmetric up to ~0.16, dataset-style ~0.09), exactly where dropping incomparable
+candidates had been inflating OAKG. OAKG still beats masked cosine significantly in
+all four regimes. The paired **Δ_obs** in the union ablation is unaffected by the
+convention. There is now **one** random-regime OAKG number (0.402694) everywhere.
 
 Regenerate this audit: see `oakg`-based recomputation in the commit that added this
 folder.
