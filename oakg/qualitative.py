@@ -1,8 +1,8 @@
 """Qualitative retrieval examples — complex multi-condition queries + OAKG top-5.
 
-Produces a small, GitHub-friendly artifact under results/qualitative/ so the team
-can (a) view the example queries and their retrievals, and (b) run their own:
-edit results/qualitative/queries.json (or pass --queries) and re-run.
+Produces a small, GitHub-friendly artifact under results/qualitative/ so the
+example queries and their retrievals are (a) viewable, and (b) reproducible: edit
+results/qualitative/queries.json (or pass --queries) and re-run.
 
     python -m oakg.qualitative            # default queries
     python -m oakg.qualitative --queries my_queries.json

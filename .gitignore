@@ -51,7 +51,7 @@ results/query_level/
 # would leak files from fully-ignored dirs like data/ and docs/).
 !**/.gitkeep
 
-# Track the small, reviewable results so the team can see them on GitHub
+# Track the small, reviewable results so they are visible on GitHub
 # (overrides the *.csv / *.png ignores above; all < ~150 KB).
 !results/README.md
 !results/config.json

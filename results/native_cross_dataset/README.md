@@ -23,9 +23,9 @@ reproduces every stratum's nDCG@10 **bit-for-bit** (max |Δ| = 0.0 across all 45
 stratum×method cells). The reason is that within each native candidate pool the
 γ-category tiering only reshuffles the *non-relevant tail*; graded-relevant
 candidates dominate on both γ and similarity, so both policies place them
-identically in the top-10. The similarity-only ablation (the PI-requested policy
-check) is provided verbatim in [`similarity_policy/`](similarity_policy/) and is
-identical to the primary tables here.
+identically in the top-10. The similarity-only ablation is provided verbatim in
+[`similarity_policy/`](similarity_policy/) and is identical to the primary tables
+here.
 
 ## How to reproduce
 
@@ -42,7 +42,7 @@ PYTHONPATH=<pkg>/src python <pkg>/scripts/run_native_cross_dataset_analysis.py \
   --out-dir results/native_cross_dataset --n-boot 10000 --n-permutations 100000
 ```
 
-Conventions (per the guide): query is the bootstrap unit; a query is included in a
+Conventions (per the analysis-package documentation): query is the bootstrap unit; a query is included in a
 stratum only if its stratum candidate pool has ≥1 nonzero graded-relevant candidate;
 relevance labels and candidate pools are identical across methods; OAKG-incomparable
 pairs stay in the pool at the bottom (never dropped).
