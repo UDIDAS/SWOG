@@ -33,7 +33,7 @@ python -m oakg.union_ablation --policy lexicographic --n-boot 10000
 
 - **Ranking policy:** `lexicographic` — the **validation-selected** policy
   (nDCG@10 on the random-masking validation family; lexicographic and product tie
-  at 0.407, both above similarity/threshold). The *same* policy is used for the
+  at 0.403, both above similarity/threshold). The *same* policy is used for the
   masked-cosine table, pooled-baseline table, this ablation, and the
   hard-distractor evaluation.
 - **Query convention:** nDCG@10 uses **graded** relevance, under which **all 111
