@@ -1,6 +1,6 @@
 {
   "snapshot_version": 1,
-  "git_commit": "416a53ea82f7c6d9f657f85ad8f16893e3738ae2",
+  "git_commit": "2ab965b50f5b8c831c790a01ea89df6adf30a247",
   "primary_policy": "lexicographic",
   "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
   "query_convention": {
