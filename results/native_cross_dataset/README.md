@@ -16,11 +16,23 @@ boundary rule differs), **not** the zero-imputation baseline: it 0-fills only
 one-sided organs inside the union and never scores organs neither case observed.
 See `results/union_ablation/README.md` for the full distinction.
 
+**Ranking policy — primary = lexicographic (validation-selected).** These tables
+are generated under the primary lexicographic policy. We verified the native
+result is **exactly policy-invariant**: regenerating under similarity-only
+reproduces every stratum's nDCG@10 **bit-for-bit** (max |Δ| = 0.0 across all 45
+stratum×method cells). The reason is that within each native candidate pool the
+γ-category tiering only reshuffles the *non-relevant tail*; graded-relevant
+candidates dominate on both γ and similarity, so both policies place them
+identically in the top-10. The similarity-only ablation (the PI-requested policy
+check) is provided verbatim in [`similarity_policy/`](similarity_policy/) and is
+identical to the primary tables here.
+
 ## How to reproduce
 
 ```bash
 # 1. export native candidate-level scores from OUR benchmark (this repo)
-python -m oakg.native_export --out results/native_inputs
+#    --policy lexicographic is the validation-selected PRIMARY policy.
+python -m oakg.native_export --out results/native_inputs --policy lexicographic
 # 2. run the provided analysis package (docs/OAKG_Native_Cross_Dataset_Analysis.zip)
 PYTHONPATH=<pkg>/src python <pkg>/scripts/run_native_cross_dataset_analysis.py \
   --cases results/native_inputs/native_cases.csv \

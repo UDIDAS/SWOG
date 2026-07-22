@@ -32,15 +32,40 @@ from .baselines import zero_imputed_similarity, missing_indicator_similarity
 from .oakg import observation_overlap
 from .graph import wl_embeddings
 from .neural import embedding_scores
-from .union_ablation import _pair_similarity
+from .union_ablation import _pair_similarity, LEX_BINS
 
 SOURCE = {"Pancreas": "msd_pancreas", "LiTS": "lits", "FLARE": "flare22"}
+
+
+def _policy_score(sim, gamma, policy):
+    """Encode the OAKG ranking policy into the single scalar the analysis package
+    ranks by (comparable-first, then score descending). Order-preserving only.
+
+      similarity    : rank by component similarity S (no gamma).
+      product       : rank by gamma * S.
+      lexicographic : gamma-category tier dominates, S breaks ties within a tier.
+                      cat in {0,1,2,3}; cat*2 + S is strictly tier-ordered (S<=1).
+    """
+    if sim is None:
+        return None
+    if policy == "similarity":
+        return sim
+    if policy == "product":
+        return gamma * sim
+    if policy == "lexicographic":
+        cat = float(sum(gamma >= b for b in LEX_BINS))
+        return cat * 2.0 + sim
+    raise ValueError(policy)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data")
     ap.add_argument("--out", default="results/native_inputs")
+    ap.add_argument("--policy", default="lexicographic",
+                    choices=["lexicographic", "product", "similarity"],
+                    help="OAKG-family ranking policy (primary=lexicographic; "
+                         "similarity is the ablation). Baselines are unaffected.")
     args = ap.parse_args()
     cfg = Config(use_demo_data=False, data_dir=args.data)
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
@@ -74,12 +99,16 @@ def main() -> None:
         wls = embedding_scores(qc, cands, wl)
         for k, c in enumerate(cands):
             ci = corpus.case_to_row[c]
-            inter, _ = observation_overlap(qc, c, real)
+            inter, gamma = observation_overlap(qc, c, real)
+            # OAKG-family scores carry the ranking policy (gamma from native scopes);
+            # baselines rank by their own similarity and are policy-independent.
             if inter:
-                oakg_s = _pair_similarity(qi, ci, xf, M, nm, ranges, "intersection"); oakg_cmp = True
+                oakg_s = _policy_score(_pair_similarity(qi, ci, xf, M, nm, ranges, "intersection"),
+                                       gamma, args.policy); oakg_cmp = True
             else:
                 oakg_s = None; oakg_cmp = False
-            union_s = _pair_similarity(qi, ci, xf, M, nm, ranges, "union")
+            union_s = _policy_score(_pair_similarity(qi, ci, xf, M, nm, ranges, "union"),
+                                    gamma, args.policy)
             for method, score, comp in [
                 ("OAKG", oakg_s, oakg_cmp),
                 ("OAKG-Union", union_s, True),

@@ -69,6 +69,8 @@ results/query_level/
 !results/native_cross_dataset/*.csv
 !results/native_cross_dataset/*.md
 !results/native_cross_dataset/*.tex
+!results/native_cross_dataset/similarity_policy/*.csv
+!results/native_cross_dataset/similarity_policy/*.tex
 # native_inputs/ (12 MB scores) stays ignored — regenerable via oakg.native_export
 
 # --- Python ---
