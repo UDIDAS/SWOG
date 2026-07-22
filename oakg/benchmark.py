@@ -62,11 +62,19 @@ def evaluate_vector_methods(
                 policy=policy, gamma_min=gamma_min,
             )
             valid = eligible & np.isfinite(scores)
+            # incomparable_policy = "bottom": keep the FULL candidate pool and push
+            # ineligible (observation-incomparable) candidates to the bottom, so the
+            # ideal-DCG is taken over the full pool. This matches the declared policy
+            # and the OAKG-Union ablation; dropping them instead would inflate nDCG.
+            # Use a finite floor (below every eligible score, which are all >= 0) so
+            # downstream metrics stay finite.
+            floor = (float(scores[valid].min()) if valid.any() else 0.0) - 1.0
+            ranking = np.where(valid, scores, floor)
             row = query_metric_row(
                 query.query_id,
                 f"OAKG-{policy} [{track}]",
-                np.asarray(candidates)[valid],
-                scores[valid],
+                np.asarray(candidates),
+                ranking,
                 data.relevance,
                 served=bool(np.any(valid)),
                 k=config.top_k,

@@ -1,5 +1,5 @@
 method,mean_metric,served_rate,n_queries
-OAKG-lexicographic [ref],0.4074382338277403,1.0,111
-OAKG-product [ref],0.4074382338277403,1.0,111
-OAKG-similarity [ref],0.3226842326098316,1.0,111
-OAKG-threshold [ref],0.32106197441146694,1.0,111
+OAKG-lexicographic [ref],0.4026940192497255,1.0,111
+OAKG-product [ref],0.4026940192497255,1.0,111
+OAKG-similarity [ref],0.31794001803181676,1.0,111
+OAKG-threshold [ref],0.316317759833452,1.0,111
