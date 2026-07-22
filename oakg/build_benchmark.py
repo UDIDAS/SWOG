@@ -29,7 +29,9 @@ from .phenotypes import DatasetSpec, organ_phenotypes
 _MASK_ROOT = Path(os.environ.get("OAKG_MASK_ROOT", "data_sources/ssl_handoff"))
 ACM = _MASK_ROOT
 FLARE_ROOT = Path(os.environ.get("OAKG_FLARE_ROOT", "data_sources/FLARE_Task2"))
-FLARE_SAM = FLARE_ROOT / "sam3_delivery"
+# Subdirectory holding the FLARE per-organ predictions for the held-out cases.
+# Override with OAKG_FLARE_PRED_SUBDIR to match your local delivery folder name.
+FLARE_SAM = FLARE_ROOT / os.environ.get("OAKG_FLARE_PRED_SUBDIR", "flare_predictions")
 FLARE_ORGANS = ("liver", "pancreas", "spleen", "left_kidney", "right_kidney")
 # Validated against per-organ GT (Dice=1.000): FLARE22 multi-label integers.
 FLARE_LABELS = {"liver": 1, "right_kidney": 2, "spleen": 3, "pancreas": 4, "left_kidney": 13}
@@ -60,7 +62,7 @@ def default_sources() -> list[dict]:
         },
         {
             # FLARE: 100 multi-organ GT cases (labelsTr + validation, 13-label),
-            # predictions for the 20 in sam3_delivery (per-organ binary). No tumor.
+            # predictions for the 20 held-out FLARE cases (per-organ binary). No tumor.
             "spec": DatasetSpec("FLARE", FLARE_ORGANS),
             "ref": [
                 _combined([FLARE_ROOT / "train_gt_label" / "labelsTr",

@@ -15,11 +15,11 @@ mechanism* itself is isolated not by the masked-cosine contrast but by the
 
 **Benchmark (validated):** 512 real cases — 281 Pancreas + 131 LiTS (single-organ,
 organ+tumor) + 100 FLARE (multi-organ hub, 5-organ morphometry, no tumor;
-predictions for the 20 in `sam3_delivery`). 111 test queries, 17 features,
+predictions for the 20 held-out FLARE cases). 111 test queries, 17 features,
 patient-level splits (288/113/111). FLARE22 label map validated at Dice=1.000.
 **Relevance is organ-consistent** — a candidate can only be relevant if it shares
 an annotated organ with the query case (cross-organ "matches" are false positives,
-not hits). Env: `llmft` (Python 3.11).
+not hits). Python 3.11; see `requirements.txt`.
 
 **Acceptance test and supporting hypotheses** (nDCG@10, random masking, ref track;
 paired 95% bootstrap CI, Holm-corrected):
