@@ -3,8 +3,10 @@
 Reproducible retrieval-evaluation code for the AAAI 2027 study on heterogeneous
 medical imaging data. OAKG restricts pairwise case comparison to jointly
 observed, anatomically supported evidence and modulates ranking by a shared-
-evidence coefficient. The experiments establish that this observability
-mechanism adds value beyond simple missing-data handling (e.g. masked cosine).
+evidence coefficient. The experiments establish that the complete OAKG framework
+outperforms masked cosine (a retrieval-quality result). The *observation-boundary
+mechanism* itself is isolated not by the masked-cosine contrast but by the
+**OAKG vs OAKG-Union** ablation (see `results/union_ablation/`).
 
 ## Current validated outcomes
 
@@ -32,7 +34,9 @@ paired 95% bootstrap CI, Holm-corrected):
 | 6 | Selective retrieval trades coverage for reliability | risk ↓ as served-rate ↓ | AURC 0.000; served-rate flat at 1.0 | ❌ no abstention range |
 
 **Masking regimes** (how partial observation is simulated — each hides different
-anatomy per case): **uniform** = keep full annotation (matched-scope control);
+anatomy per case): **uniform** = no *additional* masking (each case keeps its full
+native annotation; the residual cross-source scope differences from the source
+protocols still remain) — the matched-scope control;
 **random** = each case independently drops a random fraction (20/40/60/80%) of its
 organs (evidence decreases); **dataset-style** = restrict the whole corpus to one
 organ pattern at a time (pancreas-only / liver-only / kidney-only / multi-organ,
@@ -68,7 +72,8 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   comparison to jointly-observed features.
 - **Hyp 3 is settled negative: OAKG does not beat strong imputation.** We traced
   *why* zero-imputation is so strong: (i) OAKG's γ is organ-set overlap, so it
-  abstains on 100% of cross-organ pairs — but those candidates never reach the
+  marks 100% of cross-organ pairs incomparable (ranked at the bottom) — but those
+  candidates never reach the
   top-10 anyway, so the gap is actually in *same-dataset* ranking under masking;
   (ii) making relevance organ-consistent (removing cross-organ hits) did **not**
   close it (−0.025 → −0.032); (iii) the gap does **not** shrink with missingness —
@@ -90,24 +95,43 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   OAKG − zero-imputation is significant: **+0.185 [0.096, 0.272]** (n=15 prototype),
   holding at scale **+0.068 [0.028, 0.115]** (41 patient-level queries, ref).
   Masked cosine collapses. First clean OAKG-vs-imputation separation.
-- **Policy finding — support-restriction wins, γ-weighting backfires.** On the
+- **Policy finding — shared-evidence weighting is task-dependent.** On the
   *adversarial* hard-distractor (distractors chosen to fool imputation),
   **OAKG-similarity = 1.000 → +0.366 [0.220, 0.512] vs zero-imp, SIG** (perfect
-  discrimination), but **OAKG-product/lexicographic tie zero-imp** and threshold
-  *abstains*. The γ term down-weights narrow-coverage relevant cases — exactly the
-  ones that should rank high. **Primary policy should be OAKG-similarity** (pure
-  support-restriction); γ-product is an ablation that helps only on the broad
-  multi-organ benchmark. See `results/strata/hard_distractor_adversarial.csv`.
+  discrimination), while **OAKG-product/lexicographic tie zero-imp**. The γ
+  (shared-evidence) term down-weights narrow-coverage relevant cases, which hurts
+  on this stratum. **The primary policy remains lexicographic** — it was selected
+  on the *validation* family (tied with product; both above similarity/threshold)
+  and frozen before any test evaluation. We do **not** promote similarity-only on
+  the basis of this test-set stratum; instead we report that shared-evidence
+  weighting is task-dependent and can hurt when relevant cases have narrow
+  coverage. Similarity-only and product are reported as **ablations**. See
+  `results/strata/hard_distractor_adversarial.csv`.
 - **Real-GT FLARE cross-organ tumor stratum — OAKG > imputation (real labels).**
   Using the actual class-14 tumor GT (merged with organs; slice-level, so
   evaluation-only and reported as *paired deltas*), on 364 queries with the
   cross-organ tumor phenotype: **OAKG − zero-imputation = +0.043 [0.019, 0.066],
   SIG** (WL +0.068 SIG; masked cosine collapses −0.382). Confirms the separation on
   *real ground-truth* tumor data, not predictions. Build: `oakg.build_tumor_stratum`.
+  The stratum is **slice-level and kept separate from the patient-level corpus**;
+  adjacent slices of a case are correlated, so only **paired** deltas are reported.
+- **Observation-boundary mechanism (OAKG vs OAKG-Union).** Isolating the boundary
+  rule alone, OAKG beats union-completion where source protocols create one-sided
+  coverage: **dataset-style +0.112 [0.045, 0.182]**, **asymmetric +0.068 [0.022,
+  0.115]** (Holm-sig), uniform ≈0 (control). See `results/union_ablation/`.
+- **Native (unmasked) cross-source.** Under the original source scopes, OAKG beats
+  OAKG-Union on cross-source pooled by **+0.170 nDCG@10, 95% CI [0.045, 0.315],
+  Holm p=0.108** — a substantial positive *directional* effect that is **not
+  statistically significant after Holm** correction (only 21 cross-source-eligible
+  queries). Note: **missingness-indicators (0.626) and zero-imputation (0.585)
+  achieve stronger raw pooled cross-source nDCG@10 than OAKG (0.312)**; OAKG's
+  demonstrated advantage here is specifically over OAKG-Union and in its
+  incomparability behaviour, not in beating imputation on raw ranking. See
+  `results/native_cross_dataset/`.
 - **Structured-semantic honesty is real.** OAKG's three-valued reasoning has a
-  0.000 unsupported-negative rate: it abstains (U) on unobserved anatomy instead
-  of asserting "absent" (closed-world's 0.014), at the cost of a 0.43 indeterminate
-  rate. No retrieval metric captures this.
+  0.000 unsupported-negative rate: it returns Unknown (U) on unobserved anatomy
+  instead of asserting "absent" (closed-world's 0.014), at the cost of a 0.43
+  indeterminate rate. No retrieval metric captures this.
 - **Two open anomalies:** upstream degradation is *inverted* (pred slightly beats
   ref) — an artifact of partial predicted coverage (only 20/100 FLARE and
   tumor-only LiTS have preds); and selective retrieval has *no* range (organ

@@ -64,6 +64,18 @@ Dataset-style & 0.361 & 0.249 & $\mathbf{+0.112}$ \\
 \end{tabular}
 ```
 
+> **These absolute nDCG@10 values are ablation-internal — cite the paired Δ, not
+> the columns.** This module is a self-contained *paired* OAKG-vs-OAKG-Union
+> comparison: both methods score **all evaluable queries with incomparable pairs
+> ranked at the bottom**, via the ablation's own group-mean similarity. That is a
+> different query set and code path from the main benchmark tables, which report
+> over **served queries only** and use `oakg.oakg.oakg_scores`. So the random OAKG
+> here (**0.4027**) is not the same quantity as the main-table / policy-selection
+> random OAKG (**0.4074**, ref, served-only): serving the harder incomparable
+> queries at the bottom drags the ablation mean down by ~0.005, exactly the
+> observed gap. Both are internally correct — only the **Δ_obs** column is meant
+> to be read across methods.
+
 ## Masking regimes (what each one is)
 
 Each case's real annotated organs are the starting point; a regime decides which
