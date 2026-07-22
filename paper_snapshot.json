@@ -1,6 +1,6 @@
 {
   "snapshot_version": 1,
-  "git_commit": "2ab965b50f5b8c831c790a01ea89df6adf30a247",
+  "git_commit": "1d143ce3c84c6de90eae49bb74d0cffbeeba3dbf",
   "primary_policy": "lexicographic",
   "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
   "query_convention": {
@@ -42,18 +42,18 @@
     },
     {
       "path": "results/tables/publication_ready_retrieval_table.csv",
-      "sha256": "5e96aceec23a1aa5d25b9bcece3da7445d15d18a46e500dbd87c5e454cdd3aa2",
+      "sha256": "a116f34d4a4b788f6088e23e3ab08370cdc3a36437e27a88f25422630b6eaddd",
       "size_bytes": 12798
     },
     {
       "path": "results/tables/ranking_policy_selection.csv",
-      "sha256": "1a9458d707800b664f2e51e918caa2924c78069888458b34209cd623513b1cdc",
-      "size_bytes": 237
+      "sha256": "c131bf4dcbe63797cefdfadbcb071bae885e9156bad343de7f8cb7a567efb21c",
+      "size_bytes": 236
     },
     {
       "path": "results/tables/retrieval_summary.csv",
-      "sha256": "e1a3a87038a142171ce25a5e7b03219c868c8d84499d438a535a35579dc13a36",
-      "size_bytes": 39090
+      "sha256": "2bf7b4996dfe7073f0f6818cb6967aab30afd390c8b6bfac087adfb4c5c96685",
+      "size_bytes": 39139
     },
     {
       "path": "results/tables/structured_query_summary.csv",
