@@ -79,6 +79,21 @@ def _score_row(qc, cands, qidx, cidx, g, X, M, real, corpus, wl, policies=None):
     return out
 
 
+def _ndcg(method: str, g: np.ndarray, s: np.ndarray) -> float:
+    """nDCG@10. OAKG methods use incomparable_policy=bottom (keep the full pool,
+    push observation-incomparable candidates below every eligible score, so the
+    ideal-DCG is over the full pool) — consistent with oakg.benchmark and the
+    union ablation. Baselines have no observation-eligibility, so their non-finite
+    scores are dropped."""
+    v = np.isfinite(s)
+    if not v.any():
+        return np.nan
+    if method.startswith("OAKG"):
+        floor = float(s[v].min()) - 1.0
+        return ndcg_at_k(g, np.where(v, s, floor))
+    return ndcg_at_k(g[v], s[v])
+
+
 def tumor_stratum(out_dir, data_dir="data_tumor"):
     cfg, data, corpus, real, X, M, wl = _load(data_dir)
     recs = []
@@ -90,9 +105,7 @@ def tumor_stratum(out_dir, data_dir="data_tumor"):
         if g.sum() == 0:
             continue
         for m, s in _score_row(qc, cands, qidx, cidx, g, X, M, real, corpus, wl).items():
-            v = np.isfinite(s)
-            recs.append({"query_id": q.query_id, "method": m,
-                         "nDCG@10": ndcg_at_k(g[v], s[v]) if v.sum() else np.nan})
+            recs.append({"query_id": q.query_id, "method": m, "nDCG@10": _ndcg(m, g, s)})
     _summary(pd.DataFrame(recs)).to_csv(out_dir / "flare_tumor_realgt.csv", index=False)
     print("wrote flare_tumor_realgt.csv")
 
@@ -124,9 +137,7 @@ def hard_distractor(out_dir, adversarial: bool):
                 continue
             cidx = np.array([corpus.case_to_row[c] for c in cands]); qidx = corpus.case_to_row[qc]
             for m, s in _score_row(qc, cands, qidx, cidx, g, X, M, real, corpus, wl, policies).items():
-                v = np.isfinite(s)
-                recs.append({"query_id": f"{TARGET}:{qc}", "method": m,
-                             "nDCG@10": ndcg_at_k(g[v], s[v]) if v.sum() else np.nan})
+                recs.append({"query_id": f"{TARGET}:{qc}", "method": m, "nDCG@10": _ndcg(m, g, s)})
     name = "hard_distractor_adversarial.csv" if adversarial else "hard_distractor.csv"
     _summary(pd.DataFrame(recs)).to_csv(out_dir / name, index=False)
     print("wrote", name)
@@ -162,9 +173,7 @@ def backbone_comparison(out_dir, frac: float = 0.40):
         if comp is not None:
             sc["CompGCN"] = embedding_scores(qc, cands, comp)
         for m, s in sc.items():
-            v = np.isfinite(s)
-            recs.append({"query_id": q.query_id, "method": m,
-                         "nDCG@10": ndcg_at_k(g[v], s[v]) if v.sum() else np.nan})
+            recs.append({"query_id": q.query_id, "method": m, "nDCG@10": _ndcg(m, g, s)})
     _summary(pd.DataFrame(recs)).to_csv(out_dir / "backbone_comparison.csv", index=False)
     print("wrote backbone_comparison.csv")
 
