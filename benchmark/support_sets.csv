@@ -1,0 +1,18 @@
+item_id,item_type,support_set,rationale,curation_status
+has_tumor,phenotype,tumor_annotation,Requires any and tumor annotation,rule-derived
+left_kidney_present,phenotype,left_kidney,Requires left_kidney anatomy,rule-derived
+left_kidney_volume_cm3,phenotype,left_kidney,Requires left_kidney anatomy,rule-derived
+lesion_multiplicity,phenotype,tumor_annotation,Requires any and tumor annotation,rule-derived
+liver_present,phenotype,liver,Requires liver anatomy,rule-derived
+liver_tumor_containment,phenotype,liver|liver_tumor_annotation,Requires liver anatomy and tumor annotation,rule-derived
+liver_tumor_present,phenotype,liver|liver_tumor_annotation,Requires liver anatomy and tumor annotation,rule-derived
+liver_volume_cm3,phenotype,liver,Requires liver anatomy,rule-derived
+pancreas_present,phenotype,pancreas,Requires pancreas anatomy,rule-derived
+pancreas_tumor_containment,phenotype,pancreas|pancreas_tumor_annotation,Requires pancreas anatomy and tumor annotation,rule-derived
+pancreas_tumor_present,phenotype,pancreas|pancreas_tumor_annotation,Requires pancreas anatomy and tumor annotation,rule-derived
+pancreas_volume_cm3,phenotype,pancreas,Requires pancreas anatomy,rule-derived
+right_kidney_present,phenotype,right_kidney,Requires right_kidney anatomy,rule-derived
+right_kidney_volume_cm3,phenotype,right_kidney,Requires right_kidney anatomy,rule-derived
+spleen_present,phenotype,spleen,Requires spleen anatomy,rule-derived
+spleen_volume_cm3,phenotype,spleen,Requires spleen anatomy,rule-derived
+tumor_burden_cm3,phenotype,tumor_annotation,Requires any and tumor annotation,rule-derived

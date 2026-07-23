@@ -149,6 +149,24 @@ def main() -> None:
                 [f"tumor_annotation:{o}" for o in sup] if (is_tumor and sup)
                 else (["tumor_annotation:*"] if is_tumor else [])),
         }
+    # release-format mapping matching the benchmark-artifact template
+    # (item_id, item_type, support_set, rationale, curation_status).
+    def _members(f):
+        u = support_units[f]
+        m = list(u["anatomy"])
+        for a in u["annotation_capability"]:
+            m.append("tumor_annotation" if a == "tumor_annotation:*"
+                     else a.split(":")[1] + "_tumor_annotation")
+        return m
+    ss_rows = ["item_id,item_type,support_set,rationale,curation_status"]
+    for f in sorted(schema_map):
+        mem = _members(f)
+        anat = support_units[f]["anatomy"]
+        rat = ("Requires " + (" and ".join(anat) + " anatomy" if anat else "any")
+               + (" and tumor annotation" if support_units[f]["annotation_capability"] else ""))
+        ss_rows.append(f'{f},phenotype,{"|".join(mem)},{rat},rule-derived')
+    (out / "support_sets.csv").write_text("\n".join(ss_rows) + "\n")
+
     (out / "support_units.json").write_text(json.dumps({
         "note": ("Each phenotype's support = anatomy units (organ observed) + "
                  "annotation-capability units (source annotates that phenotype). "
