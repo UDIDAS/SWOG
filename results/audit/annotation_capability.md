@@ -5,19 +5,29 @@ Answers the PI's question: does the code distinguish **anatomical observation** 
 pancreatic-*tumor* status)?
 
 ## What the code actually does (honest answer)
-Observation is represented **per (case, feature)** by a feature-availability mask:
+The MMKG schema represents **both** scopes explicitly — they are just projected onto
+one runtime mask:
+
+1. **Anatomical observation scope** — which organs a case observes
+   (`available_organs`; surfaced in `benchmark/anatomy.json`).
+2. **Annotation-capability scope** — which phenotypes a *source* annotates
+   (`DatasetSpec.organs` / `DatasetSpec.tumor_labels` in `oakg/phenotypes.py`;
+   FLARE has `tumor_labels = {}` → **no tumor-annotation capability**). Now surfaced
+   in `benchmark/annotation_scopes.json`.
+
+`organ_phenotypes` emits a phenotype row **only when both hold** — the organ is
+present **and** the source annotates that phenotype. So the runtime mask
+`M = ~isnan(X)` (`oakg/data.py`) is the **realized conjunction** of the two scopes,
+not a substitute for them:
 
 ```
-M[case, feature] = the phenotype value for (case, feature) exists (not NaN)
+observed(case, phenotype)  ⇔  support_organs ⊆ observed_organs
+                             AND  phenotype ∈ source.annotated_phenotypes
 ```
-(`oakg/data.py` — `M = ~np.isnan(X)`.)
 
-Annotation capability is therefore operationalized through **feature availability**,
-**not** through explicit, named support units (there is no separate
-`pancreatic_tumor_annotation` observation unit in the schema; `support_organs` encodes
-anatomy only). A FLARE case simply has **no `pancreas_tumor_present` row** (FLARE22
-has no tumor annotation), so that feature is unobserved for it — the correct T/F/U
-behaviour, achieved via missingness rather than an explicit capability ontology.
+A FLARE case observes the pancreas *organ* but pancreatic-*tumor* is outside its
+annotation-capability scope → `pancreas_tumor_present` is **Unknown** and excluded
+from comparison. This is the paper's two-part support formalism, faithfully realized.
 
 ## Concrete MSD-Pancreas ↔ FLARE22 example (verified)
 | | MSD-Pancreas case | FLARE22 case |
@@ -32,17 +42,19 @@ behaviour, achieved via missingness rather than an explicit capability ontology.
 So the *functional* requirement the paper describes **is met**: a FLARE case is never
 treated as tumor-negative; its tumor status is Unknown and excluded from comparison.
 
-## The gap and the two resolutions (PI's call)
-The gap is **formalization wording, not a functional bug**: the paper frames support
-as an explicit anatomy-**plus-annotation-capability** support set, while the code uses
-feature availability to the same effect.
+## Resolution — no redesign, no weaker claim
+The earlier framing ("reword down to feature availability") **undersold it**. The MMKG
+already carries both scopes; the only thing missing was that the annotation-capability
+half lived inside `DatasetSpec` and was **not exposed** in the public schema (which
+showed `support_organs` = anatomy only — why the PI saw "only support_organs").
 
-- **Preferred (larger):** extend the schema to explicit support units
-  (`pancreas_anatomy`, `pancreatic_tumor_annotation`, …) and rerun. **Not done — a
-  redesign should be discussed with the PI first.**
-- **Lower-risk (recommended):** revise the paper to match the implementation —
-  *"Annotation capability is operationalized through dataset-specific feature
-  availability; anatomical breadth through organ observation scopes."* The paper
-  should not claim a richer executable capability ontology than the code implements.
+**Fix (done, additive, no rerun, no result change):** surface the annotation-capability
+scope as `benchmark/annotation_scopes.json`. The paper can now keep its **full** two-part
+formalism, backed by two visible schema artifacts:
 
-No result changes either way — the UNOBSERVED behaviour is already correct.
+- anatomy scope → `benchmark/anatomy.json`
+- annotation-capability scope → `benchmark/annotation_scopes.json`
+
+described as: *observability = anatomical observation scope ∩ annotation-capability
+scope, realized as feature availability.* No code/scoring/redesign change; the
+UNOBSERVED behaviour was already correct.

@@ -1,0 +1,76 @@
+{
+ "definition": "observability(case, phenotype) = phenotype.support_organs \u2286 case.observed_organs  AND  phenotype \u2208 source.annotated_phenotypes; realized at runtime as feature availability M = ~isnan(X).",
+ "anatomical_observation_scopes": {
+  "msd_pancreas": [
+   "pancreas"
+  ],
+  "lits": [
+   "liver"
+  ],
+  "flare22": [
+   "left_kidney",
+   "liver",
+   "pancreas",
+   "right_kidney",
+   "spleen"
+  ]
+ },
+ "annotation_capability_scopes": {
+  "flare22": {
+   "annotates_organs": [
+    "left_kidney",
+    "liver",
+    "pancreas",
+    "right_kidney",
+    "spleen"
+   ],
+   "annotates_tumor_for": [],
+   "annotated_phenotypes": [
+    "left_kidney_present",
+    "left_kidney_volume_cm3",
+    "liver_present",
+    "liver_volume_cm3",
+    "pancreas_present",
+    "pancreas_volume_cm3",
+    "right_kidney_present",
+    "right_kidney_volume_cm3",
+    "spleen_present",
+    "spleen_volume_cm3"
+   ]
+  },
+  "lits": {
+   "annotates_organs": [
+    "liver"
+   ],
+   "annotates_tumor_for": [
+    "liver"
+   ],
+   "annotated_phenotypes": [
+    "has_tumor",
+    "lesion_multiplicity",
+    "liver_present",
+    "liver_tumor_containment",
+    "liver_tumor_present",
+    "liver_volume_cm3",
+    "tumor_burden_cm3"
+   ]
+  },
+  "msd_pancreas": {
+   "annotates_organs": [
+    "pancreas"
+   ],
+   "annotates_tumor_for": [
+    "pancreas"
+   ],
+   "annotated_phenotypes": [
+    "has_tumor",
+    "lesion_multiplicity",
+    "pancreas_present",
+    "pancreas_tumor_containment",
+    "pancreas_tumor_present",
+    "pancreas_volume_cm3",
+    "tumor_burden_cm3"
+   ]
+  }
+ }
+}

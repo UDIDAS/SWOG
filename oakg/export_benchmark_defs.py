@@ -102,6 +102,35 @@ def main() -> None:
     }
     (out / "anatomy.json").write_text(json.dumps(anatomy, indent=1) + "\n")
 
+    # 5b. annotation_scopes.json — the OTHER half of observability -------------
+    # Observability = anatomical observation scope (which organs a case observes)
+    # INTERSECT annotation-capability scope (which phenotypes a source annotates).
+    # The runtime mask M = ~isnan(X) is the realized conjunction of the two. This
+    # surfaces the annotation-capability half (from DatasetSpec) that the anatomy-
+    # only `support_organs` field does not expose.
+    dcol = dict(zip(cases.case_id, cases.dataset))
+    pheno2 = pd.read_csv(Path(args.data) / "phenotypes_ref.csv")
+    pheno2 = pheno2.assign(source_id=pheno2.case_id.map(dcol).map(SOURCE))
+    ann = {}
+    for sid in sorted(set(SOURCE.values())):
+        feats = sorted(set(pheno2.loc[pheno2.source_id == sid, "feature"]))
+        organs = sorted({f[:-len("_present")] for f in feats if f.endswith("_present")
+                         and not f.endswith("_tumor_present")})
+        tumor_organs = sorted({f[:-len("_tumor_present")] for f in feats
+                               if f.endswith("_tumor_present")})
+        ann[sid] = {
+            "annotates_organs": organs,
+            "annotates_tumor_for": tumor_organs,   # [] = no tumor-annotation capability
+            "annotated_phenotypes": feats,
+        }
+    (out / "annotation_scopes.json").write_text(json.dumps({
+        "definition": ("observability(case, phenotype) = phenotype.support_organs ⊆ "
+                       "case.observed_organs  AND  phenotype ∈ source.annotated_phenotypes; "
+                       "realized at runtime as feature availability M = ~isnan(X)."),
+        "anatomical_observation_scopes": per_source_scope,
+        "annotation_capability_scopes": ann,
+    }, indent=1) + "\n")
+
     # 6. masking.json — seeds + realization catalogue -------------------------
     seed = Config().seed
     masking = {
@@ -132,6 +161,9 @@ def main() -> None:
         "- `case_scopes.csv` — per-case source, split, native observed organs, split hash.\n"
         "- `phenotype_schema.json` — feature → type + anatomical support (schema only).\n"
         "- `anatomy.json` — organ vocabulary, per-source native scopes, support sets.\n"
+        "- `annotation_scopes.json` — the annotation-capability half of observability "
+        "(which phenotypes each source annotates; FLARE annotates no tumor). "
+        "Observability = anatomy scope ∩ annotation-capability scope.\n"
         "- `masking.json` — masking base seed and the full realization catalogue.\n"
         "- `ontology_mappings.json` + `kg_schema.owl` — KG-schema grounding of entities/"
         "values to standard terminologies (SNOMED CT / NCIt); curated mapping + OWL T-Box.\n\n"
