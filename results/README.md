@@ -13,6 +13,25 @@ python -m oakg.strata_results      # strata/
 this snapshot. Current benchmark: **512 patient-level cases** (281 Pancreas +
 131 LiTS + 100 FLARE), 111 test queries, 17 features.
 
+## Result categories
+
+All outputs come from the corrected implementation (`incomparable_policy: bottom`,
+OAKG-Lexicographic primary); the authoritative snapshot is `../paper_snapshot.json`.
+
+- **PRIMARY (paper tables/figures):** `tables/` (publication_ready, retrieval_summary,
+  ranking_policy_selection, cross_backbone, structured_query_summary, ranking_consistency,
+  risk_coverage, upstream_degradation, query_diagnostics, **master_nDCG_table**),
+  `figures/`.
+- **SUPPLEMENTARY (patient-level analyses):** `union_ablation/` (observation-boundary),
+  `native_cross_dataset/` (native source protocols), `strata/hard_distractor.csv` +
+  `strata/hard_distractor_adversarial.csv` (patient-level diagnostic), `strata/backbone_comparison.csv`.
+- **EXPLORATORY (not confirmatory):** `strata/flare_tumor_realgt.csv` — **slice-level**,
+  364 slices ≠ 364 patients, patient clustering unreconstructable; CIs/p not confirmatory.
+- **DEPRECATED / corrected:** none tracked. The 0.403-vs-0.407 correction (the main
+  pipeline previously *dropped* incomparable candidates) is documented in
+  `audit/` — no stale 0.407 or "served-vs-all-query" explanation remains in the
+  primary outputs.
+
 ## Which file fills which paper table
 
 | File | Paper output | What it is |

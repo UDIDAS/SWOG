@@ -223,13 +223,21 @@ executes anywhere.
 **Notebook (driver):** open [`notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb`](notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb)
 and run all cells.
 
-**Command line:**
+**Authoritative paper command (reviewers start here):**
 
 ```bash
-python -m oakg.pipeline
+make reproduce-paper          # == python -m oakg.pipeline --config configs/aaai27_paper.yaml + strata/ablations
+python validate_checklist.py  # verify every artifact + snapshot hashes + headline numbers
 ```
 
-Both drive `oakg.pipeline.run_all(config)`, which writes to `results/`:
+This regenerates the **one authoritative snapshot** recorded in
+[`paper_snapshot.json`](paper_snapshot.json) (frozen config, `incomparable_policy:
+bottom`, OAKG-Lexicographic primary, 10k bootstrap; commit-pinned + SHA-256'd) and
+the headline [`results/tables/master_nDCG_table.md`](results/tables/master_nDCG_table.md).
+`python -m oakg.pipeline` with **no** config is a synthetic **smoke test only** — it
+prints a banner and does **not** produce paper results.
+
+`run_all(config)` writes to `results/`:
 
 | File | Guideline output |
 |------|------------------|
