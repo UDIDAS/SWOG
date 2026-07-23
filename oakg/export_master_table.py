@@ -79,14 +79,15 @@ def main() -> None:
     for r in df.itertuples(index=False):
         md.append(f"| {r.method} | " + " | ".join(f"{getattr(r, rg):.3f}" for rg in REGIMES) + " |")
     md.append(
-        "\n> **Do NOT subtract the OAKG-Union row from the OAKG-Lexicographic row.**\n"
-        "> Rows 1–5 are the main pipeline; **OAKG-Union comes from the separate "
-        "observation-boundary ablation** and is a *paired twin of OAKG within that "
-        "ablation*, not of the main-pipeline OAKG-Lexicographic. The valid OAKG-vs-Union "
-        "effect is the **paired Δ** in `results/union_ablation/` "
-        "(e.g. asymmetric Δ=+0.068, dataset-style Δ=+0.112), NOT the difference of these "
-        "two absolute rows. OAKG-Union is listed here only for completeness of absolute "
-        "values, per request.\n")
+        "\n> **All-111 convention:** every value is averaged over the same 111 queries "
+        "(a query a method cannot serve scores 0). So rows **1–5 (main pipeline) ARE "
+        "directly subtractable** — e.g. OAKG-Lexicographic − Masked cosine gives the "
+        "paired effect.\n"
+        "> **Exception — do NOT subtract the OAKG-Union row.** OAKG-Union comes from the "
+        "separate observation-boundary ablation (its own accounting), not the main "
+        "pipeline. The valid OAKG-vs-Union effect is the **paired Δ** in "
+        "`results/union_ablation/` (asymmetric +0.068, dataset-style +0.112), not the "
+        "difference of these two absolute rows.\n")
     md.append("Sources: rows 1–5 `results/tables/retrieval_summary.csv` (ref); "
               "OAKG-Union `results/union_ablation/union_ablation_method_summary.csv`.")
     (out / "master_nDCG_table.md").write_text("\n".join(md) + "\n")

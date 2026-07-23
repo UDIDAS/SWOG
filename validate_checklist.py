@@ -96,6 +96,23 @@ def main() -> None:
     _p("OK" if abs(lex - ur) < 1e-4 else "FAIL",
        f"main == union-ablation random OAKG ({lex:.6f} vs {ur:.6f})")
 
+    print("\n== Cross-file consistency GATE (OAKG-Lexicographic, ref, all 4 regimes) ==")
+    # Every main-pipeline file must report the SAME OAKG-Lexicographic value per
+    # regime. Under the all-111 convention these aggregations coincide, so any
+    # disagreement means a stale or mis-aggregated file -> FAIL.
+    pt = pd.read_csv(ROOT / "results/tables/publication_ready_retrieval_table.csv")
+    rs = pd.read_csv(ROOT / "results/tables/retrieval_summary.csv")
+    mt = pd.read_csv(ROOT / "results/tables/master_nDCG_table.csv")
+    for reg in ["uniform", "random", "asymmetric", "dataset_style"]:
+        p = round(float(str(pt[(pt.track == "ref") & (pt.masking_regime == reg)
+                  & (pt.method == "OAKG-lexicographic [ref]")]["nDCG@10"].iloc[0]).split()[0]), 3)
+        s = round(float(rs[(rs.track == "ref") & (rs.masking_regime == reg)
+                  & (rs.method == "OAKG-lexicographic [ref]")]["nDCG@10"].mean()), 3)
+        m = round(float(mt[mt.method == "OAKG-Lexicographic"][reg].iloc[0]), 3)
+        agree = (p == s == m)
+        _p("OK" if agree else "FAIL",
+           f"{reg}: publication={p} summary={s} master={m}" + ("" if agree else "  <<< DISAGREE"))
+
     print(f"\n== {ok} passed, {warn} warnings, {fail} failed ==")
     raise SystemExit(1 if fail else 0)
 

@@ -4,9 +4,11 @@ Reproducible retrieval-evaluation code for the AAAI 2027 study on heterogeneous
 medical imaging data. OAKG restricts pairwise case comparison to jointly
 observed, anatomically supported evidence and modulates ranking by a shared-
 evidence coefficient. The experiments establish that the complete OAKG framework
-outperforms masked cosine (a retrieval-quality result). The *observation-boundary
-mechanism* itself is isolated not by the masked-cosine contrast but by the
-**OAKG vs OAKG-Union** ablation (see `results/union_ablation/`).
+outperforms masked cosine where it can support the comparison (uniform, random) and
+**ties** it under extreme one-sidedness (asymmetric, dataset-style), where OAKG
+abstains rather than compare over unshared anatomy (all-111 convention). The
+*observation-boundary mechanism* itself is isolated not by the masked-cosine contrast
+but by the **OAKG vs OAKG-Union** ablation (see `results/union_ablation/`).
 
 ## Current validated outcomes
 
@@ -26,7 +28,7 @@ paired 95% bootstrap CI, Holm-corrected):
 
 | # | Hypothesis | Expected | Obtained (512-case) | Verdict |
 |---|---|---|---|---|
-| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **significant in all 4 masking regimes (+0.165 … +0.352) and all 4 missingness levels (+0.206 … +0.362)**, p<0.001 | ✅ pass (strong, robust) |
+| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **significant in uniform (+0.352) and random (+0.298)**; **ties** in asymmetric (+0.019 ns) and dataset-style (+0.002 ns) — where OAKG *abstains* on 40–56% of queries rather than compare over unshared organs, while masked cosine still ranks via residual global features (all-111 convention) | ✅ pass (uniform/random); ⚠️ **ties under extreme one-sidedness** |
 | 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.403 > 0.318 (**+0.085**) | ✅ confirmed |
 | 3 | OAKG > strong imputation baselines | ≥ zero/mean/missingness/Gower | beats Gower +0.213, mean +0.034 (ns); **never beats** zero-imp / missingness-indicators, **significantly worse at 80% missing** (see below) | ❌ **not met (settled)** |
 | 4 | Upstream degradation ref > pred | positive Δ | OAKG-Lexicographic **−0.035** (pred > ref) — inverted | ⚠️ anomaly (partial pred coverage) |
@@ -43,16 +45,22 @@ organ pattern at a time (pancreas-only / liver-only / kidney-only / multi-organ,
 mimicking source-specific annotation); **asymmetric** = give the query and
 candidate sides different breadth (broad↔narrow, the extreme one-sided case).
 
-**Evaluation convention — incomparable candidates are ranked at the bottom.** When
-OAKG cannot compare a candidate (it shares no observed organ with the query), that
-candidate is **kept in the pool and ranked at the bottom**, not dropped — so nDCG's
-ideal-DCG is taken over the *full* candidate pool (`incomparable_policy: bottom`).
-This is applied identically in the main benchmark, the OAKG-Union ablation, and the
-native analysis, so every OAKG number is one consistent quantity (e.g. random-regime
-OAKG-Lexicographic is 0.403 in all of them). Dropping incomparable candidates instead
-would inflate nDCG in the one-sided regimes (asymmetric, dataset-style), where OAKG
-would otherwise get a free pass on relevant candidates it declined to rank; see
-[results/audit/](results/audit/) for the field-by-field 0.403-vs-0.407 audit.
+**Evaluation convention — incomparable at the bottom, averaged over all 111 queries.**
+Two rules, applied identically to every method:
+1. **Candidate level:** a candidate OAKG cannot compare (shares no observed organ)
+   is kept in the pool and ranked at the **bottom**, not dropped (`incomparable_policy:
+   bottom`) — so ideal-DCG is over the *full* pool.
+2. **Query level:** every query is averaged (**all 111**, same set for every method).
+   A query where OAKG has **no** comparable candidate scores **0** — OAKG abstains
+   rather than fabricate a comparison over unshared organs. It is *not* excluded.
+
+Averaging over served queries only (excluding OAKG's abstentions) inflates OAKG in the
+one-sided regimes; all-111 is the fair, comparable convention. Because every method
+now covers the same 111 queries, the pooled and mean-of-realization aggregations
+coincide, so **every main-pipeline table reports one identical value per regime**
+(enforced by the consistency gate in `validate_checklist.py`). Trade-off owned
+explicitly: under all-111 OAKG *ties* masked cosine in asymmetric/dataset-style (it
+abstains a lot there) and wins in uniform/random. See [results/audit/CHANGELOG.md](results/audit/CHANGELOG.md).
 
 **Per-stratum — OAKG-Lexicographic − masked cosine by masking regime** (nDCG@10, ref;
 the aggregate is a floor — OAKG wins in *every* regime):
@@ -61,8 +69,8 @@ the aggregate is a floor — OAKG wins in *every* regime):
 |---|---|---|
 | uniform | +0.352 | [0.284, 0.420] |
 | random | +0.298 | [0.264, 0.333] |
-| dataset-style | +0.219 | [0.180, 0.258] |
-| asymmetric | +0.165 | [0.112, 0.219] |
+| dataset-style | +0.002 | [−0.040, 0.043] (ns) |
+| asymmetric | +0.019 | [−0.039, 0.076] (ns) |
 
 **By missingness level — OAKG-Lexicographic vs baselines** (nDCG@10, ref): OAKG beats
 masked cosine at every level, but never beats imputation and loses at 80%:
@@ -76,11 +84,16 @@ masked cosine at every level, but never beats imputation and loses at 80%:
 
 **Findings — what they mean:**
 
-- **The central claim holds and is robust.** OAKG beats masked cosine — the
-  guidelines' "most important simple baseline" — significantly in *every* masking
-  regime and at *every* missingness level. The graph-based observability mechanism
-  (support-restriction + γ-eligibility) clearly adds value over restricting
-  comparison to jointly-observed features.
+- **OAKG beats masked cosine where it can support the comparison; ties where it
+  abstains.** Significantly beats masked cosine in **uniform (+0.352)** and
+  **random (+0.298, every missingness level)** — where OAKG serves ~all queries. In
+  the **extreme one-sided regimes (asymmetric, dataset-style)** OAKG *ties* masked
+  cosine: it **abstains on 40–56% of queries** (no candidate shares its target organ,
+  so it scores 0 under all-111) while masked cosine still ranks those via residual
+  *global* features. This is the honest all-111 result — OAKG never does *worse* than
+  masked cosine, and its value is precisely that it declines to compare over unshared
+  anatomy rather than fabricate a ranking. (Served-only averaging previously hid the
+  abstentions and made this look like a 4/4 win.)
 - **Hyp 3 is settled negative: OAKG does not beat strong imputation.** We traced
   *why* zero-imputation is so strong: (i) OAKG's γ is organ-set overlap, so it
   marks 100% of cross-organ pairs incomparable (ranked at the bottom) — but those

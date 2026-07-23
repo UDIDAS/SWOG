@@ -51,9 +51,9 @@ OAKG-Lexicographic primary); the authoritative snapshot is `../paper_snapshot.js
 
 ## Supplementary strata (`strata/`) — the OAKG-vs-imputation story
 
-The main benchmark shows OAKG **beats masked cosine decisively** but only **ties
-strong imputation** on aggregate. These strata isolate where OAKG's mechanism
-separates from imputation. Each CSV: `method, nDCG@10, delta_vs_ZeroImp, ci_low,
+The main benchmark shows OAKG **beats masked cosine in uniform/random** (ties it in
+the one-sided regimes, where it abstains) and only **ties strong imputation** on
+aggregate. These strata isolate where OAKG's mechanism separates from imputation. Each CSV: `method, nDCG@10, delta_vs_ZeroImp, ci_low,
 ci_high, served_rate, sig` (paired 95% bootstrap).
 
 | File | Result | Meaning |
@@ -111,7 +111,8 @@ queries imputation is competitive (see the aggregate tables).
 ## The one-paragraph takeaway
 
 OAKG's **support-restriction** is the mechanism that matters: it beats masked
-cosine everywhere and beats imputation on the patient-level hard-distractor
+cosine in uniform/random (ties under extreme one-sidedness, where it abstains) and
+beats imputation on the patient-level hard-distractor
 stratum (with a directional, exploratory slice-level tumor corroboration). Its
 **γ-weighting policy** is a double-edged knob — it helps on the broad
 multi-organ benchmark but can **backfire on narrow-relevant distractors**. The

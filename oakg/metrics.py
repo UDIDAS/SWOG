@@ -59,13 +59,18 @@ def query_metric_row(
     graded = rel.reindex(candidate_ids)["graded_relevance"].fillna(0).to_numpy(dtype=float)
 
     if not served or len(scores) == 0:
+        # ALL-QUERY convention: a query the method cannot serve (no comparable
+        # candidate) still counts — it scores 0 on the metrics whose relevance
+        # class is present (it retrieved nothing useful), and NaN only where the
+        # metric is undefined (no relevant candidate at all). This keeps every
+        # method averaged over the SAME query set. NaN only if truly no candidates.
         return {
             "query_id": query_id,
             "method": method,
-            "P@10": np.nan,
-            "R@10": np.nan,
-            "AP": np.nan,
-            "nDCG@10": np.nan,
+            "P@10": 0.0 if binary.sum() > 0 else np.nan,
+            "R@10": 0.0 if binary.sum() > 0 else np.nan,
+            "AP": 0.0 if binary.sum() > 0 else np.nan,
+            "nDCG@10": 0.0 if graded.sum() > 0 else np.nan,
             "served": False,
         }
 

@@ -2,7 +2,7 @@
 
 Generated from the committed result CSVs (corrected pipeline: `incomparable_policy: bottom`, OAKG-Lexicographic primary; snapshot `paper_snapshot.json`). Regenerate: `python -m oakg.export_paper_tables`.
 
-> Absolute nDCG@10 is over each method's **served** queries (OAKG's served-rate is < 1 in one-sided regimes), so **do not subtract absolute columns across methods** to get an effect — use the **paired** tables (union-ablation, hard-distractor) for method contrasts.
+> **All-111 convention:** every value is averaged over the same 111 queries (a query a method cannot serve scores 0). Main-pipeline absolute columns are therefore directly comparable/subtractable. The one exception is **OAKG-Union**, which is ablation-internal (its own accounting) — for OAKG-vs-Union use the **paired Δ** in the union-ablation table, not a column subtraction.
 
 ---
 ## PRIMARY
@@ -11,7 +11,7 @@ Generated from the committed result CSVs (corrected pipeline: `incomparable_poli
 
 | method | uniform | random | asymmetric | dataset_style |
 |---|---|---|---|---|
-| OAKG-Lexicographic | 0.399 | 0.403 | 0.352 | 0.339 |
+| OAKG-Lexicographic | 0.399 | 0.403 | 0.263 | 0.206 |
 | Masked cosine | 0.047 | 0.105 | 0.244 | 0.204 |
 | Zero imputation | 0.440 | 0.439 | 0.434 | 0.404 |
 | Missingness indicators | 0.442 | 0.442 | 0.435 | 0.418 |
@@ -33,8 +33,8 @@ Generated from the committed result CSVs (corrected pipeline: `incomparable_poli
 
 | masking_regime | P@10 | R@10 | mAP | nDCG@10 | ServedRate |
 |---|---|---|---|---|---|
-| asymmetric | 0.281 [0.232, 0.333] | 0.046 [0.039, 0.054] | 0.270 [0.234, 0.310] | 0.360 [0.307, 0.416] | 0.730 |
-| dataset_style | 0.275 [0.236, 0.315] | 0.048 [0.041, 0.056] | 0.328 [0.295, 0.362] | 0.333 [0.293, 0.375] | 0.617 |
+| asymmetric | 0.205 [0.165, 0.246] | 0.033 [0.027, 0.040] | 0.194 [0.163, 0.227] | 0.263 [0.219, 0.307] | 0.730 |
+| dataset_style | 0.174 [0.147, 0.201] | 0.030 [0.025, 0.036] | 0.204 [0.178, 0.231] | 0.206 [0.176, 0.235] | 0.617 |
 | random | 0.330 [0.296, 0.364] | 0.053 [0.047, 0.059] | 0.347 [0.318, 0.377] | 0.403 [0.368, 0.438] | 1.000 |
 | uniform | 0.323 [0.253, 0.394] | 0.051 [0.038, 0.064] | 0.376 [0.320, 0.435] | 0.399 [0.328, 0.470] | 1.000 |
 

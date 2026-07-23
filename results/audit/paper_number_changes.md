@@ -1,15 +1,15 @@
 # Paper-text number changes (apply to the manuscript)
 
-The bottom-ranking convention fix changed several OAKG numbers. The repo tables,
-README, snapshot, and tests are already updated; the **manuscript is not in this
-repo**, so apply the substitutions below to the paper text. All values are the
-authoritative committed ones (`git show 1d143ce -- README.md`).
+Two corrections changed several OAKG numbers: (1) incomparable candidates drop→bottom,
+(2) query averaging served-only→all-111. The repo tables, README, snapshot, and tests
+are updated; the **manuscript is not in this repo**, so apply the FINAL substitutions
+below (OLD = original served-only; NEW = final all-111, `incomparable_policy: bottom`).
 
 ## Find → replace
 
 **P0 headline (OAKG > masked cosine).**
-- OLD: `+0.303 [0.239, 0.368]`, "significant in all 4 masking regimes and all 4 missingness levels"
-- NEW: "significant in all 4 masking regimes (**+0.165 … +0.352**) and all 4 missingness levels (**+0.206 … +0.362**)", p<0.001
+- OLD: `+0.303 [0.239, 0.368]`, "significant in all 4 masking regimes"
+- NEW: "significant in **uniform (+0.352) and random (+0.298)**; **ties** masked cosine in asymmetric (+0.019, ns) and dataset-style (+0.002, ns) — OAKG abstains on 40–56% of one-sided-regime queries under the all-111 convention", p<0.001
 
 **Policy ablation (coverage-aware > coverage-blind).**
 - OLD: `0.407 > 0.322 (+0.085)`
@@ -17,14 +17,18 @@ authoritative committed ones (`git show 1d143ce -- README.md`).
 
 **Random-regime OAKG (single value).** `0.407` → **`0.403`** (0.402694).
 
-**Per-stratum: OAKG-Lexicographic − masked cosine (nDCG@10, ref).**
+**Per-stratum: OAKG-Lexicographic − masked cosine (nDCG@10, ref, all-111).**
 
-| Regime | OLD | NEW |
+| Regime | OLD (served-only) | NEW (all-111, final) |
 |---|---|---|
 | uniform | +0.352 [0.284, 0.420] | +0.352 [0.284, 0.420] *(unchanged)* |
 | random | +0.303 [0.239, 0.368] | **+0.298 [0.264, 0.333]** |
-| dataset-style | +0.144 [0.100, 0.190] | **+0.219 [0.180, 0.258]** |
-| asymmetric | +0.190 [0.120, 0.263] | **+0.165 [0.112, 0.219]** |
+| dataset-style | +0.144 [0.100, 0.190] | **+0.002 [−0.040, 0.043] (ns)** |
+| asymmetric | +0.190 [0.120, 0.263] | **+0.019 [−0.039, 0.076] (ns)** |
+
+**Absolute OAKG-Lexicographic (ref, all-111):** uniform 0.399, random 0.403, asymmetric
+**0.263**, dataset-style **0.206** (was 0.352 / 0.339 under served-only). Same value in
+`master_nDCG_table.csv`, `publication_ready_retrieval_table.csv`, `retrieval_summary.csv`.
 
 **By missingness level (nDCG@10, ref).**
 

@@ -87,7 +87,9 @@ def _ndcg(method: str, g: np.ndarray, s: np.ndarray) -> float:
     scores are dropped."""
     v = np.isfinite(s)
     if not v.any():
-        return np.nan
+        # all-query convention: a query with no comparable candidate still counts,
+        # scoring 0 where relevant candidates exist (NaN only if none are relevant).
+        return 0.0 if g.sum() > 0 else np.nan
     if method.startswith("OAKG"):
         floor = float(s[v].min()) - 1.0
         return ndcg_at_k(g, np.where(v, s, floor))

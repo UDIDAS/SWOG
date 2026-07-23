@@ -37,10 +37,11 @@ def main() -> None:
          "Generated from the committed result CSVs (corrected pipeline: "
          "`incomparable_policy: bottom`, OAKG-Lexicographic primary; snapshot "
          "`paper_snapshot.json`). Regenerate: `python -m oakg.export_paper_tables`.\n",
-         "> Absolute nDCG@10 is over each method's **served** queries (OAKG's served-rate "
-         "is < 1 in one-sided regimes), so **do not subtract absolute columns across "
-         "methods** to get an effect — use the **paired** tables (union-ablation, "
-         "hard-distractor) for method contrasts.\n",
+         "> **All-111 convention:** every value is averaged over the same 111 queries "
+         "(a query a method cannot serve scores 0). Main-pipeline absolute columns are "
+         "therefore directly comparable/subtractable. The one exception is **OAKG-Union**, "
+         "which is ablation-internal (its own accounting) — for OAKG-vs-Union use the "
+         "**paired Δ** in the union-ablation table, not a column subtraction.\n",
          "---\n## PRIMARY\n"]
 
     L.append("### Master nDCG@10 (all methods × regimes) — `tables/master_nDCG_table.csv`\n")

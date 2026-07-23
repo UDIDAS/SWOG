@@ -1,5 +1,5 @@
 method,uniform,random,asymmetric,dataset_style,source
-OAKG-Lexicographic,0.399,0.403,0.352,0.339,"main pipeline (ref, lexicographic primary)"
+OAKG-Lexicographic,0.399,0.403,0.263,0.206,"main pipeline (ref, lexicographic primary)"
 Masked cosine,0.047,0.105,0.244,0.204,"main pipeline (ref, lexicographic primary)"
 Zero imputation,0.44,0.439,0.434,0.404,"main pipeline (ref, lexicographic primary)"
 Missingness indicators,0.442,0.442,0.435,0.418,"main pipeline (ref, lexicographic primary)"
