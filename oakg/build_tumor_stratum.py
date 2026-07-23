@@ -1,17 +1,18 @@
-"""Build the real-GT FLARE cross-organ tumor stratum (supplementary, slice-level).
+"""Build the real-GT FLARE cross-organ tumor stratum (EXPLORATORY, slice-level).
 
 Source: FLARE class-14 tumor GT merged with the 5 organ classes by slice-content
 hash (produced upstream by build_flare_multiorgan.py -> flare_multiorgan_cases.json).
-This is REAL ground truth (not predicted), which is why it is slice-level: the
-class-stack distribution lost patient identity.
+This is REAL ground truth (not predicted), but it is slice-level: the class-stack
+distribution lost patient identity.
 
-Methodological handling (the right way):
-  - Evaluation-only stratum: thresholds/policies are FROZEN from the patient-level
-    benchmark; nothing is fit on this data.
-  - Report PAIRED method deltas, not absolute nDCG: adjacent slices of the same
-    (anonymous) patient are correlated, inflating absolute scores, but every method
-    faces the identical pool so paired comparisons remain valid.
-  - Kept SEPARATE from the patient-level corpus (dataset name "FLARE_tumor").
+EXPLORATORY — NOT confirmatory patient-level validation:
+  - slice-level, not patient-level; the 364 slices are NOT 364 independent patients;
+  - patient-level clustering CANNOT be reconstructed (patient identity lost);
+  - adjacent slices of a case are correlated, inflating absolute nDCG, so only
+    PAIRED deltas are meaningful and the CIs / p-values must NOT be presented as
+    confirmatory evidence;
+  - evaluation-only (policy frozen from the patient-level benchmark; nothing fit
+    here) and kept SEPARATE from the patient-level corpus (dataset "FLARE_tumor").
 
 Run:  python -m oakg.build_tumor_stratum --out data_tumor
 """

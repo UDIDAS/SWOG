@@ -69,27 +69,22 @@
   },
   {
     "id": "Q4",
-    "need": "Multi-organ: sizeable pancreas with balanced kidneys & spleen",
+    "need": "Liver tumour with high burden in a large liver",
     "conditions": [
       {
-        "feature": "pancreas_volume_cm3",
-        "op": ">=",
-        "value": 85
+        "feature": "liver_tumor_present",
+        "op": "==",
+        "value": 1
       },
       {
-        "feature": "left_kidney_volume_cm3",
+        "feature": "tumor_burden_cm3",
         "op": ">=",
-        "value": 198
+        "value": 8
       },
       {
-        "feature": "right_kidney_volume_cm3",
+        "feature": "liver_volume_cm3",
         "op": ">=",
-        "value": 198
-      },
-      {
-        "feature": "spleen_volume_cm3",
-        "op": ">=",
-        "value": 197
+        "value": 1100
       }
     ]
   },
@@ -158,17 +153,17 @@
   },
   {
     "id": "Q8",
-    "need": "Multi-organ with a pancreatic tumour present (cross-source)",
+    "need": "Invasive pancreatic tumour (present but NOT organ-contained)",
     "conditions": [
-      {
-        "feature": "pancreas_present",
-        "op": "==",
-        "value": 1
-      },
       {
         "feature": "pancreas_tumor_present",
         "op": "==",
         "value": 1
+      },
+      {
+        "feature": "pancreas_tumor_containment",
+        "op": "==",
+        "value": 0
       },
       {
         "feature": "pancreas_volume_cm3",

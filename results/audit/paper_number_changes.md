@@ -17,7 +17,7 @@ authoritative committed ones (`git show 1d143ce -- README.md`).
 
 **Random-regime OAKG (single value).** `0.407` → **`0.403`** (0.402694).
 
-**Per-stratum: OAKG-product − masked cosine (nDCG@10, ref).**
+**Per-stratum: OAKG-Lexicographic − masked cosine (nDCG@10, ref).**
 
 | Regime | OLD | NEW |
 |---|---|---|

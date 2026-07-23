@@ -29,7 +29,7 @@ paired 95% bootstrap CI, Holm-corrected):
 | 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **significant in all 4 masking regimes (+0.165 … +0.352) and all 4 missingness levels (+0.206 … +0.362)**, p<0.001 | ✅ pass (strong, robust) |
 | 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.403 > 0.318 (**+0.085**) | ✅ confirmed |
 | 3 | OAKG > strong imputation baselines | ≥ zero/mean/missingness/Gower | beats Gower +0.213, mean +0.034 (ns); **never beats** zero-imp / missingness-indicators, **significantly worse at 80% missing** (see below) | ❌ **not met (settled)** |
-| 4 | Upstream degradation ref > pred | positive Δ | OAKG-product **−0.035** (pred > ref) — inverted | ⚠️ anomaly (partial pred coverage) |
+| 4 | Upstream degradation ref > pred | positive Δ | OAKG-Lexicographic **−0.035** (pred > ref) — inverted | ⚠️ anomaly (partial pred coverage) |
 | 5 | OAKG semantics: no unsupported negatives | ≈0 unsupported-neg rate | **0.000** vs closed-world 0.014; indeterminate 0.43 | ✅ pass |
 | 6 | Selective retrieval trades coverage for reliability | risk ↓ as served-rate ↓ | AURC 0.000; served-rate flat at 1.0 | ❌ no abstention range |
 
@@ -49,12 +49,12 @@ candidate is **kept in the pool and ranked at the bottom**, not dropped — so n
 ideal-DCG is taken over the *full* candidate pool (`incomparable_policy: bottom`).
 This is applied identically in the main benchmark, the OAKG-Union ablation, and the
 native analysis, so every OAKG number is one consistent quantity (e.g. random-regime
-OAKG-lexicographic is 0.403 in all of them). Dropping incomparable candidates instead
+OAKG-Lexicographic is 0.403 in all of them). Dropping incomparable candidates instead
 would inflate nDCG in the one-sided regimes (asymmetric, dataset-style), where OAKG
 would otherwise get a free pass on relevant candidates it declined to rank; see
 [results/audit/](results/audit/) for the field-by-field 0.403-vs-0.407 audit.
 
-**Per-stratum — OAKG-product − masked cosine by masking regime** (nDCG@10, ref;
+**Per-stratum — OAKG-Lexicographic − masked cosine by masking regime** (nDCG@10, ref;
 the aggregate is a floor — OAKG wins in *every* regime):
 
 | Masking regime | Δ nDCG@10 | 95% CI |
@@ -64,7 +64,7 @@ the aggregate is a floor — OAKG wins in *every* regime):
 | dataset-style | +0.219 | [0.180, 0.258] |
 | asymmetric | +0.165 | [0.112, 0.219] |
 
-**By missingness level — OAKG-product vs baselines** (nDCG@10, ref): OAKG beats
+**By missingness level — OAKG-Lexicographic vs baselines** (nDCG@10, ref): OAKG beats
 masked cosine at every level, but never beats imputation and loses at 80%:
 
 | missing | vs masked-cosine | vs zero-imp | vs missingness-ind |
@@ -109,7 +109,7 @@ masked cosine at every level, but never beats imputation and loses at 80%:
 - **Policy finding — shared-evidence weighting is task-dependent.** On the
   *adversarial* hard-distractor (distractors chosen to fool imputation),
   **OAKG-similarity = 1.000 → +0.366 [0.220, 0.512] vs zero-imp, SIG** (perfect
-  discrimination), while **OAKG-product/lexicographic tie zero-imp**. The γ
+  discrimination), while **OAKG-Lexicographic (and product) tie zero-imp**. The γ
   (shared-evidence) term down-weights narrow-coverage relevant cases, which hurts
   on this stratum. **The primary policy remains lexicographic** — it was selected
   on the *validation* family (tied with product; both above similarity/threshold)
@@ -118,14 +118,18 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   weighting is task-dependent and can hurt when relevant cases have narrow
   coverage. Similarity-only and product are reported as **ablations**. See
   `results/strata/hard_distractor_adversarial.csv`.
-- **Real-GT FLARE cross-organ tumor stratum — OAKG > imputation (real labels).**
-  Using the actual class-14 tumor GT (merged with organs; slice-level, so
-  evaluation-only and reported as *paired deltas*), on 364 queries with the
-  cross-organ tumor phenotype: **OAKG − zero-imputation = +0.043 [0.019, 0.066],
-  SIG** (WL +0.068 SIG; masked cosine collapses −0.382). Confirms the separation on
-  *real ground-truth* tumor data, not predictions. Build: `oakg.build_tumor_stratum`.
-  The stratum is **slice-level and kept separate from the patient-level corpus**;
-  adjacent slices of a case are correlated, so only **paired** deltas are reported.
+- **FLARE cross-organ tumor stratum — EXPLORATORY (real labels, slice-level).**
+  Using the actual class-14 tumor GT (merged with organs), on 364 *slice* queries
+  with the cross-organ tumor phenotype, OAKG − zero-imputation ≈ **+0.043** (WL
+  ≈ +0.068; masked cosine collapses ≈ −0.382) — directionally consistent with the
+  patient-level hard-distractor separation. **This is an exploratory check, not
+  confirmatory:** it is **slice-level**, the **364 slices are not 364 independent
+  patients**, adjacent slices of a case are correlated, and **patient-level
+  clustering cannot be reconstructed** (patient identity was lost in the class-stack
+  format). Its confidence intervals / p-values are **not** treated as confirmatory
+  evidence; it is reported only as a directional, real-label corroboration and is
+  kept entirely separate from the 512-case patient-level benchmark. Build:
+  `oakg.build_tumor_stratum`.
 - **Observation-boundary mechanism (OAKG vs OAKG-Union).** Isolating the boundary
   rule alone, OAKG beats union-completion where source protocols create one-sided
   coverage: **dataset-style +0.112 [0.045, 0.182]**, **asymmetric +0.068 [0.022,
