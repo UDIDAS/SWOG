@@ -45,6 +45,10 @@ tables:
 registry:
 	$(PY) -m oakg.export_supplement_registry --data data --out results/audit/supplement_registry.md
 
+# Execute the notebooks (verify they run on committed artifacts).
+notebooks:
+	$(PY) -m jupyter nbconvert --to notebook --execute --inplace notebooks/OAKG_FLARE_Evaluation.ipynb --ExecutePreprocessor.timeout=180
+
 # Verify every referenced artifact exists, snapshot hashes match, numbers hold.
 validate:
 	$(PY) validate_checklist.py

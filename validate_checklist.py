@@ -55,6 +55,7 @@ def main() -> None:
         "results/audit/supplement_registry.md",
         "configs/aaai27_paper.yaml", "Makefile", "tests/test_paper_regression.py",
         "results/PAPER_TABLES.md", "results/tables/master_nDCG_table.csv", "results/audit/CHANGELOG.md",
+        "notebooks/OAKG_FLARE_Evaluation.ipynb", "notebooks/OAKG_Tutorial_Walkthrough.ipynb",
     ]:
         check_exists(rel)
 
