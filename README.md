@@ -233,6 +233,8 @@ phenotypes → MMKG schema → masking → OAKG scoring → evaluation → findi
 the design decisions that make up the novel contribution. Runs on demo data, so it
 executes anywhere.
 
+**FLARE evaluations:** [`notebooks/OAKG_FLARE_Evaluation.ipynb`](notebooks/OAKG_FLARE_Evaluation.ipynb) — all FLARE analyses (dataset roles, FLARE22 UNOBSERVED-tumor demo, contribution to the benchmark, FLARE23 exploratory tumor stratum, FLARE24 audit-pending), runs on the committed artifacts.
+
 **Notebook (driver):** open [`notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb`](notebooks/OAKG_AAAI2027_Experiment_Notebook.ipynb)
 and run all cells.
 
