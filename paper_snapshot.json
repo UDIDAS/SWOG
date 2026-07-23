@@ -1,6 +1,6 @@
 {
   "snapshot_version": 1,
-  "git_commit": "1d143ce3c84c6de90eae49bb74d0cffbeeba3dbf",
+  "git_commit": "131b4c6b2eea69a3a91a667b268787e381e42f9c",
   "primary_policy": "lexicographic",
   "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
   "query_convention": {
@@ -92,8 +92,8 @@
     },
     {
       "path": "results/strata/hard_distractor_adversarial.csv",
-      "sha256": "be3b22e5b422dfd099288e679833188e2177e0f9da69173b19d7c9bcf333de26",
-      "size_bytes": 409
+      "sha256": "d8d3626c551c259f244046e5f17aaac83b8c1b78095dd7f893cab215fe616003",
+      "size_bytes": 417
     },
     {
       "path": "results/strata/flare_tumor_realgt.csv",
