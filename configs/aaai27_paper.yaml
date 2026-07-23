@@ -53,6 +53,7 @@ paper_snapshot:
   tracked_files:
     - results/config.json
     - results/tables/publication_ready_retrieval_table.csv
+    - results/tables/master_nDCG_table.csv
     - results/tables/ranking_policy_selection.csv
     - results/tables/retrieval_summary.csv
     - results/tables/structured_query_summary.csv
