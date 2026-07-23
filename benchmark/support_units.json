@@ -1,0 +1,115 @@
+{
+ "note": "Each phenotype's support = anatomy units (organ observed) + annotation-capability units (source annotates that phenotype). 'tumor_annotation:*' = any tumor annotation (global tumor features). Observability scope = support units \u2286 case available units; the runtime mask is this scope \u2229 per-measurement validity.",
+ "support_units": {
+  "has_tumor": {
+   "anatomy": [],
+   "annotation_capability": [
+    "tumor_annotation:*"
+   ]
+  },
+  "left_kidney_present": {
+   "anatomy": [
+    "left_kidney"
+   ],
+   "annotation_capability": []
+  },
+  "left_kidney_volume_cm3": {
+   "anatomy": [
+    "left_kidney"
+   ],
+   "annotation_capability": []
+  },
+  "lesion_multiplicity": {
+   "anatomy": [],
+   "annotation_capability": [
+    "tumor_annotation:*"
+   ]
+  },
+  "liver_present": {
+   "anatomy": [
+    "liver"
+   ],
+   "annotation_capability": []
+  },
+  "liver_tumor_containment": {
+   "anatomy": [
+    "liver"
+   ],
+   "annotation_capability": [
+    "tumor_annotation:liver"
+   ]
+  },
+  "liver_tumor_present": {
+   "anatomy": [
+    "liver"
+   ],
+   "annotation_capability": [
+    "tumor_annotation:liver"
+   ]
+  },
+  "liver_volume_cm3": {
+   "anatomy": [
+    "liver"
+   ],
+   "annotation_capability": []
+  },
+  "pancreas_present": {
+   "anatomy": [
+    "pancreas"
+   ],
+   "annotation_capability": []
+  },
+  "pancreas_tumor_containment": {
+   "anatomy": [
+    "pancreas"
+   ],
+   "annotation_capability": [
+    "tumor_annotation:pancreas"
+   ]
+  },
+  "pancreas_tumor_present": {
+   "anatomy": [
+    "pancreas"
+   ],
+   "annotation_capability": [
+    "tumor_annotation:pancreas"
+   ]
+  },
+  "pancreas_volume_cm3": {
+   "anatomy": [
+    "pancreas"
+   ],
+   "annotation_capability": []
+  },
+  "right_kidney_present": {
+   "anatomy": [
+    "right_kidney"
+   ],
+   "annotation_capability": []
+  },
+  "right_kidney_volume_cm3": {
+   "anatomy": [
+    "right_kidney"
+   ],
+   "annotation_capability": []
+  },
+  "spleen_present": {
+   "anatomy": [
+    "spleen"
+   ],
+   "annotation_capability": []
+  },
+  "spleen_volume_cm3": {
+   "anatomy": [
+    "spleen"
+   ],
+   "annotation_capability": []
+  },
+  "tumor_burden_cm3": {
+   "anatomy": [],
+   "annotation_capability": [
+    "tumor_annotation:*"
+   ]
+  }
+ }
+}

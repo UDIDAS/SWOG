@@ -131,6 +131,33 @@ def main() -> None:
         "annotation_capability_scopes": ann,
     }, indent=1) + "\n")
 
+    # 5c. support_units.json — the explicit two-part support set per phenotype -
+    # Bridges the paper's formalism (support = anatomy + annotation-capability) with
+    # the code: each phenotype's support is a set of typed units. Observability scope
+    # = these units ⊆ the case's available units. This scope EXACTLY determines the
+    # runtime mask up to per-measurement validity (a phenotype in scope may still be
+    # missing if the measurement is undefined — e.g. tumor-containment with no tumor,
+    # or an in-scope organ with an empty segmentation).
+    GLOBAL_TUMOR = {"has_tumor", "tumor_burden_cm3", "lesion_multiplicity"}
+    support_units = {}
+    for f in sorted(schema_map):
+        sup = [o for o in schema_map[f]["support_organs"]]
+        is_tumor = ("tumor" in f) or (f in GLOBAL_TUMOR)
+        support_units[f] = {
+            "anatomy": sup,
+            "annotation_capability": (
+                [f"tumor_annotation:{o}" for o in sup] if (is_tumor and sup)
+                else (["tumor_annotation:*"] if is_tumor else [])),
+        }
+    (out / "support_units.json").write_text(json.dumps({
+        "note": ("Each phenotype's support = anatomy units (organ observed) + "
+                 "annotation-capability units (source annotates that phenotype). "
+                 "'tumor_annotation:*' = any tumor annotation (global tumor features). "
+                 "Observability scope = support units ⊆ case available units; the runtime "
+                 "mask is this scope ∩ per-measurement validity."),
+        "support_units": support_units,
+    }, indent=1) + "\n")
+
     # 6. masking.json — seeds + realization catalogue -------------------------
     seed = Config().seed
     masking = {
