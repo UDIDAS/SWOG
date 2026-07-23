@@ -60,7 +60,8 @@ def main() -> None:
     print("\n== Entry points import ==")
     for mod in ["oakg.pipeline", "oakg.strata_results", "oakg.build_benchmark",
                 "oakg.native_export", "oakg.union_ablation", "oakg.qualitative",
-                "oakg.export_benchmark_defs", "oakg.export_supplement_registry"]:
+                "oakg.export_benchmark_defs", "oakg.export_supplement_registry",
+                "oakg.export_master_table", "oakg.export_paper_tables"]:
         try:
             importlib.import_module(mod)
             _p("OK", f"import {mod}")

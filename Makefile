@@ -36,11 +36,12 @@ freeze:
 	$(PY) tools/finalization/scripts/freeze_paper_snapshot.py --repo-root . --config $(PAPER_CFG) --out paper_snapshot.json
 	$(PY) tools/finalization/scripts/build_manifest.py --repo-root . --mapping tools/finalization/configs/paper_outputs.csv --out MANIFEST.csv
 
-# Emit the supplement [[FILL]] registry (phenotypes, params, seeds, hardware, P/R/mAP).
+# Regenerate the master table + the consolidated PAPER_TABLES.md.
 tables:
 	$(PY) -m oakg.export_master_table --out results/tables
 	$(PY) -m oakg.export_paper_tables --out results/PAPER_TABLES.md
 
+# Emit the supplement [[FILL]] registry (phenotypes, params, seeds, hardware, P/R/mAP).
 registry:
 	$(PY) -m oakg.export_supplement_registry --data data --out results/audit/supplement_registry.md
 
