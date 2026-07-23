@@ -63,7 +63,7 @@ explicitly: under all-111 OAKG *ties* masked cosine in asymmetric/dataset-style 
 abstains a lot there) and wins in uniform/random. See [results/audit/CHANGELOG.md](results/audit/CHANGELOG.md).
 
 **Per-stratum — OAKG-Lexicographic − masked cosine by masking regime** (nDCG@10, ref;
-the aggregate is a floor — OAKG wins in *every* regime):
+all-111 — significant in uniform/random, ties in the one-sided regimes where OAKG abstains):
 
 | Masking regime | Δ nDCG@10 | 95% CI |
 |---|---|---|
