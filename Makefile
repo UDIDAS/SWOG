@@ -3,7 +3,7 @@
 PY ?= python
 PAPER_CFG = configs/aaai27_paper.yaml
 
-.PHONY: help smoke-test build-data reproduce-paper freeze check-anon test clean
+.PHONY: help smoke-test build-data reproduce-paper freeze registry validate check-anon test clean
 
 help:
 	@echo "OAKG make targets:"
@@ -35,6 +35,14 @@ reproduce-paper:
 freeze:
 	$(PY) tools/finalization/scripts/freeze_paper_snapshot.py --repo-root . --config $(PAPER_CFG) --out paper_snapshot.json
 	$(PY) tools/finalization/scripts/build_manifest.py --repo-root . --mapping tools/finalization/configs/paper_outputs.csv --out MANIFEST.csv
+
+# Emit the supplement [[FILL]] registry (phenotypes, params, seeds, hardware, P/R/mAP).
+registry:
+	$(PY) -m oakg.export_supplement_registry --data data --out results/audit/supplement_registry.md
+
+# Verify every referenced artifact exists, snapshot hashes match, numbers hold.
+validate:
+	$(PY) validate_checklist.py
 
 check-anon:
 	$(PY) tools/finalization/scripts/check_anonymity.py .
