@@ -53,6 +53,7 @@ def main() -> None:
         "results/audit/flare_provenance.md",
         "results/audit/supplement_registry.md",
         "configs/aaai27_paper.yaml", "Makefile", "tests/test_paper_regression.py",
+        "results/PAPER_TABLES.md", "results/tables/master_nDCG_table.csv", "results/audit/CHANGELOG.md",
     ]:
         check_exists(rel)
 

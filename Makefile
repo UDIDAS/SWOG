@@ -37,6 +37,10 @@ freeze:
 	$(PY) tools/finalization/scripts/build_manifest.py --repo-root . --mapping tools/finalization/configs/paper_outputs.csv --out MANIFEST.csv
 
 # Emit the supplement [[FILL]] registry (phenotypes, params, seeds, hardware, P/R/mAP).
+tables:
+	$(PY) -m oakg.export_master_table --out results/tables
+	$(PY) -m oakg.export_paper_tables --out results/PAPER_TABLES.md
+
 registry:
 	$(PY) -m oakg.export_supplement_registry --data data --out results/audit/supplement_registry.md
 
