@@ -10,6 +10,7 @@ Run:  python -m oakg.export_supplement_registry --data data --out results/audit/
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import sys
 from pathlib import Path
@@ -141,12 +142,23 @@ def main() -> None:
     L.append("\nFull table (all methods/regimes/tracks): "
              "`results/tables/publication_ready_retrieval_table.csv`.\n")
 
-    L.append("## 7. Ontology concepts and identifiers\n")
-    L.append("Organ/lesion/phenotype concepts map to SNOMED CT / NCIt via the T-Box in the "
-             "upstream handoff (`ontology_schema/schema.owl` + `ontology_mappings.json`). "
-             "These source files are not redistributed here; the organ vocabulary and "
-             "per-feature support sets are in `benchmark/anatomy.json`. **[verify the OWL/"
-             "mappings ship separately if the supplement cites specific SNOMED/NCIt codes].**\n")
+    L.append("## 7. Ontology concepts and identifiers (KG-schema grounding)\n")
+    L.append("The MMKG schema grounds entities and phenotype values in standard medical "
+             "terminologies. The T-Box is `benchmark/kg_schema.owl`; the concept→code "
+             "alignment is `benchmark/ontology_mappings.json` (our curated mapping, which "
+             "references standard codes rather than redistributing the source terminologies).\n")
+    ont_path = Path("benchmark/ontology_mappings.json")
+    if ont_path.exists():
+        om = json.loads(ont_path.read_text())
+        st = om.get("stats", {})
+        L.append(f"Coverage: {st.get('concepts', len(om.get('mappings', {})))} concepts "
+                 f"({', '.join(f'{k} {v}' for k, v in st.get('by_system', {}).items() if v)}).\n")
+        L.append("| Entity | System:Code (display) |")
+        L.append("|---|---|")
+        for ent, codes in om.get("mappings", {}).items():
+            cs = " · ".join(f"{sys}:{i['code']} ({i['display']})" for sys, i in codes.items())
+            L.append(f"| `{ent}` | {cs or '—'} |")
+        L.append("")
 
     L.append("## 8. Hardware and software environment\n")
     L += _env()

@@ -12,5 +12,6 @@ FLARE segmentation masks) are governed by the source dataset licences and are
 - `phenotype_schema.json` — feature → type + anatomical support (schema only).
 - `anatomy.json` — organ vocabulary, per-source native scopes, support sets.
 - `masking.json` — masking base seed and the full realization catalogue.
+- `ontology_mappings.json` + `kg_schema.owl` — KG-schema grounding of entities/values to standard terminologies (SNOMED CT / NCIt); curated mapping + OWL T-Box.
 
-Regenerate: `python -m oakg.export_benchmark_defs --data data --out benchmark`
+Regenerate: `python -m oakg.export_benchmark_defs --data data --out benchmark` (the two ontology files are provided artifacts, not regenerated).

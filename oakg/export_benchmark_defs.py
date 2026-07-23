@@ -132,8 +132,11 @@ def main() -> None:
         "- `case_scopes.csv` — per-case source, split, native observed organs, split hash.\n"
         "- `phenotype_schema.json` — feature → type + anatomical support (schema only).\n"
         "- `anatomy.json` — organ vocabulary, per-source native scopes, support sets.\n"
-        "- `masking.json` — masking base seed and the full realization catalogue.\n\n"
-        "Regenerate: `python -m oakg.export_benchmark_defs --data data --out benchmark`\n"
+        "- `masking.json` — masking base seed and the full realization catalogue.\n"
+        "- `ontology_mappings.json` + `kg_schema.owl` — KG-schema grounding of entities/"
+        "values to standard terminologies (SNOMED CT / NCIt); curated mapping + OWL T-Box.\n\n"
+        "Regenerate: `python -m oakg.export_benchmark_defs --data data --out benchmark` "
+        "(the two ontology files are provided artifacts, not regenerated).\n"
     )
 
     print(f"wrote {out}/  queries={len(qdefs)} relevance_rows={len(relevance)} "

@@ -68,9 +68,27 @@ Reference (GT) track covers all cases; the predicted track is partial:
 
 Full table (all methods/regimes/tracks): `results/tables/publication_ready_retrieval_table.csv`.
 
-## 7. Ontology concepts and identifiers
+## 7. Ontology concepts and identifiers (KG-schema grounding)
 
-Organ/lesion/phenotype concepts map to SNOMED CT / NCIt via the T-Box in the upstream handoff (`ontology_schema/schema.owl` + `ontology_mappings.json`). These source files are not redistributed here; the organ vocabulary and per-feature support sets are in `benchmark/anatomy.json`. **[verify the OWL/mappings ship separately if the supplement cites specific SNOMED/NCIt codes].**
+The MMKG schema grounds entities and phenotype values in standard medical terminologies. The T-Box is `benchmark/kg_schema.owl`; the concept→code alignment is `benchmark/ontology_mappings.json` (our curated mapping, which references standard codes rather than redistributing the source terminologies).
+
+Coverage: 13 concepts (SNOMED CT 10, NCIt 5).
+
+| Entity | System:Code (display) |
+|---|---|
+| `Organ::Pancreas` | SNOMED CT:15776009 (Pancreatic structure) · NCIt:C12393 (Pancreas) |
+| `Organ::Liver` | SNOMED CT:10200004 (Liver structure) · NCIt:C12392 (Liver) |
+| `AnatomicSite::Head of pancreas` | SNOMED CT:362201006 (Entire head of pancreas) |
+| `AnatomicSite::Body of pancreas` | SNOMED CT:40133006 (Structure of body of pancreas) |
+| `AnatomicSite::Tail of pancreas` | SNOMED CT:73239005 (Structure of tail of pancreas) |
+| `Lesion::Pancreatic tumor` | SNOMED CT:372003004 (Primary malignant neoplasm of pancreas) · NCIt:C3305 (Pancreatic Neoplasm) |
+| `Lesion::Liver tumor` | SNOMED CT:93870000 (Malignant neoplasm of liver) · NCIt:C3099 (Hepatocellular Carcinoma) |
+| `Observation::Tumor diameter` | SNOMED CT:263605001 (Tumor size) |
+| `Observation::Tumor volume` | SNOMED CT:258261001 (Tumour volume) |
+| `Observation::Tumor burden` | NCIt:C28384 (Tumor Burden) |
+| `Observation::Lesion multiplicity` | — |
+| `Observation::Organ containment` | — |
+| `Observation::Cross-organ extension` | SNOMED CT:409771002 (Tumour invasion by direct extension from organ of origin to adjacent organ) |
 
 ## 8. Hardware and software environment
 

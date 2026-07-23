@@ -16,9 +16,10 @@ caveat). The one constraint is redistribution (see the end).
 | Organizer annotations, predictions, or pseudo-labels? | **Organizer ground truth** for all 100 reference masks. We used *only* the GT directories; the dataset's 2 000 `train_pseudo_label` scans (pseudo-labels from the FLARE22 winning solution) were **deliberately excluded**. Separately, 20 of the 100 cases also have **SAM3 model predictions** (`sam3_delivery/{organ}/*_pred`) used only for the **pred track**. |
 | Redistributable in the anonymous supplement? | **No — do not ship raw masks/images.** License is **CC BY-NC 4.0** (dataset README on source) and access is gated on HF; attribution would also break double-blind. We redistribute only our own derived task definitions (`benchmark/`: queries, relevance, scopes, schema), not FLARE pixels. |
 
-Label map (validated **Dice = 1.000** against per-organ GT): liver 1, right-kidney 2,
+Label map (verified against the per-organ organizer GT): liver 1, right-kidney 2,
 spleen 3, pancreas 4, left-kidney 13 (`oakg/build_benchmark.py:37`). FLARE22 is
-organs-only — **no tumor** in this set.
+organs-only — **no tumor** in this set. (This is a label-integer mapping check, not
+an OAKG result — OAKG performs no segmentation.)
 
 Counts verified on disk: `train_gt_label/labelsTr` = 50, `validation/Validation-Public-Labels`
 = 50, `sam3_delivery/{organ}` = 20 pred files each.

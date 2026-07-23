@@ -53,7 +53,8 @@ All values: [supplement_registry.md](supplement_registry.md) (`make registry`).
 | Predicted-mask cohort coverage | §5 (20/100 FLARE, etc.) | ✅ |
 | P@10 / R@10 / mAP | §6 + [`publication_ready_retrieval_table.csv`](../tables/publication_ready_retrieval_table.csv) | ✅ |
 | Hardware / OS / Python / libs / runtime | §8 | ✅ |
-| Ontology concepts & identifiers | §7 — OWL/mappings not in repo; **confirm they ship if SNOMED/NCIt codes are cited** | 🟡 |
+| Ontology concepts & identifiers | [`benchmark/ontology_mappings.json`](../../benchmark/ontology_mappings.json) + [`kg_schema.owl`](../../benchmark/kg_schema.owl) — 13 concepts (SNOMED CT/NCIt) + registry §7 | ✅ |
+| Ontology-alignment & validation procedure | curated entity→code mapping (the `ontology_mappings.json` above); registry §7 | ✅ |
 | Paste values into the supplement `.docx` | — | 👤 |
 
 ---
@@ -73,7 +74,7 @@ All values: [supplement_registry.md](supplement_registry.md) (`make registry`).
 | Verify `python -m oakg.pipeline` | validate_checklist (import + `--config`) | ✅ |
 | Verify `python -m oakg.strata_results` | validate_checklist | ✅ |
 | Verify publication_ready table | validate_checklist | ✅ |
-| Verify Dice=1.000 script | **no standalone script** (needs raw FLARE masks) — the 1 warning | 🟡 |
+| FLARE label-map verification | label integers checked vs organizer GT; documented in [`build_benchmark.py`](../../oakg/build_benchmark.py) + [`anatomy.json`](../../benchmark/anatomy.json) (a data-prep check, not an OAKG result — no reproducible-script obligation) | ✅ |
 | Remove names/paths/history/URLs | scrubbed; verified by [`check_anonymity.py`](../../tools/finalization/scripts/check_anonymity.py) | ✅ |
 | Frozen anonymized ZIP | `OAKG_AAAI27_Anonymous_Supplement.zip` (`git archive`, history-free) | ✅ |
 
@@ -86,7 +87,7 @@ All values: [supplement_registry.md](supplement_registry.md) (`make registry`).
 | Verify every main-paper number | [`tests/test_paper_regression.py`](../../tests/test_paper_regression.py) (7/7) + [validate_checklist.py](../../validate_checklist.py) (45/0/1) | ✅ |
 | Verify table-selection/aggregation | audit + regression cover it | ✅ |
 | Compile supplement with no placeholders | values in [supplement_registry.md](supplement_registry.md) | 👤 |
-| Run `validate_checklist.py` | 45 pass / 0 fail / 1 warn | ✅ |
+| Run `validate_checklist.py` | 45 pass / 0 fail / 0 warn | ✅ |
 | Update reproducibility checklist | this file | ✅ |
 | Send audit report / supplement PDF / checklist PDF / ZIP | audit reports = [`results/audit/`](.); ZIP done; **PDFs = compile step** | 👤 |
 
@@ -96,5 +97,3 @@ All values: [supplement_registry.md](supplement_registry.md) (`make registry`).
 1. Paste [supplement_registry.md](supplement_registry.md) values into the supplement `.docx`.
 2. Apply [paper_number_changes.md](paper_number_changes.md) to the manuscript text.
 3. Compile the supplement PDF + checklist PDF.
-4. Confirm ontology OWL/mappings ship if SNOMED/NCIt codes are cited.
-5. (Optional) a standalone Dice=1.000 script — needs the raw FLARE masks.

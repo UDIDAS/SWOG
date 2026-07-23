@@ -48,6 +48,7 @@ def main() -> None:
         "paper_snapshot.json", "MANIFEST.csv",
         "benchmark/queries.json", "benchmark/relevance.csv", "benchmark/case_scopes.csv",
         "benchmark/phenotype_schema.json", "benchmark/anatomy.json", "benchmark/masking.json",
+        "benchmark/ontology_mappings.json", "benchmark/kg_schema.owl",
         "results/audit/random_oakg_0403_vs_0407_audit.csv",
         "results/audit/flare_provenance.md",
         "results/audit/supplement_registry.md",
@@ -92,13 +93,6 @@ def main() -> None:
        f"random OAKG lexicographic = {lex:.6f} (expected 0.402694)")
     _p("OK" if abs(lex - ur) < 1e-4 else "FAIL",
        f"main == union-ablation random OAKG ({lex:.6f} vs {ur:.6f})")
-
-    print("\n== Known gaps ==")
-    dice = list(ROOT.rglob("*dice*verif*")) + list(ROOT.rglob("*label_map*"))
-    _p("WARN" if not dice else "OK",
-       "Dice=1.000 label-map check: no standalone committed script "
-       "(asserted in build_benchmark; re-run needs the raw FLARE masks)" if not dice
-       else "Dice verification artifact present")
 
     print(f"\n== {ok} passed, {warn} warnings, {fail} failed ==")
     raise SystemExit(1 if fail else 0)

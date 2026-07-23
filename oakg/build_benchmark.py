@@ -33,7 +33,7 @@ FLARE_ROOT = Path(os.environ.get("OAKG_FLARE_ROOT", "data_sources/FLARE_Task2"))
 # Override with OAKG_FLARE_PRED_SUBDIR to match your local delivery folder name.
 FLARE_SAM = FLARE_ROOT / os.environ.get("OAKG_FLARE_PRED_SUBDIR", "flare_predictions")
 FLARE_ORGANS = ("liver", "pancreas", "spleen", "left_kidney", "right_kidney")
-# Validated against per-organ GT (Dice=1.000): FLARE22 multi-label integers.
+# Verified against the per-organ organizer GT: FLARE22 multi-label integers.
 FLARE_LABELS = {"liver": 1, "right_kidney": 2, "spleen": 3, "pancreas": 4, "left_kidney": 13}
 
 
