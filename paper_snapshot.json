@@ -1,6 +1,6 @@
 {
   "snapshot_version": 1,
-  "git_commit": "6669019369238bccc9442c7bac4386e07310f9de",
+  "git_commit": "fb785d5ed71a5a714989eb1f1a6ff6daa1fe971d",
   "primary_policy": "lexicographic",
   "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
   "query_convention": {
@@ -42,12 +42,12 @@
     },
     {
       "path": "results/tables/publication_ready_retrieval_table.csv",
-      "sha256": "a116f34d4a4b788f6088e23e3ab08370cdc3a36437e27a88f25422630b6eaddd",
+      "sha256": "12507a32d317608cca46c3a40dde8c33e2752a78f9356c47da3ea066b685a3b5",
       "size_bytes": 12798
     },
     {
       "path": "results/tables/master_nDCG_table.csv",
-      "sha256": "bc0db2e40cdbf711597ae2e0ddc0d40a642b0498bd2b20da34ec6f7aa6def03c",
+      "sha256": "e3ab445e38e7ba251d54a2efb7bf8c0982d23a048fa327e3279765e4a1141eae",
       "size_bytes": 571
     },
     {
@@ -57,8 +57,8 @@
     },
     {
       "path": "results/tables/retrieval_summary.csv",
-      "sha256": "2bf7b4996dfe7073f0f6818cb6967aab30afd390c8b6bfac087adfb4c5c96685",
-      "size_bytes": 39139
+      "sha256": "5fb58f9ef477467b4725d071f61db1d7af87ac4910137a0d8e0ef58f9c9c5d0f",
+      "size_bytes": 39223
     },
     {
       "path": "results/tables/structured_query_summary.csv",
@@ -97,8 +97,8 @@
     },
     {
       "path": "results/strata/hard_distractor_adversarial.csv",
-      "sha256": "d8d3626c551c259f244046e5f17aaac83b8c1b78095dd7f893cab215fe616003",
-      "size_bytes": 417
+      "sha256": "bbd4b1241fa4b0068e2abc95254efed87571c72977ae11df69e6b22bfa67da64",
+      "size_bytes": 428
     },
     {
       "path": "results/strata/flare_tumor_realgt.csv",
