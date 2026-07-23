@@ -41,8 +41,12 @@ are correlated, so absolute nDCG is optimistic but paired comparisons are valid)
 
 ## Confronting points to state plainly
 
-1. **Two different FLARE editions.** Organs = FLARE 2024 Task2 (LaptopSeg); tumor =
-   FLARE 2023 pan-cancer. The paper must not imply a single unified FLARE source.
+1. **Two different FLARE data sources.** Organ GT = **FLARE22** annotations (the
+   50 GT training cases and the 13-organ label scheme come from FLARE 2022),
+   accessed via the **FLARE 2024–2025 Task2 (LaptopSeg)** release; tumor GT =
+   **FLARE 2023** pan-cancer (class 14). The "2024–2025" is the download release
+   for the FLARE22 organ labels, not a separate dataset. The paper must not imply
+   a single unified FLARE source.
 2. **Redistribution is constrained** (CC BY-NC 4.0 + gated + anonymity). Raw FLARE
    masks/images are **not** in the supplement; only our derived definitions are.
 3. **Tumor is slice-level** (patient identity genuinely lost) — a real limitation,
