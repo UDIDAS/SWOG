@@ -118,3 +118,6 @@ OAKG_AAAI27_Anonymous_Supplement.zip
 !benchmark/*.owl
 !results/tables/*.tex
 !results/tables/*.md
+
+# finalization toolkit configs
+!tools/finalization/configs/*.csv

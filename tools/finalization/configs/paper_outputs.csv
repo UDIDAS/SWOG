@@ -1,0 +1,13 @@
+output_file,paper_table
+results/union_ablation/union_ablation_paired_comparison.csv,Observation-boundary ablation
+results/native_cross_dataset/native_paired_effects.csv,Native source-protocol effects
+results/native_cross_dataset/native_method_summary.csv,Native baseline comparison
+results/tables/publication_ready_retrieval_table.csv,Strong retrieval baselines
+results/tables/ranking_policy_selection.csv,Ranking-policy ablation
+results/strata/hard_distractor.csv,Patient-level hard distractor
+results/strata/hard_distractor_adversarial.csv,Adversarial hard distractor
+results/strata/flare_tumor_realgt.csv,FLARE real-GT tumor stratum
+results/tables/structured_query_summary.csv,Evidence semantics
+results/tables/query_diagnostics.csv,Query diagnostics
+results/tables/ranking_consistency.csv,Ranking consistency
+results/tables/master_nDCG_table.csv,Master nDCG@10 (all methods x regimes)
