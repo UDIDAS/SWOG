@@ -258,7 +258,7 @@ prints a banner and does **not** produce paper results.
 | `tables/retrieval_summary.csv` | Tables A/B — strong baselines & masking tracks |
 | `tables/upstream_degradation.csv` | ref→pred degradation (Section 3) |
 | `tables/ranking_policy_selection.csv` | Table C — S, γ·S, threshold, lexicographic |
-| `tables/risk_coverage_curve.csv` + `figures/risk_coverage_curve.png` | Figure 1 — selective retrieval |
+| `tables/risk_coverage_curve.csv` + `figures/risk_coverage_curve.png` | selective retrieval — **exploratory, not a primary figure** (flat AURC, no abstention range) |
 | `tables/ranking_consistency.csv` | Table E — Kendall τ, Spearman ρ, top-10 overlap |
 | `tables/structured_query_summary.csv` + `query_level/structured_query_predictions.csv` | Table F — T/F/U semantics |
 | `tables/query_diagnostics.csv` | Section 11.1 diagnostics |

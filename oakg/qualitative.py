@@ -195,11 +195,11 @@ def imputation_contrast(config: Config, out_dir: Path, targets=("pancreas", "liv
             for rank in range(5):
                 ic, oc = imp_top[rank], oak_top[rank]
                 rows.append({
-                    "query_id": qid, "query_case": anchor, "target": TARGET, "threshold_cm3": round(thr, 0),
+                    "query_id": qid, "query_case": anchor, "target": TARGET, "threshold_cm3": round(thr, 1),
                     "rank": rank + 1,
-                    "imputation_case": ic, "imp_coverage": len(org[ic]), "imp_target_cm3": round(val(ic, FEAT), 0),
+                    "imputation_case": ic, "imp_coverage": len(org[ic]), "imp_target_cm3": round(val(ic, FEAT), 1),
                     "imp_relevant": ic in relset,
-                    "oakg_case": oc, "oakg_coverage": len(org[oc]), "oakg_target_cm3": round(val(oc, FEAT), 0),
+                    "oakg_case": oc, "oakg_coverage": len(org[oc]), "oakg_target_cm3": round(val(oc, FEAT), 1),
                     "oakg_relevant": oc in relset,
                 })
             if qn >= 6:
@@ -224,19 +224,22 @@ def _write_contrast_md(df: pd.DataFrame, path: Path):
           "Query = a broad multi-organ case with a large target organ. Imputation ranks",
           "broad cases high because they share *other* organs — even when their target",
           "organ is small (wrong). OAKG restricts to the shared target evidence and",
-          "returns the true matches. ✓ = correct (relevant), ✗ = wrong.", ""]
+          "returns the true matches. ✓ = correct (relevant), ✗ = wrong.",
+          "",
+          "*Relevance is decided on UNROUNDED values; displayed volumes are rounded to "
+          "1 decimal, so a value shown equal to the threshold may still be just below it.*", ""]
     if len(df):
         md.append(f"Top-5 relevant rate:  **imputation {df['imp_relevant'].mean():.0%}**  vs  **OAKG {df['oakg_relevant'].mean():.0%}**.\n")
     for qid, grp in df.groupby("query_id"):
         r0 = grp.iloc[0]
-        md.append(f"### {qid}: query `{r0.query_case}` — large **{r0.target}** (≥ {int(r0.threshold_cm3)} cm³)")
+        md.append(f"### {qid}: query `{r0.query_case}` — large **{r0.target}** (≥ {r0.threshold_cm3:.1f} cm³)")
         md.append("")
         md.append("| rank | imputation → | | OAKG → | |")
         md.append("|---|---|---|---|---|")
         for r in grp.itertuples():
             im = "✓" if r.imp_relevant else "✗"; om = "✓" if r.oakg_relevant else "✗"
-            md.append(f"| {r.rank} | {r.imputation_case} ({r.imp_coverage}-organ, {r.target[:4]}={int(r.imp_target_cm3)}) | {im} "
-                      f"| {r.oakg_case} ({r.oakg_coverage}-organ, {r.target[:4]}={int(r.oakg_target_cm3)}) | {om} |")
+            md.append(f"| {r.rank} | {r.imputation_case} ({r.imp_coverage}-organ, {r.target[:4]}={r.imp_target_cm3:.1f}) | {im} "
+                      f"| {r.oakg_case} ({r.oakg_coverage}-organ, {r.target[:4]}={r.oakg_target_cm3:.1f}) | {om} |")
         md.append("")
     path.write_text("\n".join(md))
 

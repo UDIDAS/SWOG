@@ -18,13 +18,16 @@ this snapshot. Current benchmark: **512 patient-level cases** (281 Pancreas +
 All outputs come from the corrected implementation (`incomparable_policy: bottom`,
 OAKG-Lexicographic primary); the authoritative snapshot is `../paper_snapshot.json`.
 
-- **PRIMARY (paper tables/figures):** `tables/` (publication_ready, retrieval_summary,
-  ranking_policy_selection, cross_backbone, structured_query_summary, ranking_consistency,
-  risk_coverage, upstream_degradation, query_diagnostics, **master_nDCG_table**),
-  `figures/`.
+- **PRIMARY (paper tables/figures):** `tables/` (**master_nDCG_table**, publication_ready,
+  retrieval_summary, ranking_policy_selection, cross_backbone, structured_query_summary,
+  ranking_consistency, query_diagnostics), `figures/masking_stress.png`.
 - **SUPPLEMENTARY (patient-level analyses):** `union_ablation/` (observation-boundary),
   `native_cross_dataset/` (native source protocols), `strata/hard_distractor.csv` +
   `strata/hard_distractor_adversarial.csv` (patient-level diagnostic), `strata/backbone_comparison.csv`.
+  Also **documented limitations, not primary claims:** `tables/upstream_degradation.csv`
+  (ref→pred inverted — partial pred coverage) and the selective/risk-coverage output
+  (`figures/risk_coverage_curve.png` + `tables/risk_coverage_curve.csv`) which shows a
+  **flat AURC / no abstention range** and is therefore **not a primary figure**.
 - **EXPLORATORY (not confirmatory):** `strata/flare_tumor_realgt.csv` — **slice-level**,
   364 slices ≠ 364 patients, patient clustering unreconstructable; CIs/p not confirmatory.
 - **DEPRECATED / corrected:** none tracked. The 0.403-vs-0.407 correction (the main
@@ -44,9 +47,9 @@ OAKG-Lexicographic primary); the authoritative snapshot is `../paper_snapshot.js
 | `native_cross_dataset/` (see its README) | **Native cross-dataset** | OAKG vs OAKG-Union under the *original unmasked* source scopes, by source direction. Cross-source pooled +0.170; same-source ≈0 control; 31.9% of cross-source pairs incomparable natively |
 | `tables/ranking_consistency.csv` | **Table E** | Full-to-partial ranking consistency: Kendall τ, Spearman ρ, top-10 overlap (per track) |
 | `tables/structured_query_summary.csv` | **Table F** | Closed / open / OAKG three-valued semantics: T/F/U precision-recall-F1, macro-F1, indeterminate & unsupported-negative rates. **`recall_F` = supported-negative recall** (recall of *observed* absences); T=PRESENT, F=ABSENT, U=UNOBSERVED (U P/R are 0 — "unobserved" is a prediction state, not a ground-truth class). **Key contrast:** OAKG reaches **unsupported-negative rate 0.000** (vs closed-world 0.014) at the cost of supported-negative recall 0.49 (vs 0.97) and indeterminate rate 0.43 — it declines to assert absence it cannot support. OAKG and generic open-world coincide on this eval (both 0.000). |
-| `figures/risk_coverage_curve.png` + `tables/risk_coverage_curve.csv` | **Figure 1** | Selective risk vs served-query coverage; AURC |
+| `figures/risk_coverage_curve.png` + `tables/risk_coverage_curve.csv` | *exploratory (not primary)* | Selective risk vs served-query coverage; **flat AURC, no abstention range** — not a primary figure |
 | `figures/masking_stress.png` | **Figure 2** | nDCG@10 vs missing-coverage level (20/40/60/80%) for key methods, ref track |
-| `tables/upstream_degradation.csv` | Section 3 | ref−pred degradation (Δ_upstream) per method/metric/masking |
+| `tables/upstream_degradation.csv` | *supplementary limitation* | ref−pred degradation (Δ_upstream); **inverted (pred>ref) from partial pred coverage — documented limitation, not a primary result** |
 | `tables/query_diagnostics.csv` | Section 11.1 | Per-query pool size, #relevant, prevalence, zero-relevant flags |
 
 ## Supplementary strata (`strata/`) — the OAKG-vs-imputation story

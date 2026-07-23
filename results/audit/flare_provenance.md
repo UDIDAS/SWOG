@@ -36,8 +36,10 @@ Counts verified on disk: `train_gt_label/labelsTr` = 50, `validation/Validation-
 | Script + source output for the +0.043 result | `oakg.build_tumor_stratum` (reassembly upstream: `build_flare_multiorgan.py` → `flare_multiorgan_cases.json`) → `results/strata/flare_tumor_realgt.csv`: OAKG − zero-imp = **+0.043 [0.019, 0.066]**. |
 
 Handling (already in the paper): **slice-level, kept separate from the patient-level
-corpus, thresholds frozen, only PAIRED deltas reported** (adjacent slices of a case
-are correlated, so absolute nDCG is optimistic but paired comparisons are valid).
+corpus, thresholds frozen, reported as EXPLORATORY, DIRECTIONAL paired deltas** —
+**not** statistically confirmatory. Patient identity is unrecoverable, so the 364
+slices are not 364 independent patients (adjacent slices of a case may be correlated);
+its confidence intervals / p-values are **not** treated as confirmatory evidence.
 
 ## Confronting points to state plainly
 
