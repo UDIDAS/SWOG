@@ -1,6 +1,6 @@
 {
   "snapshot_version": 1,
-  "git_commit": "131b4c6b2eea69a3a91a667b268787e381e42f9c",
+  "git_commit": "6669019369238bccc9442c7bac4386e07310f9de",
   "primary_policy": "lexicographic",
   "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
   "query_convention": {
@@ -44,6 +44,11 @@
       "path": "results/tables/publication_ready_retrieval_table.csv",
       "sha256": "a116f34d4a4b788f6088e23e3ab08370cdc3a36437e27a88f25422630b6eaddd",
       "size_bytes": 12798
+    },
+    {
+      "path": "results/tables/master_nDCG_table.csv",
+      "sha256": "bc0db2e40cdbf711597ae2e0ddc0d40a642b0498bd2b20da34ec6f7aa6def03c",
+      "size_bytes": 571
     },
     {
       "path": "results/tables/ranking_policy_selection.csv",
