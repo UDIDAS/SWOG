@@ -117,7 +117,7 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   evidence wins; OAKG's pairwise γ-eligibility adds little on top.
 - **Cross-backbone observability (Table D): +Obs gains are small/mixed.** Adding
   OAKG eligibility to a backbone helps WL slightly (+0.011–0.014) but *hurts* the
-  phenotype backbone on the ref track (−0.038). Observability-awareness adds
+  phenotype backbone on the ref track (**−0.120**; pred −0.080). Observability-awareness adds
   little once the representation already drops unobserved evidence.
 - **Hard-distractor stratum — OAKG separates from imputation.** On a stratum where
   imputed zeros mislead (broad queries, narrow relevant + broad distractors),
