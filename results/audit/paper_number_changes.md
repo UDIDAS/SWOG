@@ -22,14 +22,19 @@ does **not** survive the all-111 convention — the ablation previously scored a
 queries by bottom-tie order, not 0.
 - OLD: "OAKG beats union-completion where one-sided coverage is created: dataset-style
   **+0.112 [0.045, 0.182]**, asymmetric **+0.068 [0.022, 0.115]** (Holm-sig)"
-- NEW: "Under the all-111 convention, **OAKG-Union ≥ OAKG in every regime** (uniform
-  +0.001 ns, random −0.010, **asymmetric −0.088 [−0.127, −0.052]**, **dataset-style
-  −0.044 [−0.072, −0.021]** Holm-sig). The OAKG-vs-OAKG-Union contrast is a **null result
-  on aggregate ranking**; OAKG's value is in abstention *semantics* and the
-  hard-distractor contrast with zero-imputation (+0.068), not aggregate nDCG."
-- ⚠️ Do **not** state or imply that the observation-boundary ablation shows OAKG beating
-  union-completion on nDCG. If the manuscript built a 'mechanism isolation' argument on
-  +0.068/+0.112, that paragraph must be rewritten as a null/semantics result.
+- NEW: "Under the all-111 convention, **OAKG-Union significantly outperforms OAKG on
+  aggregate all-query nDCG@10 in the one-sided regimes** (uniform +0.001 ns, random −0.010,
+  **asymmetric −0.088 [−0.127, −0.052]**, **dataset-style −0.044 [−0.072, −0.021]** Holm-sig).
+  Present this as a **validity–ranking trade-off**: the **measurable ranking cost** of strict
+  support-restriction and query-level abstention (OAKG abstains on 27%/38% of query–realizations
+  and accepts lower aggregate ranking rather than construct rankings from unsupported evidence).
+  Frame the observation-boundary contribution through evidentiary validity, explicit
+  incomparability/abstention, and the zero unsupported-negative rate — not as an aggregate-ranking
+  improvement over OAKG-Union. The hard-distractor contrast with zero-imputation (+0.068) is a
+  distinct, retained result."
+- ⚠️ Do **not** describe this "merely as a failure to improve ranking," and do **not** state or
+  imply the ablation shows OAKG beating union-completion on nDCG. If the manuscript built a
+  'mechanism isolation' argument on +0.068/+0.112, rewrite it as the validity–ranking trade-off.
 
 **Per-stratum: OAKG-Lexicographic − masked cosine (nDCG@10, ref, all-111).**
 

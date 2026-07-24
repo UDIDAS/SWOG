@@ -77,12 +77,15 @@ Dataset-style & 0.206 & 0.249 & $\mathbf{-0.044}$ \\
 
 ## What it shows (honest reading)
 
-- **The observation-boundary ablation does NOT show an aggregate-nDCG advantage** for
-  intersection+abstention (OAKG) over union-completion (OAKG-Union). Where one-sided
-  coverage is created (asymmetric, dataset-style), OAKG's abstention **costs** on
-  aggregate ranking: a scored-0 abstention loses to any returned ranking. This mirrors
-  the main benchmark, where OAKG ties/does not beat the imputation baselines on
-  aggregate one-sided regimes.
+- **A validity–ranking trade-off, not a failure to improve.** Strict support-restriction
+  and query-level abstention carry a **measurable ranking cost**: where one-sided coverage
+  is created (asymmetric −0.088, dataset-style −0.044), OAKG abstains on 27%/38% of
+  query–realizations (scored 0) and so **OAKG-Union significantly outperforms OAKG on
+  aggregate all-query nDCG@10**. OAKG accepts this lower aggregate ranking **rather than
+  construct rankings from unsupported evidence**. The contribution is therefore evidentiary
+  validity — explicit incomparability/abstention and a zero unsupported-negative rate — not
+  an aggregate-ranking gain over union-completion. This mirrors the main benchmark, where
+  OAKG ties/does not beat the imputation baselines on aggregate one-sided regimes.
 - **Uniform (control): Δ ≈ 0** — intersection = union when scopes match.
 - **Random: −0.010** (tiny) and **hard-distractor: 0.000** (both 0.9419) — union
   completion is not misled on these; the boundary is not isolated by them.

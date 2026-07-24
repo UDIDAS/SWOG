@@ -8,10 +8,12 @@ outperforms masked cosine where it can support the comparison (uniform, random) 
 **ties** it under extreme one-sidedness (asymmetric, dataset-style), where OAKG
 abstains rather than compare over unshared anatomy (all-111 convention). The
 *observation-boundary mechanism* (intersection+abstention vs union-completion) is
-examined by the **OAKG vs OAKG-Union** ablation; under the same all-111 convention it is
-a **null result on aggregate ranking** (OAKG-Union ≥ OAKG in every regime), so OAKG's
-value rests on its abstention *semantics* (Unknown vs false-absent) and on the
-hard-distractor contrast with zero-imputation, not on aggregate nDCG (see
+examined by the **OAKG vs OAKG-Union** ablation. Under the all-111 convention it exposes a
+**validity–ranking trade-off**: strict support-restriction and query-level abstention carry
+a **measurable ranking cost** (OAKG-Union ≥ OAKG in every regime — asymmetric −0.088,
+dataset-style −0.044), which OAKG accepts rather than construct rankings from unsupported
+evidence. Its contribution is therefore evidentiary validity — explicit incomparability /
+abstention and a zero unsupported-negative rate — not an aggregate-ranking gain (see
 `results/union_ablation/`).
 
 ## Current validated outcomes
@@ -148,15 +150,17 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   evidence; it is reported only as a directional, real-label corroboration and is
   kept entirely separate from the 512-case patient-level benchmark. Build:
   `oakg.build_tumor_stratum`.
-- **Observation-boundary mechanism (OAKG vs OAKG-Union) — null on aggregate ranking.**
+- **Observation-boundary mechanism (OAKG vs OAKG-Union) — a validity–ranking trade-off.**
   Under the same all-111 convention as the main benchmark, **OAKG-Union ≥ OAKG in every
   regime**: uniform +0.001 (ns), random −0.010, **asymmetric −0.088 [−0.127, −0.052]**,
   **dataset-style −0.044 [−0.072, −0.021]** (Holm-sig). Where source protocols create
-  one-sided coverage, OAKG abstains on 27–38% of queries (scored 0), so union-completion
-  is ahead on aggregate nDCG. The boundary rule's value is in abstention *semantics* and
-  the hard-distractor-vs-imputation contrast, not aggregate ranking. *(A prior version
-  scored abstentions by arbitrary bottom-tie order, yielding spurious +0.112/+0.068; see
-  `results/audit/CHANGELOG.md`.)* See `results/union_ablation/`.
+  one-sided coverage, OAKG abstains on 27%/38% of query–realizations (scored 0) — a
+  **measurable ranking cost of strict support-restriction and abstention** that OAKG accepts
+  rather than construct rankings from unsupported evidence. The boundary rule's contribution
+  is evidentiary validity (explicit incomparability/abstention, zero unsupported-negative
+  rate) and the hard-distractor-vs-imputation contrast, not aggregate ranking. *(A prior
+  version scored abstentions by arbitrary bottom-tie order, yielding spurious +0.112/+0.068;
+  see `results/audit/CHANGELOG.md`.)* See `results/union_ablation/`.
 - **Native (unmasked) cross-source.** Under the original source scopes, OAKG − OAKG-Union
   on cross-source pooled is **+0.170 nDCG@10, 95% CI [0.045, 0.315], Holm p=0.108** — a
   positive *directional* effect that is **not significant after Holm** (only 21
