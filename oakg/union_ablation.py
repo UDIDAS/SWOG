@@ -15,6 +15,12 @@ methods. Component similarity, weights, and the ranking policy are our existing
 ones (group-mean of numeric + categorical components). Statistics (query-cluster
 + seed bootstrap, sign-flip p, Holm) follow the provided reference module.
 
+Scoring uses the SAME all-111 abstention convention as the main benchmark: a query
+the method cannot serve scores nDCG@10=0 (not its arbitrary bottom-tie order). OAKG
+(intersection) abstains in the one-sided regimes; OAKG-Union never abstains. Under
+this convention the ablation OAKG absolute equals the main-pipeline OAKG per regime,
+and Delta_obs is directly comparable to the main benchmark (verified by the checklist).
+
 Run:  python -m oakg.union_ablation --policy lexicographic --n-boot 10000
 """
 from __future__ import annotations
@@ -90,7 +96,15 @@ def _ndcg_at_k(ranked_rel, k=10):
 
 
 def _score_query(qcase, cands, graded, xf, M, real, corpus, numeric_mask, ranges, policy, mode):
+    """nDCG@10 under the SAME all-111 abstention rule as the main pipeline
+    (``oakg.metrics.query_metric_row``): a query with >=1 relevant candidate but
+    NO comparable candidate (the method serves nothing) scores **0**; the metric
+    is NaN only when there is no relevant candidate at all. This is the single
+    convention shared with the main benchmark — abstained queries are NOT scored
+    by their (arbitrary) bottom-tie order. Returns ``(ndcg, served)``.
+    """
     keys = []
+    n_comparable = 0
     for order, c in enumerate(cands):
         inter, gamma = observation_overlap(qcase, c, real)
         if mode == "intersection" and not inter:
@@ -103,10 +117,17 @@ def _score_query(qcase, cands, graded, xf, M, real, corpus, numeric_mask, ranges
                 s = _pair_similarity(corpus.case_to_row[qcase], corpus.case_to_row[c],
                                      xf, M, numeric_mask, ranges, mode)
                 key = _rank_key(s, gamma, policy)
+        if key[0] != -np.inf:
+            n_comparable += 1
         keys.append((key, -order, graded[order]))
+    served = n_comparable > 0
+    if not any(g > 0 for g in graded):
+        return np.nan, served                 # metric undefined: no relevant candidate
+    if not served:
+        return 0.0, served                    # ALL-111: serves nothing -> scores 0
     keys.sort(key=lambda x: (x[0], x[1]), reverse=True)
     ranked = [r for _, _, r in keys]
-    return _ndcg_at_k(ranked) if any(g > 0 for g in graded) else np.nan
+    return _ndcg_at_k(ranked), served
 
 
 # --------------------------------------------------------------------------
@@ -117,10 +138,11 @@ def _query_rows(qcase, graded_map, realization, xf, M, corpus, nm, ranges, polic
     graded = np.array([graded_map.get(c, 0.0) for c in cands], float)
     rows = []
     for mode, name in [("intersection", "OAKG"), ("union", "OAKG-Union")]:
+        ndcg, served = _score_query(qcase, cands, graded, xf, M, real=realization,
+                                    corpus=corpus, numeric_mask=nm, ranges=ranges,
+                                    policy=policy, mode=mode)
         rows.append({"regime": regime, "seed": seed, "query_id": qcase, "method": name,
-                     "nDCG@10": _score_query(qcase, cands, graded, xf, M, real=realization,
-                                             corpus=corpus, numeric_mask=nm, ranges=ranges,
-                                             policy=policy, mode=mode)})
+                     "nDCG@10": ndcg, "served": served})
     return rows
 
 
@@ -172,9 +194,9 @@ def _hard_distractor_rows(data, corpus, config, nm, ranges, policy):
             graded = np.array([1.0 if (TARGET in org[c] and np.isfinite(val(c, FEAT)) and val(c, FEAT) >= thr) else 0.0
                                for c in cands], float)
             for mode, name in [("intersection", "OAKG"), ("union", "OAKG-Union")]:
+                ndcg, served = _score_query(qc, cands, graded, xf, M, real, corpus, nm, ranges, policy, mode)
                 rows.append({"regime": "hard_distractor", "seed": 0, "query_id": f"{TARGET}:{qc}",
-                             "method": name,
-                             "nDCG@10": _score_query(qc, cands, graded, xf, M, real, corpus, nm, ranges, policy, mode)})
+                             "method": name, "nDCG@10": ndcg, "served": served})
     return rows
 
 
@@ -191,12 +213,15 @@ def summarize_methods(ql: pd.DataFrame, n_boot=10000, seed=2027) -> pd.DataFrame
         lo, hi = np.quantile(boots, [0.025, 0.975])
         out.append({"regime": regime, "method": method, "nDCG@10": float(pqs["nDCG@10"].mean()),
                     "ci_low": float(lo), "ci_high": float(hi),
+                    "served_rate": (float(g["served"].mean()) if "served" in g.columns else float("nan")),
                     "n_queries": int(len(qids)), "n_query_seed_rows": int(len(pqs))})
     return pd.DataFrame(out)
 
 
 def paired_summary(ql: pd.DataFrame, n_boot=10000, seed=2027) -> pd.DataFrame:
     valid = ql.dropna(subset=["nDCG@10"])
+    oakg_served = (valid[valid.method == "OAKG"].groupby("regime")["served"].mean().to_dict()
+                   if "served" in valid.columns else {})
     wide = valid.pivot_table(index=["regime", "seed", "query_id"], columns="method",
                              values="nDCG@10", aggfunc="first").reset_index().dropna(subset=["OAKG", "OAKG-Union"])
     wide["delta_obs"] = wide["OAKG"] - wide["OAKG-Union"]
@@ -211,7 +236,8 @@ def paired_summary(ql: pd.DataFrame, n_boot=10000, seed=2027) -> pd.DataFrame:
         p = float((np.sum(np.abs(null) >= abs(np.mean(qeff))) + 1) / (n_boot + 1))
         rows.append({"regime": regime, "OAKG": float(g.OAKG.mean()), "OAKG_Union": float(g["OAKG-Union"].mean()),
                      "delta_obs": float(g.delta_obs.mean()), "ci_low": float(lo), "ci_high": float(hi),
-                     "p_value": p, "n_queries": int(len(qids)), "n_query_seed_rows": int(len(g))})
+                     "p_value": p, "oakg_served_rate": float(oakg_served.get(regime, float("nan"))),
+                     "n_queries": int(len(qids)), "n_query_seed_rows": int(len(g))})
     out = pd.DataFrame(rows)
     out["holm_p"] = _holm(out.p_value.to_numpy(float))
     out["significant_0_05"] = out.holm_p < 0.05
@@ -253,11 +279,14 @@ def main():
     (out / "union_ablation_config.json").write_text(json.dumps({
         "policy": args.policy, "policy_note": "validation-selected (lexicographic; tied with product)",
         "n_boot": args.n_boot, "n_queries_total": int(main_ql.query_id.nunique()),
-        "query_convention": "zero-relevant queries -> nDCG NaN, excluded (106 evaluable of 111)",
+        "query_convention": ("all-111 (identical to oakg.metrics.query_metric_row): a query the "
+                             "method cannot serve (0 comparable candidates) scores nDCG@10=0; NaN "
+                             "only if no relevant candidate exists. All 111 queries retained every "
+                             "regime (0 NaN). Abstained queries are zeroed, NOT scored by bottom-tie order."),
         "incomparable_policy": "bottom", "lex_bins": list(LEX_BINS),
     }, indent=2))
-    print("\n=== paired OAKG - OAKG-Union (Δ_obs) ===")
-    print(paired[["regime", "OAKG", "OAKG_Union", "delta_obs", "ci_low", "ci_high", "holm_p", "significant_0_05"]].round(4).to_string(index=False))
+    print("\n=== paired OAKG - OAKG-Union (Δ_obs), all-111 convention ===")
+    print(paired[["regime", "OAKG", "OAKG_Union", "delta_obs", "ci_low", "ci_high", "oakg_served_rate", "holm_p", "significant_0_05"]].round(4).to_string(index=False))
     print("\n=== hard-distractor ===")
     print(hd_paired[["regime", "OAKG", "OAKG_Union", "delta_obs", "ci_low", "ci_high", "holm_p"]].round(4).to_string(index=False))
     print("DONE")

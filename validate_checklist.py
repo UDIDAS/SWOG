@@ -115,6 +115,20 @@ def main() -> None:
         _p("OK" if agree else "FAIL",
            f"{reg}: publication={p} summary={s} master={m}" + ("" if agree else "  <<< DISAGREE"))
 
+    print("\n== OAKG-Union ablation convention GATE (all-111: ablation OAKG == main-pipeline OAKG) ==")
+    # The ablation must score abstained queries under the SAME all-111 rule as the
+    # main pipeline (oakg.metrics.query_metric_row): a query it cannot serve scores 0.
+    # When it does, the ablation OAKG absolute equals the main-pipeline OAKG-Lexicographic
+    # per regime. Any drift means the ablation reintroduced a served-only / non-zeroed
+    # abstention convention (which previously inflated Δobs in the one-sided regimes).
+    ab = pd.read_csv(ROOT / "results/union_ablation/union_ablation_method_summary.csv")
+    for reg in ["uniform", "random", "asymmetric", "dataset_style"]:
+        a = round(float(ab[(ab.regime == reg) & (ab.method == "OAKG")]["nDCG@10"].iloc[0]), 3)
+        m = round(float(mt[mt.method == "OAKG-Lexicographic"][reg].iloc[0]), 3)
+        agree = (a == m)
+        _p("OK" if agree else "FAIL",
+           f"{reg}: ablation OAKG={a} main OAKG-Lex={m}" + ("" if agree else "  <<< CONVENTION DRIFT"))
+
     print(f"\n== {ok} passed, {warn} warnings, {fail} failed ==")
     raise SystemExit(1 if fail else 0)
 

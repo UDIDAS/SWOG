@@ -54,9 +54,15 @@ adds this folder's follow-up), so the main random OAKG moved from 0.407438 to
 **0.402694**, identical to the union ablation. Other main-table OAKG cells shifted
 too — small under uniform/random (~0.005) but larger under the one-sided regimes
 (asymmetric up to ~0.16, dataset-style ~0.09), exactly where dropping incomparable
-candidates had been inflating OAKG. OAKG still beats masked cosine significantly in
-all four regimes. The paired **Δ_obs** in the union ablation is unaffected by the
-convention. There is now **one** random-regime OAKG number (0.402694) everywhere.
+candidates had been inflating OAKG. There is now **one** random-regime OAKG number
+(0.402694) everywhere.
+
+> **Two later corrections superseded the asides in this note.** (1) Under the **all-111**
+> query convention OAKG beats masked cosine in **2 of 4** regimes (uniform, random), not
+> "all four" — see `CHANGELOG.md` Correction 2. (2) The union-ablation **Δ_obs was
+> *not* unaffected**: that module scored abstained queries by bottom-tie order, not 0;
+> corrected to all-111, its Δ_obs are negative (OAKG-Union ≥ OAKG) — see `CHANGELOG.md`
+> Correction 3.
 
 Regenerate this audit: see `oakg`-based recomputation in the commit that added this
 folder.

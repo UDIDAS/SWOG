@@ -33,13 +33,43 @@ features. The served-only "beats in all 4 regimes" was an artifact of hiding OAK
 abstentions. The **patient-level hard-distractor result is unchanged** (+0.068 [0.029,
 0.113]) — it is broadly-covered, so all-111 does not touch it.
 
-## Unchanged by the corrections
+## Correction 3 — union-ablation scorer: served-only abstention → all-111
+`oakg/union_ablation.py` is a **separate scorer** (its own `_ndcg_at_k` / `_score_query`,
+not the main pipeline's `query_metric_row`). It received Correction 1 (incomparable
+*candidates* → bottom) but **not** Correction 2 (abstained *queries* → 0): a query where
+OAKG had **no** comparable candidate was scored by its arbitrary bottom-tie (original)
+order instead of **0**. Because OAKG abstains on 27% (asymmetric) / 38% (dataset-style)
+of queries, this **inflated** the ablation OAKG absolute and produced spurious positive
+Δ_obs. Fixed: the ablation now applies the identical all-111 rule; a
+`validate_checklist.py` gate asserts **ablation OAKG == main-pipeline OAKG per regime**.
+
+### Before → after (union ablation, OAKG − OAKG-Union, ref, lexicographic)
+| Regime | OAKG (before→after) | Δ_obs before | **Δ_obs after (all-111)** | OAKG served |
+|---|---|---|---|---|
+| uniform | 0.399 → 0.399 | +0.001 | **+0.001** (ns) | 1.00 |
+| random | 0.403 → 0.403 | −0.010 | **−0.010** | 1.00 |
+| asymmetric | 0.419 → **0.263** | +0.068 | **−0.088** [−0.127, −0.052] | 0.73 |
+| dataset-style | 0.361 → **0.206** | +0.112 | **−0.044** [−0.072, −0.021] | 0.62 |
+
+**Consequence:** the OAKG-vs-OAKG-Union contrast is a **null/negative result on aggregate
+nDCG** (OAKG-Union ≥ OAKG in every regime). The "+0.068/+0.112 observation-boundary
+mechanism" claim does **not** survive the main-benchmark convention. OAKG's value is in
+its **abstention semantics** (Unknown vs false-absent) and its separation from the cruder
+**zero-imputation** baseline on the patient-level hard-distractor (+0.068), not in
+OAKG-vs-Union aggregate ranking. The hard-distractor ablation is unchanged (Δ_obs = 0;
+OAKG served 100%).
+
+## Unchanged by corrections 1–2
 | Result | Value (both before & after) |
 |---|---|
 | Hard-distractor OAKG − ZeroImp | **+0.068 [0.029, 0.113]** (broadly-covered → no incomparable) |
 | FLARE tumor (exploratory) OAKG − ZeroImp | ≈ +0.043 |
-| Union-ablation Δ_obs, native cross-dataset | unchanged (already bottom-ranking) |
 | Policy tie (lexicographic == product), lex > similarity | still holds |
+
+> ⚠️ **Not** unchanged: the **union-ablation Δ_obs** — see Correction 3. An earlier note
+> here claimed it was unaffected "because it already used bottom-ranking." That conflated
+> the two corrections: the ablation had Correction 1 (bottom-ranking of incomparable
+> *candidates*) but **not** Correction 2 (all-111 zeroing of abstained *queries*).
 
 ## What stayed true
 - OAKG beats masked cosine **significantly in uniform (+0.352) and random (+0.298)**;

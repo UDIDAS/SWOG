@@ -17,6 +17,20 @@ below (OLD = original served-only; NEW = final all-111, `incomparable_policy: bo
 
 **Random-regime OAKG (single value).** `0.407` → **`0.403`** (0.402694).
 
+**Observation-boundary mechanism (OAKG vs OAKG-Union, Δ_obs).** The mechanism claim
+does **not** survive the all-111 convention — the ablation previously scored abstained
+queries by bottom-tie order, not 0.
+- OLD: "OAKG beats union-completion where one-sided coverage is created: dataset-style
+  **+0.112 [0.045, 0.182]**, asymmetric **+0.068 [0.022, 0.115]** (Holm-sig)"
+- NEW: "Under the all-111 convention, **OAKG-Union ≥ OAKG in every regime** (uniform
+  +0.001 ns, random −0.010, **asymmetric −0.088 [−0.127, −0.052]**, **dataset-style
+  −0.044 [−0.072, −0.021]** Holm-sig). The OAKG-vs-OAKG-Union contrast is a **null result
+  on aggregate ranking**; OAKG's value is in abstention *semantics* and the
+  hard-distractor contrast with zero-imputation (+0.068), not aggregate nDCG."
+- ⚠️ Do **not** state or imply that the observation-boundary ablation shows OAKG beating
+  union-completion on nDCG. If the manuscript built a 'mechanism isolation' argument on
+  +0.068/+0.112, that paragraph must be rewritten as a null/semantics result.
+
 **Per-stratum: OAKG-Lexicographic − masked cosine (nDCG@10, ref, all-111).**
 
 | Regime | OLD (served-only) | NEW (all-111, final) |
@@ -50,9 +64,16 @@ the exact table/track the paper cites.
 - **real-GT tumor** OAKG − zero-imp = **+0.043 [0.019, 0.066]**.
 - **adversarial hard-distractor** OAKG-similarity = **1.000, +0.366 [0.220, 0.512]**
   (only OAKG-threshold changed: NaN/abstain → 0.000 serve-at-bottom).
-- **union-ablation Δ_obs** and the whole **native cross-dataset** table (both already
-  used bottom-ranking): unchanged.
+- **native cross-dataset** table: unchanged, and ✓ **verified robust to all-111** —
+  OAKG's served rate is 1.000 in every native cross-source stratum (the FLARE hub always
+  supplies a comparable candidate), so the all-111 zeroing never triggers. +0.170 holds
+  (still directional only, Holm p=0.108).
 - Policy tie (lex == product) and lex > similarity: still hold.
+
+> ⚠️ **CORRECTION — union-ablation Δ_obs was NOT unchanged.** An earlier version of this
+> note wrongly listed it as safe. The ablation is a separate scorer that only had the
+> bottom-ranking fix, not the all-111 abstention fix; see the find→replace entry below
+> and `CHANGELOG.md` Correction 3.
 
 ## One-line rationale for the paper/rebuttal
 OAKG's evaluation ranks observation-incomparable candidates at the bottom

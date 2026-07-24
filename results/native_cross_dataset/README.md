@@ -57,6 +57,16 @@ pairs stay in the pool at the bottom (never dropped).
 | msd_pancreas → others | 10 | 0.307 | 0.215 | +0.092 [−0.028, 0.228] | 0.749 | 56.7% |
 | lits → others | 3 | 0.687 | 0.284 | +0.404 [−0.257, 0.936] | 0.994 | 73.8% |
 
+> **All-111 convention — verified robust.** Unlike the masked-regime `union_ablation`
+> (where masking removed the shared organ, so OAKG fully abstained on 27–38% of queries),
+> here **OAKG's served rate is 1.000 in every stratum** — the FLARE hub shares an organ
+> with every case, so no included query is left with zero comparable candidates. The
+> all-111 zeroing of fully-abstained queries therefore never triggers, and these Δ_obs are
+> identical under the all-111 and served-query conventions (replicated from
+> `results/native_inputs/native_scores.csv`; OAKG 0.312 / Union 0.143 / Δ +0.170 both
+> ways). The incomparable *pairs* (31.9%) are ranked at the bottom, not dropped — that is
+> the `bottom` candidate policy, not query-level abstention.
+
 ## What it shows
 
 - **The observation boundary is real under native source protocols.** OAKG marks

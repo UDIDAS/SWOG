@@ -1,6 +1,6 @@
 {
   "snapshot_version": 1,
-  "git_commit": "060097950dcb20572b5a6aa38065072fa977a6b0",
+  "git_commit": "076e058d585db40845a5ef1d8f7a4e450f865f41",
   "primary_policy": "lexicographic",
   "policy_selection_rule": "Product and lexicographic tied on validation nDCG@10; lexicographic was selected before test evaluation and remains fixed for all primary tables. Product and similarity-only are reported as ablations. The primary policy is NOT changed based on test hard-distractor performance.\n",
   "query_convention": {
@@ -67,13 +67,13 @@
     },
     {
       "path": "results/union_ablation/union_ablation_paired_comparison.csv",
-      "sha256": "5ff7c7a718e736598f34dc4808e6fe05d1772f5116a693396e825e63309ba32f",
-      "size_bytes": 735
+      "sha256": "abec0b154ff800112f76e9ac46388437285f762fbebbfeafff80d0d5e0d1ad9f",
+      "size_bytes": 803
     },
     {
       "path": "results/union_ablation/union_ablation_method_summary.csv",
-      "sha256": "5471a3a79d8f13eadb2642369277dc7f3fd79fdac4e93f23a832e14adcde0dea",
-      "size_bytes": 739
+      "sha256": "4641c8d9d5d17a90313654f09a9337bfb935c977bcd863905a59c97743752064",
+      "size_bytes": 812
     },
     {
       "path": "results/native_cross_dataset/native_paired_effects.csv",

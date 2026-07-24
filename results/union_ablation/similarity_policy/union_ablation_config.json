@@ -3,7 +3,7 @@
   "policy_note": "validation-selected (lexicographic; tied with product)",
   "n_boot": 10000,
   "n_queries_total": 111,
-  "query_convention": "zero-relevant queries -> nDCG NaN, excluded (106 evaluable of 111)",
+  "query_convention": "all-111 (identical to oakg.metrics.query_metric_row): a query the method cannot serve (0 comparable candidates) scores nDCG@10=0; NaN only if no relevant candidate exists. All 111 queries retained every regime (0 NaN). Abstained queries are zeroed, NOT scored by bottom-tie order.",
   "incomparable_policy": "bottom",
   "lex_bins": [
     0.25,

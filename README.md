@@ -7,8 +7,12 @@ evidence coefficient. The experiments establish that the complete OAKG framework
 outperforms masked cosine where it can support the comparison (uniform, random) and
 **ties** it under extreme one-sidedness (asymmetric, dataset-style), where OAKG
 abstains rather than compare over unshared anatomy (all-111 convention). The
-*observation-boundary mechanism* itself is isolated not by the masked-cosine contrast
-but by the **OAKG vs OAKG-Union** ablation (see `results/union_ablation/`).
+*observation-boundary mechanism* (intersection+abstention vs union-completion) is
+examined by the **OAKG vs OAKG-Union** ablation; under the same all-111 convention it is
+a **null result on aggregate ranking** (OAKG-Union ≥ OAKG in every regime), so OAKG's
+value rests on its abstention *semantics* (Unknown vs false-absent) and on the
+hard-distractor contrast with zero-imputation, not on aggregate nDCG (see
+`results/union_ablation/`).
 
 ## Current validated outcomes
 
@@ -143,19 +147,27 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   evidence; it is reported only as a directional, real-label corroboration and is
   kept entirely separate from the 512-case patient-level benchmark. Build:
   `oakg.build_tumor_stratum`.
-- **Observation-boundary mechanism (OAKG vs OAKG-Union).** Isolating the boundary
-  rule alone, OAKG beats union-completion where source protocols create one-sided
-  coverage: **dataset-style +0.112 [0.045, 0.182]**, **asymmetric +0.068 [0.022,
-  0.115]** (Holm-sig), uniform ≈0 (control). See `results/union_ablation/`.
-- **Native (unmasked) cross-source.** Under the original source scopes, OAKG beats
-  OAKG-Union on cross-source pooled by **+0.170 nDCG@10, 95% CI [0.045, 0.315],
-  Holm p=0.108** — a substantial positive *directional* effect that is **not
-  statistically significant after Holm** correction (only 21 cross-source-eligible
-  queries). Note: **missingness-indicators (0.626) and zero-imputation (0.585)
-  achieve stronger raw pooled cross-source nDCG@10 than OAKG (0.312)**; OAKG's
-  demonstrated advantage here is specifically over OAKG-Union and in its
-  incomparability behaviour, not in beating imputation on raw ranking. See
-  `results/native_cross_dataset/`.
+- **Observation-boundary mechanism (OAKG vs OAKG-Union) — null on aggregate ranking.**
+  Under the same all-111 convention as the main benchmark, **OAKG-Union ≥ OAKG in every
+  regime**: uniform +0.001 (ns), random −0.010, **asymmetric −0.088 [−0.127, −0.052]**,
+  **dataset-style −0.044 [−0.072, −0.021]** (Holm-sig). Where source protocols create
+  one-sided coverage, OAKG abstains on 27–38% of queries (scored 0), so union-completion
+  is ahead on aggregate nDCG. The boundary rule's value is in abstention *semantics* and
+  the hard-distractor-vs-imputation contrast, not aggregate ranking. *(A prior version
+  scored abstentions by arbitrary bottom-tie order, yielding spurious +0.112/+0.068; see
+  `results/audit/CHANGELOG.md`.)* See `results/union_ablation/`.
+- **Native (unmasked) cross-source.** Under the original source scopes, OAKG − OAKG-Union
+  on cross-source pooled is **+0.170 nDCG@10, 95% CI [0.045, 0.315], Holm p=0.108** — a
+  positive *directional* effect that is **not significant after Holm** (only 21
+  cross-source-eligible queries). ✓ **Verified robust to all-111:** OAKG's served rate is
+  **1.000 in every native cross-source stratum** (the FLARE hub shares an organ with every
+  case, so no included query fully abstains) — the all-111 zeroing never triggers and the
+  +0.170 is unchanged (unlike the masked-regime ablation, where masking removed the shared
+  organ). Note:
+  **missingness-indicators (0.626) and zero-imputation (0.585) achieve stronger raw
+  pooled cross-source nDCG@10 than OAKG (0.312)**; OAKG's advantage here is over
+  OAKG-Union and in its incomparability behaviour, not in beating imputation on raw
+  ranking. See `results/native_cross_dataset/`.
 - **Structured-semantic honesty is real.** OAKG's three-valued reasoning has a
   0.000 unsupported-negative rate: it returns Unknown (U) on unobserved anatomy
   instead of asserting "absent" (closed-world's 0.014), at the cost of a 0.43
