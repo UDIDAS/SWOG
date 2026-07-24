@@ -1,0 +1,16 @@
+query_id,query_slice,rank,retrieved_slice,relevant,observed_organs,has_tumor,cross_organ_tumor
+Q0009,FLARE-9c96a6cfb5,1,FLARE-6d36e81b5f,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0009,FLARE-9c96a6cfb5,2,FLARE-243c2a1718,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0009,FLARE-9c96a6cfb5,3,FLARE-4014d37ae5,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0009,FLARE-9c96a6cfb5,4,FLARE-9edf73512d,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0009,FLARE-9c96a6cfb5,5,FLARE-4de41ab448,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0012,FLARE-804c5f6fa0,1,FLARE-366c4dcb0c,1,liver|right_kidney|pancreas|left_kidney,1,1
+Q0012,FLARE-804c5f6fa0,2,FLARE-99cb78d3b4,1,liver|right_kidney|pancreas|left_kidney,1,1
+Q0012,FLARE-804c5f6fa0,3,FLARE-0a653f3066,1,liver|right_kidney|pancreas|left_kidney,1,1
+Q0012,FLARE-804c5f6fa0,4,FLARE-23563c34ee,1,liver|right_kidney|pancreas|left_kidney,1,1
+Q0012,FLARE-804c5f6fa0,5,FLARE-389264408c,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0027,FLARE-6fa5985097,1,FLARE-9edf73512d,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0027,FLARE-6fa5985097,2,FLARE-4449b87752,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0027,FLARE-6fa5985097,3,FLARE-6d36e81b5f,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0027,FLARE-6fa5985097,4,FLARE-95126eada5,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
+Q0027,FLARE-6fa5985097,5,FLARE-9c96a6cfb5,1,liver|right_kidney|spleen|pancreas|left_kidney,1,1
