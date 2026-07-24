@@ -32,7 +32,7 @@ paired 95% bootstrap CI, Holm-corrected):
 
 | # | Hypothesis | Expected | Obtained (512-case) | Verdict |
 |---|---|---|---|---|
-| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **significant in uniform (+0.352) and random (+0.298)**; **ties** in asymmetric (+0.019 ns) and dataset-style (+0.002 ns) — where OAKG *abstains* on 40–56% of queries rather than compare over unshared organs, while masked cosine still ranks via residual global features (all-111 convention) | ✅ pass (uniform/random); ⚠️ **ties under extreme one-sidedness** |
+| 1 | **OAKG > masked cosine** (P0 acceptance test) | positive, significant | **significant in uniform (+0.352) and random (+0.298)**; **ties** in asymmetric (+0.019 ns) and dataset-style (+0.002 ns) — where OAKG *abstains* on 27%/38% of query–realizations (asymmetric/dataset-style; up to 54%/77% in the harshest mask) rather than compare over unshared organs, while masked cosine still ranks via residual global features (all-111 convention) | ✅ pass (uniform/random); ⚠️ **ties under extreme one-sidedness** |
 | 2 | Coverage-aware policy > coverage-blind | product/lex ≥ similarity | 0.403 > 0.318 (**+0.085**) | ✅ confirmed |
 | 3 | OAKG > strong imputation baselines | ≥ zero/mean/missingness/Gower | beats Gower +0.213, mean +0.034 (ns); **never beats** zero-imp / missingness-indicators, **significantly worse at 80% missing** (see below) | ❌ **not met (settled)** |
 | 4 | Upstream degradation ref > pred | positive Δ | OAKG-Lexicographic **−0.035** (pred > ref) — inverted | ⚠️ anomaly (partial pred coverage) |
@@ -92,8 +92,9 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   abstains.** Significantly beats masked cosine in **uniform (+0.352)** and
   **random (+0.298, every missingness level)** — where OAKG serves ~all queries. In
   the **extreme one-sided regimes (asymmetric, dataset-style)** OAKG *ties* masked
-  cosine: it **abstains on 40–56% of queries** (no candidate shares its target organ,
-  so it scores 0 under all-111) while masked cosine still ranks those via residual
+  cosine: it **abstains on 27% (asymmetric) / 38% (dataset-style) of query–realizations**
+  on average — up to 54% / 77% in the harshest individual mask — (no candidate shares its
+  target organ, so it scores 0 under all-111) while masked cosine still ranks those via residual
   *global* features. This is the honest all-111 result — OAKG never does *worse* than
   masked cosine, and its value is precisely that it declines to compare over unshared
   anatomy rather than fabricate a ranking. (Served-only averaging previously hid the

@@ -129,6 +129,23 @@ def main() -> None:
         _p("OK" if agree else "FAIL",
            f"{reg}: ablation OAKG={a} main OAKG-Lex={m}" + ("" if agree else "  <<< CONVENTION DRIFT"))
 
+    print("\n== Supplement-registry sync GATE (§6 nDCG@10 == master, all 4 regimes) ==")
+    # The registry §6 table is generated FROM publication_ready, but a stale committed
+    # copy can drift. Gate its nDCG@10 against the master so one authoritative value
+    # holds in every derived artifact too.
+    import re as _re
+    reg_ndcg = {}
+    for line in (ROOT / "results/audit/supplement_registry.md").read_text().splitlines():
+        cells = [c.strip() for c in line.split("|")]
+        if len(cells) == 7 and cells[1] in ("uniform", "random", "asymmetric", "dataset_style") \
+                and all(_re.match(r"^0?\.?\d", cells[i]) for i in (2, 3, 4, 5)):
+            reg_ndcg[cells[1]] = round(float(_re.match(r"([0-9.]+)", cells[5]).group(1)), 3)
+    for reg in ["uniform", "random", "asymmetric", "dataset_style"]:
+        r = reg_ndcg.get(reg)
+        m = round(float(mt[mt.method == "OAKG-Lexicographic"][reg].iloc[0]), 3)
+        _p("OK" if r == m else "FAIL",
+           f"{reg}: registry={r} master={m}" + ("" if r == m else "  <<< STALE REGISTRY"))
+
     print(f"\n== {ok} passed, {warn} warnings, {fail} failed ==")
     raise SystemExit(1 if fail else 0)
 
