@@ -22,8 +22,8 @@ abstention and a zero unsupported-negative rate — not an aggregate-ranking gai
 > removed and replaced by the validated alternative, not kept as history.
 
 **Benchmark (validated):** 512 real cases — 281 Pancreas + 131 LiTS (single-organ,
-organ+tumor) + 100 FLARE (multi-organ hub, 5-organ morphometry, no tumor;
-predictions for the 20 held-out FLARE cases). 111 test queries, 17 features,
+organ+tumor) + 100 FLARE (multi-organ hub, 5-organ morphometry, no patient-level
+tumor annotations; predictions for the 20 held-out FLARE cases). 111 test queries, 17 features,
 patient-level splits (288/113/111). FLARE22 label map verified against the organizer GT.
 **Relevance is organ-consistent** — a candidate can only be relevant if it shares
 an annotated organ with the query case (cross-organ "matches" are false positives,
@@ -183,8 +183,8 @@ masked cosine at every level, but never beats imputation and loses at 80%:
   overlap is near-universal, so the threshold policy never abstains, AURC≈0).
 
 **Data facts (for composition decisions):** Patient-level FLARE GT is capped at
-**100** (50 labelsTr + 50 validation) and is **tumor-free** (FLARE22 = 13 organs,
-no tumor class). FLARE tumor GT *does* exist (class 14) but only as slice-level
+**100** (50 labelsTr + 50 validation) and **provides no patient-level tumor annotations**
+(FLARE22 = 13 organs, no tumor class in the label set). FLARE tumor GT *does* exist (class 14) but only as slice-level
 stacks with patient identity lost — usable as a real-GT **slice-level** stratum
 (above), not merged into the patient-level corpus. Predicted patient-level tumor
 was rejected: autonomous inference is noisy (107 false-positive blobs/case) and
@@ -297,7 +297,7 @@ predicted NIfTI masks across three heterogeneous sources:
 
 - **Pancreas** → pancreas organ + tumor (single-organ)
 - **LiTS** → liver organ + tumor (single-organ)
-- **FLARE** → 5-organ morphometry, no tumor (**multi-organ hub**)
+- **FLARE** → 5-organ morphometry, no patient-level tumor annotations (**multi-organ hub**)
 
 Per-source organ coverage forms the observability structure; the FLARE cases
 share organs with both single-organ datasets, so the shared-evidence coefficient

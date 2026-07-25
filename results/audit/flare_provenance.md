@@ -18,7 +18,7 @@ caveat). The one constraint is redistribution (see the end).
 
 Label map (verified against the per-organ organizer GT): liver 1, right-kidney 2,
 spleen 3, pancreas 4, left-kidney 13 (`oakg/build_benchmark.py:37`). FLARE22 is
-organs-only — **no tumor** in this set. (This is a label-integer mapping check, not
+organs-only — **no tumor annotations** in this set. (This is a label-integer mapping check, not
 an OAKG result — OAKG performs no segmentation.)
 
 Counts verified on disk: `train_gt_label/labelsTr` = 50, `validation/Validation-Public-Labels`
@@ -29,7 +29,7 @@ Counts verified on disk: `train_gt_label/labelsTr` = 50, `validation/Validation-
 | Question (doc §1.B) | Answer |
 |---|---|
 | Exact dataset/release with class 14 | **FLARE 2023 pan-cancer** per-class arrays (`/scratch/.../FLARE/class_{1..14}.npy`); class 14 = tumor. A *different* FLARE edition than the organ data above. |
-| Ground truth, prediction, or pseudo-label? | **Real ground truth** (`class_14_labels.npy`). Chosen over predicted tumor deliberately (FLARE22 patients have no tumor GT → predictions would be unmeasurable/noisy). |
+| Ground truth, prediction, or pseudo-label? | **Real ground truth** (`class_14_labels.npy`). Chosen over predicted tumor deliberately (FLARE22 provides no patient-level tumor annotations → predictions would be unmeasurable/noisy). |
 | Case and slice IDs | `case_id = FLARE-<md5-slice-hash>` (e.g. `FLARE-f622920ac9`); 23 061 slice-cases in `flare_multiorgan_cases.json`. |
 | How the 364 slice queries were generated | `oakg.build_tumor_stratum` samples ≤700 tumor + ≤700 non-tumor slices (seed 2027) and runs the standard query/relevance builder → 364 evaluable queries on the cross-organ-tumor phenotype. |
 | Why patient identity is unavailable | class-14 is distributed as **per-class 2-D slice stacks** (`class_14_labels.npy` shape 9911×256×256 — no patient/volume axis). `build_flare_multiorgan.py` re-groups slices across class files by CT-content hash, but there is **no slice→patient index**, so cases are slices, not patients. |

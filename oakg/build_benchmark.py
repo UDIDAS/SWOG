@@ -2,7 +2,7 @@
 
 Three heterogeneous sources populate one MMKG-shaped benchmark:
   - Pancreas, LiTS: single-organ, organ + tumor observations.
-  - FLARE:          multi-organ (5 organs), organ morphometry only (no tumor).
+  - FLARE:          multi-organ (5 organs), organ morphometry only (no patient-level tumor annotations).
 FLARE is the multi-organ hub: its cases share organs with both single-organ
 datasets, so the shared-evidence coefficient gamma becomes non-degenerate and
 cross-organ retrieval is possible. Reference (GT) masks populate the ref track
@@ -62,7 +62,7 @@ def default_sources() -> list[dict]:
         },
         {
             # FLARE: 100 multi-organ GT cases (labelsTr + validation, 13-label),
-            # predictions for the 20 held-out FLARE cases (per-organ binary). No tumor.
+            # predictions for the 20 held-out FLARE cases (per-organ binary). No tumor annotations.
             "spec": DatasetSpec("FLARE", FLARE_ORGANS),
             "ref": [
                 _combined([FLARE_ROOT / "train_gt_label" / "labelsTr",
