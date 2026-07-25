@@ -54,7 +54,7 @@ Normalization: numeric features scaled by the per-feature range above (min–max
 
 Reference (GT) track covers all cases; the predicted track is partial:
 - Pancreas / LiTS: SSL/SAM3 predictions paired with GT (pred track).
-- FLARE: predictions for **20 of 100** cases (`sam3_delivery`); the other 80 use GT on both tracks.
+- FLARE: predictions for **20 of 100** cases (`sam3_delivery`); the other 80 have **no predictions** and are **pred-unobserved** (all-NaN in the pred matrix, so observation-incomparable on the pred track). The ref track uses GT for all 100.
 - Cases by source: Pancreas=281, LiTS=131, FLARE=100.
 
 ## 6. Precision@10 / Recall@10 / mAP (primary lexicographic, ref)

@@ -126,8 +126,9 @@ def main() -> None:
     cases = data.cases
     L.append("Reference (GT) track covers all cases; the predicted track is partial:")
     L.append("- Pancreas / LiTS: SSL/SAM3 predictions paired with GT (pred track).")
-    L.append("- FLARE: predictions for **20 of 100** cases (`sam3_delivery`); the other 80 "
-             "use GT on both tracks.")
+    L.append("- FLARE: predictions for **20 of 100** cases (`sam3_delivery`); the other 80 have "
+             "**no predictions** and are **pred-unobserved** (all-NaN in the pred matrix, so "
+             "observation-incomparable on the pred track). The ref track uses GT for all 100.")
     L.append(f"- Cases by source: " + ", ".join(
         f"{k}={v}" for k, v in cases.dataset.value_counts().to_dict().items()) + ".\n")
 
