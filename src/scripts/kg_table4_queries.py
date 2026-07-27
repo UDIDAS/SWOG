@@ -18,7 +18,7 @@ import nibabel as nib
 from scipy import ndimage
 
 BUNDLE = "/scratch/ud3d4/acm_data/ssl_handoff_ours"
-OUT = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+OUT = "/home/ud3d4/Desktop/SWOG/kg/data"
 OBSERVED = {"pancreas": "pancreas", "lits": "liver"}
 
 

@@ -18,12 +18,12 @@ FLARE is sampled to a tractable, stratified subset (all cross-organ cases + tumo
 a coverage-stratified tumor-free remainder) so pairwise retrieval stays O(1e6), and the
 per-organ phenotype schema is harmonized to the Pancreas/LiTS record shape.
 
-Out: JBI_submission/results/corpus_3regime.json
+Out: kg/data/corpus_3regime.json
 """
 import json, os
 from collections import Counter, defaultdict
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 OUT = f"{RES}/corpus_3regime.json"
 FLARE_TARGET = 600          # tractable multi-organ sample size
 SEED = 42

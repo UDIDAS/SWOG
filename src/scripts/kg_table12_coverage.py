@@ -8,12 +8,12 @@ coverage regime(s) it touches, and the ontology / three-valued-semantics / incom
 behaviours it stresses — then verifies the set spans the phenotype x stratum space
 (the claim Table 12 supports). Pure design table; no retrieval results or raters needed.
 
-Out: JBI_submission/results/table12_coverage_matrix.json
+Out: kg/data/table12_coverage_matrix.json
 """
 import json, os
 from collections import defaultdict
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 OUT = f"{RES}/table12_coverage_matrix.json"
 
 # phenotype axes + semantics/feature axes (columns of the matrix)

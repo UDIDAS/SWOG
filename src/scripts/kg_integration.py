@@ -17,14 +17,14 @@ information content of shared concepts), detect communities, and test dataset mi
 a label-permutation null.
 
 Reports BOTH graphs side by side so the contrast is explicit.
-Out: JBI_submission/results/table11_kg_integration.json
+Out: kg/data/table11_kg_integration.json
 """
 import json, math, itertools
 import numpy as np
 import networkx as nx
 from networkx.algorithms.community import greedy_modularity_communities
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 REC = json.load(open(f"{RES}/corpus_3regime.json"))["records"]
 SEED = 42
 NULL_PERM = 200
@@ -130,7 +130,7 @@ def build_kg_case_graph(records, min_shared_ic=1.5):
 
 
 def build_organ_overlap_graph(records, tau=0.6):
-    import jbi_retrieval_v2 as R
+    import kg_retrieval_v2 as R
     G = nx.Graph(); G.add_nodes_from(range(len(records)))
     for i, j in itertools.combinations(range(len(records)), 2):
         s = R.similarity(records[i], records[j], "proposed")

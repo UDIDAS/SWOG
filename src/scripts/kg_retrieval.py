@@ -19,7 +19,7 @@ Circularity is acknowledged; LOPO (Table 7) provides the non-circular signal.
 import os, json, itertools
 import numpy as np
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 REC = json.load(open(f"{RES}/case_phenotypes.json"))["records"]
 ORGAN_UNIVERSE = ["pancreas", "liver"]
 CATS = ["burden_cat", "multiplicity", "containment", "anatomic_location"]

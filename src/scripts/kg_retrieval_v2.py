@@ -19,7 +19,7 @@ import os, json, itertools
 import numpy as np
 from scipy.stats import wilcoxon
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 CORPUS = json.load(open(f"{RES}/corpus_3regime.json"))
 REC = CORPUS["records"]
 ORGAN_UNIVERSE = CORPUS["organ_universe"]        # 5 organs

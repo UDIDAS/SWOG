@@ -11,12 +11,12 @@ datasets as intended. This turns the query DESIGN (Table 12) into shown executio
 Corpus: corpus_3regime.json (slice-level FLARE carries tumour phenotypes, so pancreas/LiTS
 queries can genuinely match FLARE cases on the shared organ). GT-derived phenotypes.
 
-Out: JBI_submission/results/crossdataset_query_results.json
+Out: kg/data/crossdataset_query_results.json
 """
 import json
-import jbi_retrieval_v2 as R
+import kg_retrieval_v2 as R
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 REC = json.load(open(f"{RES}/corpus_3regime.json"))["records"]
 BY_ID = {r["case_id"]: r for r in REC}
 

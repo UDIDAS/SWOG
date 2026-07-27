@@ -5,7 +5,7 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 GREEN = RGBColor(0x1a, 0x7f, 0x37); AMBER = RGBColor(0xB0, 0x6A, 0x00)
 t2 = json.load(open(f"{RES}/table2_phenotype_extraction.json"))
 t4 = json.load(open(f"{RES}/table4_structured_queries.json"))
@@ -127,5 +127,5 @@ P('Google Drive (reconstruction resources/): Pancreas + LiTS + FLARE predictions
   'checkpoints. JBI result JSONs + this document: local JBI_submission/ folder (untracked). '
   'Code: SWOG repo (src/scripts/, kg/).')
 
-out = "/home/ud3d4/Desktop/SWOG/JBI_submission/results_summary.docx"
+out = "/home/ud3d4/Desktop/SWOG/kg/data_summary.docx"
 doc.save(out); print("Saved:", out)

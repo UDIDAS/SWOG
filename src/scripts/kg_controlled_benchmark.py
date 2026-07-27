@@ -29,9 +29,9 @@ Strata:
 import json, itertools
 import numpy as np
 from scipy.stats import wilcoxon
-import jbi_retrieval_v2 as R   # reuse similarity(), ontology, holm(), _dcg()
+import kg_retrieval_v2 as R   # reuse similarity(), ontology, holm(), _dcg()
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 REC = R.REC
 SEED = 42
 NULL_PERMUTATIONS = 200

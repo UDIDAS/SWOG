@@ -20,7 +20,7 @@ import os, json, glob
 import numpy as np
 import nibabel as nib
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
 FT2 = "/scratch/ud3d4/acm_data/FLARE_Task2"
 OUT = f"{RES}/corpus_perpatient.json"
 ORGANS = {1: "liver", 2: "right_kidney", 3: "spleen", 4: "pancreas", 13: "left_kidney"}

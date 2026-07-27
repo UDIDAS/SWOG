@@ -6,8 +6,8 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.table import WD_TABLE_ALIGNMENT
 
-RES = "/home/ud3d4/Desktop/SWOG/JBI_submission/results"
-OUT = "/home/ud3d4/Desktop/SWOG/JBI_submission/Group_update.docx"
+RES = "/home/ud3d4/Desktop/SWOG/kg/data"
+OUT = "/home/ud3d4/Desktop/SWOG/docs/Group_update.docx"
 D = json.load(open(f"{RES}/tables_5to11_controlled.json"))
 GREEN = RGBColor(0x1a, 0x7f, 0x37); GREY = RGBColor(0x55, 0x55, 0x55)
 

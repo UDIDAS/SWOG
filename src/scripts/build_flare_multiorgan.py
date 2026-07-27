@@ -19,7 +19,7 @@ import numpy as np
 from scipy import ndimage
 
 FL = "/scratch/ud3d4/acm_data/FLARE"
-OUT = "/home/ud3d4/Desktop/SWOG/JBI_submission/results/flare_multiorgan_cases.json"
+OUT = "/home/ud3d4/Desktop/SWOG/kg/data/flare_multiorgan_cases.json"
 ORGANS = {1: "liver", 2: "right_kidney", 3: "spleen", 4: "pancreas", 13: "left_kidney"}
 TUMOR = 14
 
