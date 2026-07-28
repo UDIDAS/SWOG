@@ -101,9 +101,7 @@ def main():
             m = c.get("per_case_metrics", {})
             # organ (label 1)
             ou = uri("organ", cid, info["organ"])
-            node(ou, "Organ", info["organ"],
-                 gt_volume_cm3=sg.get("1", {}).get("volume_cm3"), pred_volume_cm3=sp.get("1", {}).get("volume_cm3"),
-                 dice=m.get("label_1", {}).get("dice"))
+            node(ou, "Organ", info["organ"])
             typ(ou, "Organ"); typ(ou, info["organ_cls"]); edge(cuu, "depicts_organ", ou)
             metrics(ou, sp.get("1"), sg.get("1"), m.get("label_1", {}).get("dice"))
             if info["organ_mk"] in cu: edge(ou, "mapped_to_concept", cu[info["organ_mk"]])
@@ -111,9 +109,7 @@ def main():
             # lesion (label 2) — GT tumor present
             if sg.get("2"):
                 lu = uri("lesion", cid, "tumor")
-                node(lu, "Lesion", f"{info['organ']} tumor", is_tumor=True,
-                     gt_volume_cm3=sg["2"].get("volume_cm3"), pred_volume_cm3=sp.get("2", {}).get("volume_cm3"),
-                     dice=m.get("label_2", {}).get("dice"))
+                node(lu, "Lesion", f"{info['organ']} tumor", is_tumor=True)
                 typ(lu, "Lesion"); typ(lu, info["tumor_cls"]); lit(lu, "is_tumor", True, XSD.boolean)
                 edge(ou, "has_lesion", lu); edge(lu, "located_in", ou)
                 metrics(lu, sp.get("2"), sg.get("2"), m.get("label_2", {}).get("dice"), True)
