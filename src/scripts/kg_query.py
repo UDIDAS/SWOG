@@ -25,6 +25,7 @@ class KG:
             self.out[(e["source"], e["relation"])].append(e["target"])
             self.inn[(e["target"], e["relation"])].append(e["source"])
         self.cases_all = [n["id"] for n in G["nodes"] if n["type"] == "ImagingCase"]
+        self.patients = [n["id"] for n in G["nodes"] if n["type"] == "Patient"]
 
     # ---- primitives ----
     def objs(self, s, rel):
@@ -59,10 +60,34 @@ class KG:
     def cases(self, pred):
         return sorted(c for c in self.cases_all if pred(c))
 
+    # ---- patient-level ----
+    def patient_of(self, case):
+        ps = self.objs(case, "of_patient")
+        return ps[0] if ps else None
+
+    def is_patient_level(self, case):
+        return bool(self.objs(case, "of_patient"))
+
+    def patients_where(self, pred):
+        """Patients (via their case) satisfying pred — only per-patient (volume) cases count."""
+        return sorted({self.patient_of(c) for c in self.cases_all
+                       if self.is_patient_level(c) and pred(c)})
+
+    def n_organs(self, case):
+        return len(self.objs(case, "depicts_organ"))
+
 
 # ---- named complex queries ----
 def QUERIES(kg):
     return {
+        # -- patient-level --
+        "patients_total": kg.patients,
+        "patients_flare": kg.patients_where(lambda c: kg.prop(c, "dataset") == "flare"),
+        "patients_observing_pancreas": kg.patients_where(lambda c: any(kg.label(o) == "pancreas" for o in kg.objs(c, "depicts_organ"))),
+        "patients_multi_organ_ge2": kg.patients_where(lambda c: kg.n_organs(c) >= 2),
+        "patients_with_pancreatic_tumor": kg.patients_where(lambda c: any(True for _ in kg.organ_lesions(c, "pancreas"))),
+        "patients_high_burden_any_tumor": kg.patients_where(lambda c: any(kg.obs_value(l, "TumorBurden") == "high" for _, l in kg.organ_lesions(c))),
+        # -- phenotype (patient-level now that all cases are patients) --
         "high_burden_pancreatic_tumor":
             kg.cases(lambda c: any(kg.obs_value(l, "TumorBurden") == "high"
                                    for _, l in kg.organ_lesions(c, "pancreas"))),

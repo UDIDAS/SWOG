@@ -13,13 +13,17 @@ Nodes: ImagingCase, Dataset, Organ, Lesion, OntologyConcept, AnatomicSite, Obser
 Edges: from_dataset, depicts_organ, has_lesion, located_in, overlaps_organ, mapped_to_concept,
        has_observation, at_site.  Grounds organs/lesions/sub-sites to SNOMED CT / NCIt.
 """
-import json, os
+import json, os, sys
 from collections import Counter
 from rdflib import Graph, Namespace, URIRef, Literal, RDF, RDFS, XSD
 
 KG = "/home/ud3d4/Desktop/SWOG/kg"
 DATA = f"{KG}/data"
 OUT = f"{KG}/graph"
+# default = PER-PATIENT corpus (patient-level queries). pass corpus_3regime.json for slice-level.
+CORPUS = sys.argv[1] if len(sys.argv) > 1 else f"{DATA}/corpus_perpatient.json"
+TAG = "" if "perpatient" in os.path.basename(CORPUS) else \
+    "_" + os.path.basename(CORPUS).replace("corpus_", "").replace(".json", "")
 MMKG = Namespace("http://example.org/mmkg/schema/")
 INST = Namespace("http://example.org/mmkg/instance/")
 
@@ -92,13 +96,19 @@ def main():
         add_concepts(mk, {s: {"code": c, "display": disp} for s, (c, disp) in systems.items()})
 
     # ---- instances ----
-    recs = json.load(open(f"{DATA}/corpus_3regime.json"))["records"]
+    recs = json.load(open(CORPUS))["records"]
     for r in recs:
-        cid = r["case_id"]; cu = uri("case", cid)
-        node(cu, "ImagingCase", cid, dataset=r["dataset"], granularity=r.get("granularity"), modality="CT")
-        typ(cu, "ImagingCase"); lit(cu, "case_id", cid); lit(cu, "dataset", r["dataset"]); lit(cu, "modality", "CT")
+        cid = r["case_id"]; cu = uri("case", cid); gran = r.get("granularity")
+        node(cu, "ImagingCase", cid, dataset=r["dataset"], granularity=gran, modality="CT")
+        typ(cu, "ImagingCase"); lit(cu, "case_id", cid); lit(cu, "dataset", r["dataset"])
+        lit(cu, "modality", "CT"); lit(cu, "granularity", gran)
         du = uri("dataset", r["dataset"]); node(du, "Dataset", r["dataset"]); typ(du, "Dataset")
         edge(cu, "from_dataset", du)
+        # PATIENT layer: a per-patient (volume) case IS a patient study -> patient-level queries
+        if gran == "volume":
+            pu = uri("patient", cid)
+            node(pu, "Patient", cid, patient_id=cid, dataset=r["dataset"]); typ(pu, "Patient")
+            lit(pu, "patient_id", cid); edge(cu, "of_patient", pu)
 
         tumor_organs = [o for o in r["observed_organs"] if r["organs"][o].get("has_tumor")]
         for o in r["observed_organs"]:
@@ -146,15 +156,17 @@ def main():
                             edge(lu, "overlaps_organ", uri("organ", cid, o2))
 
     # ---- persist ----
-    g.serialize(f"{OUT}/imaging_kg.ttl", format="turtle")
+    g.serialize(f"{OUT}/imaging_kg{TAG}.ttl", format="turtle")
     unified = {"nodes": list(nodes.values()), "edges": edges,
-               "schema": "kg/schema.owl", "namespace": str(INST)}
-    json.dump(unified, open(f"{OUT}/unified_mmkg.json", "w"))
+               "schema": "kg/schema.owl", "namespace": str(INST), "corpus": os.path.basename(CORPUS)}
+    json.dump(unified, open(f"{OUT}/unified_mmkg{TAG}.json", "w"))
 
     # ---- report ----
     ntypes = Counter(n["type"] for n in nodes.values())
     etypes = Counter(e["relation"] for e in edges)
-    print(f"KG built from {len(recs)} ImagingCases -> {OUT}/imaging_kg.ttl + unified_mmkg.json")
+    npat = ntypes.get("Patient", 0)
+    print(f"KG built from {len(recs)} ImagingCases ({npat} patient-level) [{os.path.basename(CORPUS)}]"
+          f" -> {OUT}/imaging_kg{TAG}.ttl + unified_mmkg{TAG}.json")
     print(f"Triples: {len(g)}")
     print(f"Nodes ({len(nodes)}): " + ", ".join(f"{k}={v}" for k, v in ntypes.most_common()))
     print(f"Edges ({len(edges)}): " + ", ".join(f"{k}={v}" for k, v in etypes.most_common()))
