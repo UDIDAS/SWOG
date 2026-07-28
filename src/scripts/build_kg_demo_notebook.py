@@ -148,6 +148,13 @@ print(f"KG loaded: {len(kg.patients)} patients, {len(kg.nodes)} nodes")
 res = QUERIES(kg)
 pd.DataFrame([{"query": k, "count": (len(v) if isinstance(v, list) else v)} for k, v in res.items()])""")
 
+md("""> **Reading the results (data honesty).** Tumor queries resolve for **Pancreas** and **LiTS** patients
+> (per-patient tumor annotations). `cross_organ_tumor = 0` is **expected, not a bug**: the per-patient
+> **FLARE (FLARE22) set is organs-only — no tumor label** — so its 100 patients contribute organ/observability
+> facts but no lesions. (Cross-organ tumor is a property of the *slice-level* FLARE23 reconstruction, which is
+> a separate, non-patient-level graph.) So patient-level *tumor* reasoning currently covers the 412
+> tumor-annotated patients; FLARE contributes the multi-organ coverage.""")
+
 md("""## 7 · The SWOG use-case — Q1: *Whipple surgery, lymph-node recurrence*
 
 The flagship SWOG query is **multimodal**: *Whipple surgery* and *lymph-node recurrence* live in the
