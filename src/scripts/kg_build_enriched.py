@@ -39,7 +39,8 @@ def uri(*p):
     return INST["_".join(str(x).replace(" ", "").replace(":", "").replace("/", "") for x in p)]
 
 
-def main():
+def build(sel, tag, title):
+    """Build one enriched KG over datasets in `sel` -> imaging_kg{tag}.ttl (+ unified json)."""
     os.makedirs(OUT, exist_ok=True)
     g = Graph(); g.parse(f"{KG}/schema.owl"); g.bind("mmkg", MMKG); g.bind("inst", INST)
     nodes, edges = {}, []
@@ -88,6 +89,7 @@ def main():
 
     n_cases = 0
     for ds, info in DS.items():
+        if ds not in sel: continue
         d = json.load(open(f"{HANDOFF}/ssl_handoff_{ds}.json"))
         for cid, c in d["cases"].items():
             n_cases += 1
@@ -129,17 +131,16 @@ def main():
                     edge(lu, "at_site", su)
                     if SITE_MK[loc] in cu: edge(su, "mapped_to_concept", cu[SITE_MK[loc]])
 
-    g.serialize(f"{OUT}/imaging_kg_pancreas_lits.ttl", format="turtle")
+    g.serialize(f"{OUT}/imaging_kg{tag}.ttl", format="turtle")
     json.dump({"nodes": list(nodes.values()), "edges": edges, "schema": "kg/schema.owl",
-               "datasets": ["pancreas", "lits"], "note": "GT + predicted metrics per organ/lesion"},
-              open(f"{OUT}/unified_mmkg_pancreas_lits.json", "w"))
-    print(f"Enriched Pancreas+LiTS KG: {n_cases} cases, {len(g)} triples -> {OUT}/imaging_kg_pancreas_lits.ttl")
-    print("Nodes:", dict(Counter(n["type"] for n in nodes.values())))
-    print("Edges:", dict(Counter(e["relation"] for e in edges)))
-    # show one enriched lesion
-    ex = next(n for n in nodes.values() if n["type"] == "Lesion" and "pred_volume_cm3" in n["properties"])
-    print("Example lesion props:", json.dumps(ex["properties"]))
+               "datasets": sel, "note": "GT + predicted metrics per organ/lesion"},
+              open(f"{OUT}/unified_mmkg{tag}.json", "w"))
+    print(f"{title}: {n_cases} cases, {len(g)} triples -> {OUT}/imaging_kg{tag}.ttl")
+    print("  Nodes:", dict(Counter(n["type"] for n in nodes.values())),
+          "| Edges:", dict(Counter(e["relation"] for e in edges)))
 
 
 if __name__ == "__main__":
-    main()
+    build(["pancreas"], "_pancreas", "Enriched Pancreas KG")
+    build(["lits"], "_lits", "Enriched LiTS KG")
+    build(["pancreas", "lits"], "_pancreas_lits", "Enriched Pancreas+LiTS KG")
