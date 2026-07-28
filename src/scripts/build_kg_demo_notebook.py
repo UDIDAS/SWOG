@@ -36,19 +36,26 @@ patient-level queries                        ── explainable reasoning
 Datasets: **Pancreas (MSD), LiTS, FLARE** — 512 per-patient studies.""")
 
 md("## 0 · Setup")
-code("""import sys, json, subprocess
+code("""import sys, os, json, subprocess
 from collections import Counter
-ROOT = "/home/ud3d4/Desktop/SWOG"
+# portable: walk up from the working dir until we find the repo (kg/schema.owl)
+ROOT = os.getcwd()
+while ROOT != "/" and not os.path.exists(f"{ROOT}/kg/schema.owl"):
+    ROOT = os.path.dirname(ROOT)
 sys.path.insert(0, f"{ROOT}/src/scripts")
 import pandas as pd
 pd.set_option("display.max_colwidth", 70)
-print("environment ready")""")
+print("repo root:", ROOT)""")
 
 md("""## 1 · Obtain — the ontology (schema)
 
 The KG is **grounded**: every organ / lesion / phenotype is a class in an OWL ontology, cross-referenced
 to clinical terminologies (**SNOMED CT**, **NCIt**). This is what makes the graph *explainable* and
-interoperable with the clinical Text KG.""")
+interoperable with the clinical Text KG.
+
+> *Grounding provenance:* pancreas, liver, their tumors, and the pancreas sub-sites use **verified** codes
+> (`ontology_mappings.json`, checked by direct SNOMED/NCIt lookup); kidney/spleen use **standard but
+> not-yet-independently-verified** codes (marked *supplemental* in `kg_build_graph.py`).""")
 code("""from rdflib import Graph, RDF, OWL
 schema = Graph(); schema.parse(f"{ROOT}/kg/schema.owl")
 classes = sorted(str(s).split('/')[-1] for s in schema.subjects(RDF.type, OWL.Class))
@@ -138,7 +145,28 @@ try:
 except Exception as e:
     print("(table2 phenotype-quality JSON:", e, ")")""")
 
-md("""## 6 · Query — patient-level reasoning
+md("""## 6 · Evaluate — is the reasoning mechanism sound?
+
+The KG's core retrieval mechanism is **observability-aware**: two patients are compared only over the
+anatomy they *jointly observe* (unobserved ≠ absent). We validated this against a **coverage-blind**
+ablation on the 3-regime corpus. Headline numbers below (precomputed by `kg_controlled_benchmark.py`):
+a **zero** gap on the control stratum (as it must be) and a **significant positive** gap where coverage
+differs — plus the sharp specificity controls.""")
+code("""ev = json.load(open(f"{ROOT}/kg/data/tables_5to11_controlled.json"))
+t6, t8 = ev["table6"], ev["table8"]
+strat = pd.DataFrame([
+    {"stratum": s, "proposed nDCG": t6[s]["proposed"]["nDCG"],
+     "coverage-blind": t6[s]["coverage_blind"]["nDCG"], "Δ observability": t6[s]["dObs_nDCG"]}
+    for s in ["Within-dataset (control)", "Cross-dataset (target)", "Decomposition (target)"]])
+print("Table 6 — retrieval by stratum (proposed vs coverage-blind ablation):")
+display(strat)
+print(f"\\nTable 8 — coverage controls ({t8.get('n_disjoint_pairs','?'):,} disjoint pairs): "
+      f"proposed excludes {t8['incomparable_excluded_pct']['proposed']}% / "
+      f"{t8['silence_false_penalty_pct']['proposed']}% false-penalty  |  "
+      f"coverage-blind {t8['incomparable_excluded_pct']['coverage_blind']}% / "
+      f"{t8['silence_false_penalty_pct']['coverage_blind']}%  -> the mechanism is doing the work.")""")
+
+md("""## 7 · Query — patient-level reasoning
 
 `kg_query.py` runs **complex, multi-hop, patient-level** queries over the graph — the kind of
 explainable cohort questions the KG exists to answer.""")
@@ -155,7 +183,7 @@ md("""> **Reading the results (data honesty).** Tumor queries resolve for **Panc
 > a separate, non-patient-level graph.) So patient-level *tumor* reasoning currently covers the 412
 > tumor-annotated patients; FLARE contributes the multi-organ coverage.""")
 
-md("""## 7 · The SWOG use-case — Q1: *Whipple surgery, lymph-node recurrence*
+md("""## 8 · The SWOG use-case — Q1: *Whipple surgery, lymph-node recurrence*
 
 The flagship SWOG query is **multimodal**: *Whipple surgery* and *lymph-node recurrence* live in the
 **Text KG**; the **imaging** half is *"patients with a pancreatic-head tumor"* (Whipple = pancreatic-head
