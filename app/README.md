@@ -1,6 +1,8 @@
 # OAKG retrieval demos
 
-A Streamlit app with **two separate retrievals**, one per tab, plus a Llama 3.2 3B explainer in each.
+A Streamlit app: one heading, **three retrieval panels** (tabs), and a single **assistant** chatbot
+at the bottom that can answer about any panel. (The assistant is a local Llama 3.2 3B, but the UI
+just calls it "assistant".)
 
 ## Run
 ```bash
@@ -19,7 +21,7 @@ optional categorical filter) and a **competitor** to compare against OAKG.
 - The **competitor** (Zero / Mean / Median imputation, or Cross-organ collision) fabricates a value
   for unobserved phenotypes and **over-returns** — false positives.
 - Shows headline metrics, a **precision leaderboard** (OAKG vs every competitor), the two ranked
-  panels side by side (⚠️ = false positive), and a Llama explainer. Sharpest case: `= 0` ("no tumor")
+  panels side by side (⚠️ = false positive). Sharpest case: `= 0` ("no tumor")
   — the competitor sweeps in every unobserved patient; OAKG keeps only the truly-measured zeros.
 - The retrieved patients are drawn as **one merged KG** (top-N by relevance): each patient's subgraph,
   all linked through **shared Dataset and SNOMED/NCIt concept nodes** — the shared schema makes them a
@@ -43,7 +45,7 @@ shows directly: for a pancreas anchor, **Masked cosine** ranks FLARE patients as
 down-weights them via γ. Includes an **interactive vis.js KG view with a toggle** — *Merged KG*
 (anchor + its OAKG neighbours as one graph, linked through shared Dataset/concept nodes) or *Single
 patient* (the anchor's own subgraph; categorical phenotypes are direct triples `lesion —tumorBurden→
-high`) — plus companion bars and a Llama explainer.
+high`) — plus companion bars.
 
 ## 🗣 Tab 3 — Describe / paper queries
 A natural-language front-end plus the OAKG paper's queries, highlighted.
@@ -54,11 +56,17 @@ A natural-language front-end plus the OAKG paper's queries, highlighted.
     single-organ observability — OAKG returns "unknown" instead of a false answer, the paper's point.)
   - *Cross-dataset complex (B1–B7):* the paper's cross-dataset queries; each button sends its query
     patient to the 🧭 Anchor tab (they're the similarity paradigm).
-- **Natural language:** type a description ("small pancreatic tumors that are contained"); Llama 3.2
-  3B maps it to a structured query and fills the panel (a robust normalizer fixes the 3B model's
-  sloppy keys). Edit the phenotype / condition / categorical panel, then it runs OAKG retrieval
-  inline — OAKG matches vs what coverage-blind (impute 0) would return, a results table, and the
-  retrieved patients drawn as **one merged KG**.
+- **Natural language:** type a description ("small pancreatic tumors that are contained"); the
+  assistant maps it to a structured query and fills the panel (a robust normalizer repairs the
+  model's sloppy keys). Edit the phenotype / condition / categorical panel, then it runs OAKG
+  retrieval inline — OAKG matches vs what coverage-blind (impute 0) would return, a results table,
+  and the retrieved patients drawn as **one merged KG**.
+
+## 💬 Assistant (bottom of the page)
+A single chatbot below the tabs, available regardless of which panel you're on. It's given the
+**current state of all three panels** (queries + results), so it can *Summarize the current panels*
+or answer follow-ups about any of them. Grounded in that context; the chat persists until you clear
+it. (Backend: local Llama 3.2 3B; the UI just says "assistant".)
 
 ## The observability is real (not synthetic)
 From each patient's `observed_organs` + which dataset annotated tumors: Pancreas patients imaged only
@@ -66,7 +74,7 @@ the pancreas, LiTS only the liver (24 with an observed-zero liver tumor), FLARE 
 no tumors. That's why a pancreas patient and a FLARE patient share only `pancreas_volume`.
 
 ## Files
-- `oakg_query_app.py` — the Streamlit app (two tabs; a reusable `llm_block` form-based chat).
+- `oakg_query_app.py` — the Streamlit app (three tabs + one bottom assistant; reusable `llm_block`).
 - `paper_retrieval.py` — the OAKG paper's baselines + OAKG scorer, vendored verbatim (Streamlit-free).
 - `kg_viz.py` — Plotly + vis.js KG visualization builders (Streamlit-free).
 - `llm_backend.py` — Llama 3.2 3B load + generate helpers (Streamlit-free).

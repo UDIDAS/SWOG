@@ -122,7 +122,7 @@ def naive_value(rec, organ, field, default):
 
 
 # ----------------------------------------------------------------------------- Llama helper
-@st.cache_resource(show_spinner="Loading Llama 3.2 3B (first use only)…")
+@st.cache_resource(show_spinner="Loading assistant (first use only)…")
 def get_llm():
     from llm_backend import load_llama
     return load_llama()
@@ -131,16 +131,15 @@ def get_llm():
 def _gen(chat_key, system, context, user_msg, remember=False):
     if remember:
         st.session_state[chat_key].append(("user", user_msg))
-    with st.spinner("Llama 3.2 3B is thinking…"):
+    with st.spinner("Assistant is thinking…"):
         from llm_backend import generate
-        tok, model, repo = get_llm()
+        tok, model, _ = get_llm()
         hist = [{"role": r, "content": t} for r, t in st.session_state[chat_key]
                 if r in ("user", "assistant")]
         base = [{"role": "system", "content": system + "\n\nCONTEXT:\n" + context}]
         msgs = base + (hist if remember else [{"role": "user", "content": user_msg}])
         reply = generate(tok, model, msgs, max_new_tokens=340, temperature=0.2)
     st.session_state[chat_key].append(("assistant", reply))
-    st.session_state[f"{chat_key}_repo"] = repo
 
 
 def _normalize_query(q):
@@ -211,27 +210,26 @@ def set_panel(num, op_label, thr, cat, catv):
 
 
 def llm_block(context, system, sig, key, placeholder):
-    """Reusable Llama explainer + chat (uses a form, so it works inside tabs)."""
+    """Reusable assistant explainer + chat (form-based). sig=None disables auto-reset."""
     sig_key, chat_key = f"{key}_sig", f"{key}_chat"
-    if st.session_state.get(sig_key) != sig:                     # new query -> fresh chat
+    if sig is not None and st.session_state.get(sig_key) != sig:     # new query -> fresh chat
         st.session_state[chat_key] = []
         st.session_state[sig_key] = sig
     st.session_state.setdefault(chat_key, [])
     c1, c2 = st.columns(2)
-    if c1.button("📝 Explain these results", key=f"{key}_ex", width="stretch"):
-        _gen(chat_key, system, context, "Explain these results for a clinician in a short paragraph.")
+    if c1.button("📝 Summarize the current panels", key=f"{key}_ex", width="stretch"):
+        _gen(chat_key, system, context,
+             "Summarize the current results for a clinician in a short paragraph.")
     if c2.button("🗑 Clear chat", key=f"{key}_cl", width="stretch"):
         st.session_state[chat_key] = []
     with st.form(key=f"{key}_form", clear_on_submit=True):
-        q = st.text_input("Ask a follow-up", placeholder=placeholder, key=f"{key}_q",
+        q = st.text_input("Ask", placeholder=placeholder, key=f"{key}_q",
                           label_visibility="collapsed")
         if st.form_submit_button("Ask") and q.strip():
             _gen(chat_key, system, context, q.strip(), remember=True)
     for role, text in st.session_state[chat_key]:               # render AFTER processing
         with st.chat_message(role):
             st.markdown(text)
-    if st.session_state[chat_key]:
-        st.caption(f"powered by {st.session_state.get(f'{chat_key}_repo', 'Llama 3.2 3B')}")
 
 
 # ----------------------------------------------------------------------------- app
@@ -241,9 +239,11 @@ rec_by_id = {r["case_id"]: r for r in records}
 ds_all = sorted({r["dataset"] for r in records})
 
 st.title("OAKG retrieval demos")
-st.caption("Two separate retrievals: **range-based** (OAKG vs coverage-blind imputation) and "
-           "**anchor-based similarity** (OAKG vs the paper's baselines). Pick a tab.")
+st.caption("Three retrieval panels — **range-based** (OAKG vs coverage-blind imputation), "
+           "**anchor-based similarity** (OAKG vs the paper's baselines), and **describe / paper "
+           "queries** — with an assistant at the bottom.")
 
+CTX = {}   # each panel records a short context string; the bottom assistant reads all of them
 tab_range, tab_anchor, tab_nl = st.tabs(
     ["🔎 Range-based retrieval", "🧭 Anchor-based similarity", "🗣 Describe / paper queries"])
 
@@ -416,8 +416,7 @@ with tab_range:
         st.plotly_chart(kg_viz.cohort_bar_figure([rec_by_id[r["patient"]] for r in oakg_rows]),
                         width="stretch")
 
-    st.markdown("**Explain with Llama 3.2 3B**")
-    range_ctx = (
+    CTX["range"] = (
         f"Range query: {nlabel} {cond_label} (categorical filter: "
         f"{CATEG[cat_key][0]+' in '+str(cat_allowed) if cat_allowed else 'none'}).\n"
         f"Cohort {len(cohort)}; {len(obs_vals)} observed this phenotype.\n"
@@ -426,12 +425,6 @@ with tab_range:
         f"positives.\nLeaderboard: "
         + " | ".join(f"{d['method']}: returned={d['returned']}, false={d['false positives']}, "
                      f"precision={d['precision']}" for d in leader))
-    RANGE_SYS = ("You explain a STRUCTURED range retrieval over an imaging KG. OAKG treats a missing "
-                 "phenotype as unobserved (never matches); the competitor fabricates a value and can "
-                 "false-match. Ground ONLY in CONTEXT; be concise; don't invent numbers.")
-    llm_block(range_ctx, RANGE_SYS, (tuple(sorted(ds_sel)), num_key, cond_label, cat_key,
-              tuple(cat_allowed or ()), comp_label), "rangellm",
-              "e.g. why did the competitor return more?")
 
 # ==================================================================== TAB 2: anchor-based
 with tab_anchor:
@@ -515,11 +508,9 @@ with tab_anchor:
     with st.expander("Anchor raw record (KG properties)"):
         st.json(arec)
 
-    st.markdown("**Explain with Llama 3.2 3B**")
     oakg_ex = ", ".join(f"{t['patient']}({t['dataset']},γ={t['γ']})" for t in oakg_top[:6]) or "none"
     base_ex = ", ".join(f"{t['patient']}({t['dataset']},γ={t['γ']})" for t in base_top[:6]) or "none"
-    av = real_value(arec, norgan, nfield)
-    anchor_ctx = (
+    CTX["anchor"] = (
         f"Anchor: {anchor} (dataset {arec['dataset']}, observed organs {sorted(arec['observed_organs'])}).\n"
         "Task: rank other patients by similarity; OAKG uses jointly-observed features weighted by "
         "shared-evidence gamma (Jaccard of observed organs).\n"
@@ -529,16 +520,12 @@ with tab_anchor:
         f"OAKG top neighbours: {oakg_ex}.\n{base} top neighbours: {base_ex}.\n"
         "A baseline can rank a patient sharing only one observed feature as a perfect match "
         "(cosine of a single scalar = 1.0); OAKG's gamma sinks such weak-overlap matches.")
-    ANCHOR_SYS = ("You explain patient-SIMILARITY retrieval over an imaging KG. OAKG compares only on "
-                  "jointly-observed features and weights by shared-evidence gamma. Lower weak-overlap "
-                  "is better. Ground ONLY in CONTEXT; be concise; don't invent patients or numbers.")
-    llm_block(anchor_ctx, ANCHOR_SYS, (anchor, base, topk), "anchorllm",
-              "e.g. why did masked cosine rank FLARE patients?")
 
 # ==================================================================== TAB 3: describe / paper queries
 with tab_nl:
-    st.caption("Describe the patients you want (natural language) → Llama turns it into a structured "
-               "phenotype query in the panel below → run OAKG retrieval. Or start from a paper query.")
+    st.caption("Describe the patients you want (natural language) → the assistant turns it into a "
+               "structured phenotype query in the panel below → run OAKG retrieval. Or start from a "
+               "paper query.")
 
     with st.expander("📄 Paper queries — click to load into the panel", expanded=True):
         st.markdown("**Structured queries (Table 4):**")
@@ -566,7 +553,7 @@ with tab_nl:
     desc = d1.text_input("Description", key="nl_desc", label_visibility="collapsed",
                          placeholder="e.g. small pancreatic tumors that are contained")
     if d2.button("💡 Suggest", width="stretch") and desc.strip():
-        with st.spinner("Llama 3.2 3B is mapping your description…"):
+        with st.spinner("Assistant is mapping your description…"):
             q, raw = nl_to_query(desc.strip())
         if q:
             op_lab = next((l for l, c in OPERATORS.items() if c == q.get("operator")), "greater than (>)")
@@ -574,7 +561,7 @@ with tab_nl:
             set_panel(q["phenotype"], op_lab, q.get("threshold", 0.0),
                       cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
         else:
-            st.warning(f"Could not parse a query. Llama said: {raw[:200]}")
+            st.warning(f"Could not parse a query. The assistant said: {raw[:200]}")
 
     # ---- query panel (session-state driven so presets / suggestions can fill it) ----
     st.session_state.setdefault("nl_num", "panc_tumor_vol")
@@ -638,6 +625,31 @@ with tab_nl:
         components.html(kg_viz.merged_kg_html(top, load_mappings(), height=520), height=544)
     else:
         st.info("No observation-backed patient matches — adjust the query.")
+
+    CTX["nl"] = (
+        f"Describe/paper query: {nlabel} {cond_label}"
+        + (f" and {CATEG[cat_key][0]} in {cat_vals}" if cat_key != "(none)" and cat_vals else "")
+        + f".\nOAKG returned {len(hits)} observation-backed patients; coverage-blind (impute 0) would "
+        f"return {blind} ({blind-len(hits)} false).")
+
+# ==================================================================== bottom: assistant
+st.divider()
+st.subheader("💬 Assistant")
+st.caption("Ask about any panel above — the assistant sees the current range, anchor, and describe "
+           "queries and their results.")
+universal_ctx = "\n\n".join([
+    "RANGE-BASED PANEL —\n" + CTX.get("range", "(not run)"),
+    "ANCHOR-BASED PANEL —\n" + CTX.get("anchor", "(not run)"),
+    "DESCRIBE / PAPER PANEL —\n" + CTX.get("nl", "(not run)"),
+])
+ASSIST_SYS = (
+    "You are an assistant for an OAKG retrieval dashboard with three panels: range-based (OAKG vs "
+    "coverage-blind imputation), anchor-based similarity (OAKG vs the paper's baselines, weighted by "
+    "shared-evidence gamma), and a describe/paper-query panel. Answer grounded ONLY in the CONTEXT of "
+    "the current panel states; be concise; don't invent patients or numbers. Core idea: OAKG treats "
+    "unobserved phenotypes as unknown and weights similarity by shared evidence, avoiding the false "
+    "positives that imputation or unweighted similarity produce.")
+llm_block(universal_ctx, ASSIST_SYS, None, "assistant", "Ask about any panel…")
 
 st.caption(f"KG source: {os.path.relpath(CORPUS, ROOT)} · {len(records)} patient instances · "
            "observability from `observed_organs` + dataset tumor-annotation coverage.")
