@@ -27,7 +27,7 @@ with open(_VIS_JS_PATH) as _f:
 TYPE_COLOR = {
     "Patient": "#d62728", "ImagingCase": "#1f77b4", "Organ": "#2ca02c",
     "Lesion": "#ff7f0e", "Observation": "#9467bd", "AnatomicSite": "#17becf",
-    "Concept": "#7f7f7f",
+    "Concept": "#7f7f7f", "Dataset": "#8c564b",
 }
 ORGAN_MAP = {"pancreas": "Organ::Pancreas", "liver": "Organ::Liver"}
 TUMOR_MAP = {"pancreas": "Lesion::Pancreatic tumor", "liver": "Lesion::Liver tumor"}
@@ -114,6 +114,11 @@ def patient_graph_html(rec, mappings, height=560):
                     add(f"KS:{o}", code, "Concept", f"{code} — {disp}", 14, "box")
                     link(f"S:{o}", f"KS:{o}", "mapped_to_concept")
 
+    return _wrap(nodes, edges, height)
+
+
+def _wrap(nodes, edges, height):
+    """Wrap nodes/edges into a self-contained interactive vis.js HTML document."""
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>#net{{width:100%;height:{height}px;border:1px solid #eee;border-radius:6px}}
 body{{margin:0;font-family:arial,sans-serif}}</style>
@@ -125,6 +130,48 @@ body{{margin:0;font-family:arial,sans-serif}}</style>
   var network = new vis.Network(document.getElementById('net'),
                                 {{nodes: nodes, edges: edges}}, {json.dumps(_OPTIONS)});
 </script></body></html>"""
+
+
+def merged_kg_html(records_list, mappings, height=560):
+    """One KG over MANY patients — they connect through SHARED Dataset + OntologyConcept nodes
+    (the shared schema). Per-patient nodes are id-scoped by case; Dataset/Concept nodes are global."""
+    nodes, edges, seen = [], [], set()
+
+    def add(nid, label, ntype, title, size=16, shape="dot"):
+        if nid not in seen:
+            seen.add(nid)
+            nodes.append({"id": nid, "label": label, "title": title, "shape": shape,
+                          "size": size, "color": TYPE_COLOR[ntype], "group": ntype})
+
+    def link(a, b, rel):
+        edges.append({"from": a, "to": b, "label": rel})
+
+    for rec in records_list:
+        cid, ds = rec["case_id"], rec["dataset"]
+        add(f"DS:{ds}", ds, "Dataset", f"Dataset: {ds}", 26, "database")          # SHARED
+        add(f"P:{cid}", cid, "Patient", f"Patient {cid} ({ds})", 18, "star")
+        add(f"C:{cid}", "case", "ImagingCase", f"ImagingCase — {cid}", 12, "square")
+        link(f"P:{cid}", f"C:{cid}", "of_patient")
+        link(f"C:{cid}", f"DS:{ds}", "from_dataset")
+        for o in rec["observed_organs"]:
+            od = rec["organs"][o]
+            add(f"O:{cid}:{o}", o.replace("_", " "), "Organ",
+                f"{o.replace('_', ' ')} — {od.get('organ_volume_cm3')} cm³ ({cid})", 12)
+            link(f"C:{cid}", f"O:{cid}:{o}", "depicts_organ")
+            code, disp = _concept(mappings, ORGAN_MAP.get(o, ""))
+            if code:
+                add(f"K:{code}", code, "Concept", f"{code} — {disp}", 16, "box")   # SHARED
+                link(f"O:{cid}:{o}", f"K:{code}", "mapped_to_concept")
+            if od.get("has_tumor"):
+                add(f"L:{cid}:{o}", f"{o.replace('_', ' ')} tumor", "Lesion",
+                    f"tumor — {od.get('tumor_volume_cm3')} cm³, burden {od.get('burden_cat')} ({cid})",
+                    12, "triangle")
+                link(f"O:{cid}:{o}", f"L:{cid}:{o}", "has_lesion")
+                code, disp = _concept(mappings, TUMOR_MAP.get(o, ""))
+                if code:
+                    add(f"K:{code}", code, "Concept", f"{code} — {disp}", 16, "box")  # SHARED
+                    link(f"L:{cid}:{o}", f"K:{code}", "mapped_to_concept")
+    return _wrap(nodes, edges, height)
 
 
 def cohort_strip_figure(records, nlabel, norgan, nfield):

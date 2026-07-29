@@ -19,9 +19,11 @@ optional categorical filter) and a **competitor** to compare against OAKG.
 - The **competitor** (Zero / Mean / Median imputation, or Cross-organ collision) fabricates a value
   for unobserved phenotypes and **over-returns** — false positives.
 - Shows headline metrics, a **precision leaderboard** (OAKG vs every competitor), the two ranked
-  panels side by side (⚠️ = false positive), a cohort bar of the OAKG-retrieved patients, and a
-  Llama explainer. Sharpest case: `= 0` ("no tumor") — the competitor sweeps in every unobserved
-  patient; OAKG keeps only the truly-measured zeros.
+  panels side by side (⚠️ = false positive), and a Llama explainer. Sharpest case: `= 0` ("no tumor")
+  — the competitor sweeps in every unobserved patient; OAKG keeps only the truly-measured zeros.
+- The retrieved patients are drawn as **one merged KG** (top-N by relevance): each patient's subgraph,
+  all linked through **shared Dataset and SNOMED/NCIt concept nodes** — the shared schema makes them a
+  single connected graph rather than N separate ones.
 
 ## 🧭 Tab 2 — Anchor-based similarity
 Pick **any patient** as the anchor; rank all others by similarity using the **OAKG paper's exact
@@ -38,9 +40,10 @@ baselines** (Section 5), vendored verbatim from `oakg/baselines.py` + `oakg/oakg
 Metric: **weak-overlap neighbours (γ<0.25) in the top-k** — lower is better. The paper's finding
 shows directly: for a pancreas anchor, **Masked cosine** ranks FLARE patients as *perfect* matches
 (they share only `pancreas_volume`, so a one-feature cosine is trivially 1.0), while **OAKG**
-down-weights them via γ. Includes the anchor's **interactive vis.js KG graph** (drag/zoom/hover;
-categorical phenotypes are direct triples `lesion —tumorBurden→ high`), companion bars, and a Llama
-explainer.
+down-weights them via γ. Includes an **interactive vis.js KG view with a toggle** — *Merged KG*
+(anchor + its OAKG neighbours as one graph, linked through shared Dataset/concept nodes) or *Single
+patient* (the anchor's own subgraph; categorical phenotypes are direct triples `lesion —tumorBurden→
+high`) — plus companion bars and a Llama explainer.
 
 ## The observability is real (not synthetic)
 From each patient's `observed_organs` + which dataset annotated tumors: Pancreas patients imaged only

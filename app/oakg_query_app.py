@@ -316,6 +316,14 @@ with tab_range:
 
     if oakg_rows:
         import kg_viz
+        st.markdown("**Retrieved patients as one KG** — they connect through shared **Dataset** and "
+                    "**SNOMED/NCIt concept** nodes (the shared schema). Drag / hover / zoom.")
+        gsz = st.selectbox("patients to graph (top by relevance)", [5, 8, 12, 20], index=1, key="r_gsz")
+        st.markdown(" &nbsp; ".join(f"<span style='color:{c};font-size:16px'>●</span> {t}"
+                                    for t, c in kg_viz.TYPE_COLOR.items()), unsafe_allow_html=True)
+        top = sorted(oakg_rows, key=lambda r: r["relevance"], reverse=True)[:gsz]
+        components.html(kg_viz.merged_kg_html([rec_by_id[r["patient"]] for r in top],
+                                              load_mappings(), height=560), height=584)
         st.plotly_chart(kg_viz.cohort_bar_figure([rec_by_id[r["patient"]] for r in oakg_rows]),
                         width="stretch")
 
@@ -394,16 +402,25 @@ with tab_anchor:
         st.caption("Baselines vendored verbatim from the OAKG paper (`oakg/baselines.py`).")
 
     st.divider()
-    st.markdown("### 🕸 Knowledge graph — the anchor patient")
+    st.markdown("### 🕸 Knowledge graph")
     import kg_viz
     mappings = load_mappings()
-    st.caption("Interactive vis.js graph — drag nodes, hover, zoom. Categorical phenotypes are direct "
-               "triples, e.g. lesion —tumorBurden→ high.")
-    st.markdown(" &nbsp; ".join(f"<span style='color:{c};font-size:18px'>●</span> {t}"
+    view = st.radio("View", ["Merged KG (anchor + neighbours)", "Single patient (anchor)"],
+                    horizontal=True, key="a_view")
+    st.markdown(" &nbsp; ".join(f"<span style='color:{c};font-size:16px'>●</span> {t}"
                                 for t, c in kg_viz.TYPE_COLOR.items()), unsafe_allow_html=True)
-    components.html(kg_viz.patient_graph_html(arec, mappings, height=540), height=564)
+    if view.startswith("Merged"):
+        st.caption("Anchor + its OAKG neighbours as **one** KG — connected through shared Dataset and "
+                   "SNOMED/NCIt concept nodes. Drag / hover / zoom.")
+        merged = [arec] + [rec_by_id[t["patient"]] for t in oakg_top]
+        components.html(kg_viz.merged_kg_html(merged, mappings, height=560), height=584)
+    else:
+        st.caption("The anchor's own subgraph — drag nodes, hover, zoom. Categorical phenotypes are "
+                   "direct triples, e.g. lesion —tumorBurden→ high.")
+        components.html(kg_viz.patient_graph_html(arec, mappings, height=560), height=584)
+    aorgan = {"pancreas": "pancreas", "lits": "liver"}.get(arec["dataset"], arec["observed_organs"][0])
     g1, g2 = st.columns(2)
-    g1.plotly_chart(kg_viz.patient_bars_figure(arec, norgan), width="stretch")
+    g1.plotly_chart(kg_viz.patient_bars_figure(arec, aorgan), width="stretch")
     g2.plotly_chart(kg_viz.cohort_bar_figure([rec_by_id[t["patient"]] for t in oakg_top]),
                     width="stretch")
     with st.expander("Anchor raw record (KG properties)"):
