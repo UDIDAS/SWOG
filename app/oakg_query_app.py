@@ -18,6 +18,7 @@ Run:  streamlit run app/oakg_query_app.py
 """
 import json
 import os
+import re
 import statistics
 import sys
 
@@ -54,14 +55,28 @@ NUMERIC = {
 CATEG = {
     "panc_burden": ("Pancreatic tumor burden",        "pancreas", "tumor", "burden_cat"),
     "panc_mult":   ("Pancreatic tumor multiplicity",  "pancreas", "tumor", "multiplicity"),
+    "panc_contain":("Pancreatic tumor containment",   "pancreas", "tumor", "containment"),
     "panc_loc":    ("Pancreatic tumor location",      "pancreas", "tumor", "anatomic_location"),
     "liver_burden":("Liver tumor burden",             "liver",    "tumor", "burden_cat"),
     "liver_mult":  ("Liver tumor multiplicity",       "liver",    "tumor", "multiplicity"),
+    "liver_contain":("Liver tumor containment",       "liver",    "tumor", "containment"),
 }
+CAT_FIELD_VALUES = {"burden_cat": ["high", "low"], "multiplicity": ["solitary", "multifocal"],
+                    "containment": ["contained", "boundary"], "anatomic_location": ["head", "body", "tail"]}
 OPERATORS = {"less than (<)": "<", "at most (≤)": "<=", "greater than (>)": ">",
              "at least (≥)": ">=", "equals (=)": "==", "between (range)": "between"}
 SYM = {"<": "<", "<=": "≤", ">": ">", ">=": "≥", "==": "="}
 TUMOR_ANNOTATED = {("pancreas", "pancreas"), ("liver", "lits")}
+
+# The OAKG paper's structured queries (Table 4), mapped to this app's phenotype schema.
+PAPER_STRUCTURED = [
+    ("High tumor burden (pancreas)", "panc_tumor_vol", "greater than (>)", 0.0, "panc_burden", ["high"]),
+    ("Multifocal disease (liver)", "liver_tumor_vol", "greater than (>)", 0.0, "liver_mult", ["multifocal"]),
+    ("Tumor in the pancreas", "panc_tumor_vol", "greater than (>)", 0.0, "(none)", []),
+    ("Tumor in the liver", "liver_tumor_vol", "greater than (>)", 0.0, "(none)", []),
+    ("Contained pancreatic tumor", "panc_tumor_vol", "greater than (>)", 0.0, "panc_contain", ["contained"]),
+    ("Small pancreatic tumor (< 5 cm³)", "panc_tumor_vol", "less than (<)", 5.0, "(none)", []),
+]
 
 
 @st.cache_data
@@ -77,6 +92,12 @@ def load_mappings():
 @st.cache_resource
 def load_corpus():
     return pr.build_corpus(load_records())
+
+
+@st.cache_data
+def load_crossds():
+    p = os.path.join(ROOT, "kg", "data", "crossdataset_query_results.json")
+    return json.load(open(p))["queries"] if os.path.exists(p) else []
 
 
 def is_observed(rec, organ, kind):
@@ -122,6 +143,73 @@ def _gen(chat_key, system, context, user_msg, remember=False):
     st.session_state[f"{chat_key}_repo"] = repo
 
 
+def _normalize_query(q):
+    """Coerce the LLM's JSON into a valid schema spec (3B models are sloppy with keys)."""
+    ph = str(q.get("phenotype", "")).strip()
+    catf, catv = q.get("categorical_field"), q.get("categorical_values") or []
+    op, thr = q.get("operator", ">"), q.get("threshold", 0.0)
+    num = ph if ph in NUMERIC else next((k for k in NUMERIC if ph.startswith(k)), None)
+    if num is None and ph in CATEG:                      # a categorical key given as the phenotype
+        organ = CATEG[ph][1]
+        num = {"pancreas": "panc_tumor_vol", "liver": "liver_tumor_vol"}.get(organ)
+        catf = catf if catf in CATEG else ph
+        if isinstance(thr, str) and not catv:            # threshold like "high" is really a value
+            catv = [thr]
+        op, thr = ">", 0.0
+    if num is None:
+        return None
+    if op not in ("<", "<=", ">", ">=", "==", "between"):
+        op = ">"
+    try:
+        thr = float(thr)
+    except (TypeError, ValueError):
+        thr = 0.0
+    catf = catf if catf in CATEG else None
+    if catf:
+        allowed = CAT_FIELD_VALUES.get(CATEG[catf][3], [])
+        catv = [v for v in catv if v in allowed]
+        if not catv:
+            catf = None
+    return {"phenotype": num, "operator": op, "threshold": thr,
+            "categorical_field": catf, "categorical_values": catv}
+
+
+def nl_to_query(desc):
+    """Use Llama to map a free-text description to a structured phenotype query (JSON)."""
+    num_s = "; ".join(f'"{k}" ({NUMERIC[k][0]})' for k in NUMERIC)
+    cat_s = "; ".join(f'"{k}" (values {CAT_FIELD_VALUES.get(CATEG[k][3], [])})' for k in CATEG)
+    sysp = ("You convert a clinician's description into ONE structured phenotype query. Reply with "
+            "ONLY compact JSON and nothing else: {\"phenotype\":\"<numeric key>\",\"operator\":\"<one "
+            "of <,<=,>,>=,==,between>\",\"threshold\":<number>,\"categorical_field\":\"<categorical "
+            "key or null>\",\"categorical_values\":[<strings>]}. "
+            f"Numeric keys (use EXACTLY one, no suffix): {num_s}. Categorical keys: {cat_s}. "
+            "Rules: 'has a tumor' -> the matching tumor-volume key, operator '>', threshold 0. "
+            "'small/low' -> operator '<' with a small threshold; 'large/big' -> operator '>'. "
+            "Burden/multiplicity/containment/location go in categorical_field + categorical_values, "
+            "NOT in phenotype. Use ONLY the listed keys and values.")
+    from llm_backend import generate
+    tok, model, _ = get_llm()
+    raw = generate(tok, model, [{"role": "system", "content": sysp},
+                                {"role": "user", "content": f'Description: "{desc}"'}],
+                   max_new_tokens=180, temperature=0.1)
+    m = re.search(r"\{.*\}", raw, re.S)
+    if not m:
+        return None, raw
+    try:
+        return _normalize_query(json.loads(m.group(0))), raw
+    except Exception:
+        return None, raw
+
+
+def set_panel(num, op_label, thr, cat, catv):
+    st.session_state.nl_num = num
+    st.session_state.nl_op = op_label
+    st.session_state.nl_thr = float(thr if thr is not None else 0.0)
+    st.session_state.nl_cat = cat if cat in CATEG else "(none)"
+    st.session_state.nl_catv = list(catv or [])
+    st.rerun()
+
+
 def llm_block(context, system, sig, key, placeholder):
     """Reusable Llama explainer + chat (uses a form, so it works inside tabs)."""
     sig_key, chat_key = f"{key}_sig", f"{key}_chat"
@@ -156,7 +244,8 @@ st.title("OAKG retrieval demos")
 st.caption("Two separate retrievals: **range-based** (OAKG vs coverage-blind imputation) and "
            "**anchor-based similarity** (OAKG vs the paper's baselines). Pick a tab.")
 
-tab_range, tab_anchor = st.tabs(["🔎 Range-based retrieval", "🧭 Anchor-based similarity"])
+tab_range, tab_anchor, tab_nl = st.tabs(
+    ["🔎 Range-based retrieval", "🧭 Anchor-based similarity", "🗣 Describe / paper queries"])
 
 # ==================================================================== TAB 1: range-based
 with tab_range:
@@ -445,6 +534,110 @@ with tab_anchor:
                   "is better. Ground ONLY in CONTEXT; be concise; don't invent patients or numbers.")
     llm_block(anchor_ctx, ANCHOR_SYS, (anchor, base, topk), "anchorllm",
               "e.g. why did masked cosine rank FLARE patients?")
+
+# ==================================================================== TAB 3: describe / paper queries
+with tab_nl:
+    st.caption("Describe the patients you want (natural language) → Llama turns it into a structured "
+               "phenotype query in the panel below → run OAKG retrieval. Or start from a paper query.")
+
+    with st.expander("📄 Paper queries — click to load into the panel", expanded=True):
+        st.markdown("**Structured queries (Table 4):**")
+        pc = st.columns(3)
+        for i, spec in enumerate(PAPER_STRUCTURED):
+            if pc[i % 3].button(spec[0], key=f"ps_{i}", width="stretch"):
+                set_panel(spec[1], spec[2], spec[3], spec[4], spec[5])
+        st.caption("*Cross-organ distribution* (tumor in ≥2 organs) is **indeterminate** here — every "
+                   "case observes a single organ, so OAKG returns 'unknown' rather than a false answer.")
+        cds = load_crossds()
+        if cds:
+            st.markdown("**Cross-dataset complex queries (B1–B7)** — similarity from a query patient; "
+                        "send one to the *Anchor-based* tab:")
+            bt = st.columns(4)
+            for i, q in enumerate(cds):
+                cid = q.get("query", {}).get("case_id", "")
+                if bt[i % 4].button(f"{q['code']}: {q['title'].split(' -> ')[0]}",
+                                    key=f"bq_{i}", help=q["title"], width="stretch") and cid:
+                    st.session_state.a_anchor = f"{cid}  ·  {q['query'].get('dataset', '')}"
+                    st.session_state.a_view = "Single patient (anchor)"
+                    st.toast(f"Set anchor to {cid} — open the 🧭 Anchor-based tab.")
+
+    st.markdown("**Describe in natural language**")
+    d1, d2 = st.columns([4, 1])
+    desc = d1.text_input("Description", key="nl_desc", label_visibility="collapsed",
+                         placeholder="e.g. small pancreatic tumors that are contained")
+    if d2.button("💡 Suggest", width="stretch") and desc.strip():
+        with st.spinner("Llama 3.2 3B is mapping your description…"):
+            q, raw = nl_to_query(desc.strip())
+        if q:
+            op_lab = next((l for l, c in OPERATORS.items() if c == q.get("operator")), "greater than (>)")
+            cat = q.get("categorical_field")
+            set_panel(q["phenotype"], op_lab, q.get("threshold", 0.0),
+                      cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
+        else:
+            st.warning(f"Could not parse a query. Llama said: {raw[:200]}")
+
+    # ---- query panel (session-state driven so presets / suggestions can fill it) ----
+    st.session_state.setdefault("nl_num", "panc_tumor_vol")
+    st.session_state.setdefault("nl_op", "less than (<)")
+    st.session_state.setdefault("nl_thr", 5.0)
+    st.session_state.setdefault("nl_cat", "(none)")
+    st.session_state.setdefault("nl_catv", [])
+    q1, q2, q3, q4 = st.columns(4)
+    num_key = q1.selectbox("Phenotype", list(NUMERIC), format_func=lambda k: NUMERIC[k][0], key="nl_num")
+    nlabel, norgan, nkind, nfield = NUMERIC[num_key]
+    obs_vals = [v for v in (real_value(r, norgan, nfield) for r in records
+                            if is_observed(r, norgan, nkind)) if v is not None]
+    vmax = float(max(obs_vals)) if obs_vals else 1.0
+    op = OPERATORS[q2.selectbox("Condition", list(OPERATORS), key="nl_op")]
+    if op == "between":
+        lo, hi = q3.slider("range", 0.0, round(vmax, 1), (0.0, round(vmax * 0.25, 1)), key="nl_rng")
+        def matches(v): return lo <= v <= hi
+        cond_label = f"in [{lo}, {hi}]"
+    else:
+        st.session_state.nl_thr = min(st.session_state.nl_thr, round(vmax, 1))
+        thr = q3.number_input("threshold", 0.0, round(vmax, 1), step=0.5, key="nl_thr")
+        _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
+                ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
+        matches = _ops[op]
+        cond_label = f"{SYM[op]} {thr}"
+    cat_key = q4.selectbox("Categorical filter", ["(none)"] + list(CATEG),
+                           format_func=lambda k: k if k == "(none)" else CATEG[k][0], key="nl_cat")
+    cat_vals = []
+    if cat_key != "(none)":
+        _, corgan, ckind, cfield = CATEG[cat_key]
+        c_opts = CAT_FIELD_VALUES.get(cfield, [])
+        if any(v not in c_opts for v in st.session_state.nl_catv):
+            st.session_state.nl_catv = [v for v in st.session_state.nl_catv if v in c_opts]
+        cat_vals = q4.multiselect(f"{CATEG[cat_key][0]} in", c_opts, key="nl_catv")
+
+    def nl_observed_match(rec):
+        rv = real_value(rec, norgan, nfield)
+        if not (is_observed(rec, norgan, nkind) and rv is not None and matches(rv)):
+            return False
+        if cat_key != "(none)":
+            _, co, ck, cf = CATEG[cat_key]
+            return is_observed(rec, co, ck) and real_value(rec, co, cf) in set(cat_vals)
+        return True
+
+    st.markdown(f"**Query:** `{nlabel} {cond_label}`"
+                + (f" **and** {CATEG[cat_key][0]} ∈ {cat_vals}" if cat_key != "(none)" and cat_vals else ""))
+    hits = [r for r in records if nl_observed_match(r)]
+    blind = sum(1 for r in records if matches(naive_value(r, norgan, nfield, 0.0))
+                and (cat_key == "(none)" or naive_value(r, CATEG[cat_key][1], CATEG[cat_key][3], "none") in set(cat_vals)))
+    m1, m2 = st.columns(2)
+    m1.metric("OAKG matches (observation-backed)", len(hits))
+    m2.metric("Coverage-blind (impute 0) would return", blind,
+              delta=f"{blind-len(hits)} false", delta_color="inverse")
+    if hits:
+        df = pd.DataFrame([{"patient": r["case_id"], "dataset": r["dataset"],
+                            nlabel: round(real_value(r, norgan, nfield), 2)} for r in hits])
+        st.dataframe(df.head(50), hide_index=True, width="stretch", height=300)
+        import kg_viz
+        st.markdown("**Retrieved patients as one KG** (shared Dataset + concept nodes):")
+        top = hits[:8]
+        components.html(kg_viz.merged_kg_html(top, load_mappings(), height=520), height=544)
+    else:
+        st.info("No observation-backed patient matches — adjust the query.")
 
 st.caption(f"KG source: {os.path.relpath(CORPUS, ROOT)} · {len(records)} patient instances · "
            "observability from `observed_organs` + dataset tumor-annotation coverage.")

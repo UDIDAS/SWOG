@@ -45,6 +45,21 @@ down-weights them via γ. Includes an **interactive vis.js KG view with a toggle
 patient* (the anchor's own subgraph; categorical phenotypes are direct triples `lesion —tumorBurden→
 high`) — plus companion bars and a Llama explainer.
 
+## 🗣 Tab 3 — Describe / paper queries
+A natural-language front-end plus the OAKG paper's queries, highlighted.
+
+- **Paper queries (click to load):**
+  - *Structured (Table 4):* High tumor burden, Multifocal disease, Tumor in an organ, Contained
+    tumor, Small tumor. (*Cross-organ distribution* is called out as **indeterminate** under
+    single-organ observability — OAKG returns "unknown" instead of a false answer, the paper's point.)
+  - *Cross-dataset complex (B1–B7):* the paper's cross-dataset queries; each button sends its query
+    patient to the 🧭 Anchor tab (they're the similarity paradigm).
+- **Natural language:** type a description ("small pancreatic tumors that are contained"); Llama 3.2
+  3B maps it to a structured query and fills the panel (a robust normalizer fixes the 3B model's
+  sloppy keys). Edit the phenotype / condition / categorical panel, then it runs OAKG retrieval
+  inline — OAKG matches vs what coverage-blind (impute 0) would return, a results table, and the
+  retrieved patients drawn as **one merged KG**.
+
 ## The observability is real (not synthetic)
 From each patient's `observed_organs` + which dataset annotated tumors: Pancreas patients imaged only
 the pancreas, LiTS only the liver (24 with an observed-zero liver tumor), FLARE 5 organ volumes but
