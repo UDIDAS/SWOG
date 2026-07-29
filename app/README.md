@@ -45,17 +45,19 @@ injects extra ⚠️ false rows among them. The headline metric reports how many
 query, one real patient OAKG keeps next to one it drops.
 
 ## KG visualization (the OAKG-retrieved patients)
-Below the panels, an interactive **Plotly** section visualizes *only the reliable OAKG set*:
-- **Cohort at a glance** — a per-patient strip plot of the queried phenotype by dataset, and a
-  **sunburst** (dataset → organ → tumor → burden) showing the retrieved cohort's composition.
-- **Per-patient knowledge graph** — pick a retrieved patient and see its KG subgraph as an
-  interactive node-link tree: `Patient → ImagingCase → Organ(s) → Lesion(s) → Observations / anatomic
-  site`, with **SNOMED/NCIt concept** nodes for grounding. Hover any node for its properties
-  (volumes, voxels, codes); a companion bar chart shows that patient's organ vs tumor volume, and an
-  expander dumps the raw record. Node colors encode type (Patient / Case / Organ / Lesion /
-  Observation / Site / Concept).
+Below the panels, an interactive section visualizes *only the reliable OAKG set*:
+- **Cohort at a glance** — a simple **bar** of how many retrieved patients come from each dataset,
+  plus a per-patient strip plot of the queried phenotype by dataset.
+- **Per-patient knowledge graph** — pick a retrieved patient and explore its KG subgraph as a
+  **fully interactive vis.js network** (drag nodes, scroll to zoom, pan, hover for tooltips):
+  `Patient → ImagingCase → Organ(s) → Lesion(s) → Observations / anatomic site`, with **SNOMED/NCIt
+  concept** nodes for grounding. Node color + shape encode type (see the legend above the graph); a
+  companion bar chart shows that patient's organ vs tumor volume, and an expander dumps the raw record.
 
-Uses `plotly` + `networkx` (already in the env); figure builders live in `kg_viz.py`.
+The graph is a **self-contained** HTML doc with the vis-network JS inlined from
+`app/assets/vis-network.min.js` (vendored) — no CDN, works offline. We build the HTML directly
+(not via pyvis, whose IPython→sqlite3 import breaks in this env's library load order). Cohort charts
+use `plotly`. Builders live in `kg_viz.py`.
 
 ## Llama 3.2 3B explainer + chatbot
 - **📝 Explain these results** — generates a plain-language summary of the current query grounded in

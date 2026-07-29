@@ -28,6 +28,7 @@ import sys
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # make llm_backend importable
 
@@ -375,20 +376,21 @@ else:
     st.caption(f"Visualizing the **{len(retrieved)}** observation-backed patients OAKG returned — "
                "the reliable set only, no fabricated matches.")
 
-    st.markdown("**Retrieved cohort at a glance** (interactive — hover, zoom, click legend)")
+    st.markdown("**Retrieved cohort at a glance**")
     v1, v2 = st.columns(2)
-    v1.plotly_chart(kg_viz.cohort_strip_figure(retrieved, nlabel, norgan, nfield),
-                    width="stretch")
-    v2.plotly_chart(kg_viz.cohort_sunburst_figure(retrieved, norgan), width="stretch")
+    v1.plotly_chart(kg_viz.cohort_bar_figure(retrieved), width="stretch")
+    v2.plotly_chart(kg_viz.cohort_strip_figure(retrieved, nlabel, norgan, nfield), width="stretch")
 
-    st.markdown("**Per-patient knowledge graph** — full information for one retrieved patient")
+    st.markdown("**Per-patient knowledge graph** — drag nodes, hover for details, scroll to zoom")
     opt_labels = [f"{r['patient']}  ·  {rec_by_id[r['patient']]['dataset']}" for r in ranked]
     choice = st.selectbox("Patient (ranked by relevance)", opt_labels,
                           key=f"vizpat_{hash(tuple(opt_labels))}")
     rec = rec_by_id[choice.split("  ·  ")[0]]
-    g1, g2 = st.columns([3, 1])
-    g1.plotly_chart(kg_viz.patient_kg_figure(rec, mappings), width="stretch")
-    g2.plotly_chart(kg_viz.patient_bars_figure(rec, norgan), width="stretch")
+    st.markdown(" &nbsp; ".join(f"<span style='color:{c};font-size:18px'>●</span> {t}"
+                                for t, c in kg_viz.TYPE_COLOR.items()), unsafe_allow_html=True)
+    components.html(kg_viz.patient_graph_html(rec, mappings, height=560), height=584)
+    bcol, _ = st.columns([1, 2])
+    bcol.plotly_chart(kg_viz.patient_bars_figure(rec, norgan), width="stretch")
     with st.expander("Full record (raw KG properties)"):
         st.json(rec)
 
