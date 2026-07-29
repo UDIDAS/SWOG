@@ -71,6 +71,11 @@ def load_records():
     return json.load(open(CORPUS))["records"]
 
 
+@st.cache_data
+def load_mappings():
+    return json.load(open(os.path.join(ROOT, "kg", "ontology_mappings.json")))["mappings"]
+
+
 def is_observed(rec, organ, kind):
     """Was this phenotype actually measured for this patient?"""
     if organ not in rec["observed_organs"]:
@@ -97,6 +102,7 @@ def naive_value(rec, organ, field, default):
 # ----------------------------------------------------------------------------- app
 st.set_page_config(page_title="OAKG phenotype query", layout="wide")
 records = load_records()
+rec_by_id = {r["case_id"]: r for r in records}
 
 st.title("Patient retrieval by phenotype — OAKG vs coverage-blind")
 st.caption(
@@ -161,10 +167,10 @@ with st.sidebar:
     COMPETITORS = {
         "Zero imputation (missing → 0)":
             ("impute", 0.0, "unobserved value filled with 0"),
-        f"Mean imputation (missing → {mean_v})":
-            ("impute", mean_v, "unobserved value filled with the cohort mean"),
-        f"Median imputation (missing → {median_v})":
-            ("impute", median_v, "unobserved value filled with the cohort median"),
+        "Mean imputation (missing → cohort mean)":
+            ("impute", mean_v, f"unobserved value filled with the cohort mean ({mean_v})"),
+        "Median imputation (missing → cohort median)":
+            ("impute", median_v, f"unobserved value filled with the cohort median ({median_v})"),
         "Cross-organ collision (untyped phenotype)":
             ("cross_organ", None, "any organ's value answers the query — right number, wrong organ"),
     }
@@ -355,6 +361,36 @@ with st.expander(f"On this query: who OAKG keeps vs what {comp_short} adds", exp
                    "on this query, so there is nothing to drop.")
     else:
         st.info("No patient reliably satisfies this query, so there is no kept example to show.")
+
+# ----------------------------------------------------------------------------- KG visualization
+st.divider()
+st.subheader("🕸 KG visualization — the OAKG-retrieved (reliable) patients")
+if not oakg_rows:
+    st.info("Run a query that returns OAKG patients to populate the visualizations.")
+else:
+    import kg_viz
+    mappings = load_mappings()
+    ranked = sorted(oakg_rows, key=lambda r: r["relevance"], reverse=True)
+    retrieved = [rec_by_id[r["patient"]] for r in ranked]
+    st.caption(f"Visualizing the **{len(retrieved)}** observation-backed patients OAKG returned — "
+               "the reliable set only, no fabricated matches.")
+
+    st.markdown("**Retrieved cohort at a glance** (interactive — hover, zoom, click legend)")
+    v1, v2 = st.columns(2)
+    v1.plotly_chart(kg_viz.cohort_strip_figure(retrieved, nlabel, norgan, nfield),
+                    width="stretch")
+    v2.plotly_chart(kg_viz.cohort_sunburst_figure(retrieved, norgan), width="stretch")
+
+    st.markdown("**Per-patient knowledge graph** — full information for one retrieved patient")
+    opt_labels = [f"{r['patient']}  ·  {rec_by_id[r['patient']]['dataset']}" for r in ranked]
+    choice = st.selectbox("Patient (ranked by relevance)", opt_labels,
+                          key=f"vizpat_{hash(tuple(opt_labels))}")
+    rec = rec_by_id[choice.split("  ·  ")[0]]
+    g1, g2 = st.columns([3, 1])
+    g1.plotly_chart(kg_viz.patient_kg_figure(rec, mappings), width="stretch")
+    g2.plotly_chart(kg_viz.patient_bars_figure(rec, norgan), width="stretch")
+    with st.expander("Full record (raw KG properties)"):
+        st.json(rec)
 
 # ----------------------------------------------------------------------------- Llama 3.2 3B
 st.divider()

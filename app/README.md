@@ -44,6 +44,19 @@ injects extra ⚠️ false rows among them. The headline metric reports how many
 **false positives**, and the *"who OAKG keeps vs what the competitor adds"* box shows, for the current
 query, one real patient OAKG keeps next to one it drops.
 
+## KG visualization (the OAKG-retrieved patients)
+Below the panels, an interactive **Plotly** section visualizes *only the reliable OAKG set*:
+- **Cohort at a glance** — a per-patient strip plot of the queried phenotype by dataset, and a
+  **sunburst** (dataset → organ → tumor → burden) showing the retrieved cohort's composition.
+- **Per-patient knowledge graph** — pick a retrieved patient and see its KG subgraph as an
+  interactive node-link tree: `Patient → ImagingCase → Organ(s) → Lesion(s) → Observations / anatomic
+  site`, with **SNOMED/NCIt concept** nodes for grounding. Hover any node for its properties
+  (volumes, voxels, codes); a companion bar chart shows that patient's organ vs tumor volume, and an
+  expander dumps the raw record. Node colors encode type (Patient / Case / Organ / Lesion /
+  Observation / Site / Concept).
+
+Uses `plotly` + `networkx` (already in the env); figure builders live in `kg_viz.py`.
+
 ## Llama 3.2 3B explainer + chatbot
 - **📝 Explain these results** — generates a plain-language summary of the current query grounded in
   the retrieval facts.
@@ -71,3 +84,4 @@ liver tumor.
 ## Files
 - `oakg_query_app.py` — the Streamlit app.
 - `llm_backend.py` — Llama 3.2 3B load + generate helpers (Streamlit-free, so it's reusable/testable).
+- `kg_viz.py` — Plotly/networkx KG visualization builders (Streamlit-free).
