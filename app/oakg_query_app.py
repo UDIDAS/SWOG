@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-OAKG similarity-retrieval demo (Streamlit) with a Llama 3.2 3B explainer/chatbot.
+OAKG retrieval demos (Streamlit) with a Llama 3.2 3B explainer/chatbot.
 
-Everything is driven from the sidebar:
-  1. Cohort (datasets).
-  2. Anchor patient — found with a phenotype range query. OAKG returns only observation-backed
-     matches; you pick one as the ANCHOR.
-  3. Similarity comparison — which OAKG-paper baseline to pit against OAKG.
+Two SEPARATE retrievals, one per tab:
 
-The anchor drives the main page: similarity retrieval (OAKG vs the paper's baselines), an interactive
-KG view of the anchor, and a Llama 3.2 3B explainer. The paper baselines + OAKG scorer are vendored
-verbatim in paper_retrieval.py; observability is real (from `observed_organs` + dataset tumor
-annotation): Pancreas patients imaged only the pancreas, LiTS only the liver, FLARE 5 organ volumes
-but no tumors.
+  🔎 Range-based retrieval — structured query (phenotype + condition). OAKG returns only
+     observation-backed matches; a coverage-blind competitor imputes missing values and over-returns
+     (false positives). Shows the imputation-vs-observability story + a precision leaderboard.
+
+  🧭 Anchor-based similarity — pick any patient as an anchor; rank all others by similarity using the
+     OAKG paper's exact baselines (Section 5) vs OAKG's support-restricted + γ-weighted scorer.
+
+Observability is real (from `observed_organs` + dataset tumor annotation): Pancreas patients imaged
+only the pancreas, LiTS only the liver, FLARE 5 organ volumes but no tumors.
 
 Run:  streamlit run app/oakg_query_app.py
 """
 import json
 import os
+import statistics
 import sys
 
 import pandas as pd
@@ -41,7 +42,6 @@ def find_root():
 ROOT = find_root()
 CORPUS = os.path.join(ROOT, "kg", "data", "corpus_perpatient.json")
 
-# phenotype registry:  key -> (label, organ, kind, field)
 NUMERIC = {
     "panc_tumor_vol":  ("Pancreatic tumor volume (cm³)", "pancreas",     "tumor", "tumor_volume_cm3"),
     "liver_tumor_vol": ("Liver tumor volume (cm³)",      "liver",        "tumor", "tumor_volume_cm3"),
@@ -58,7 +58,9 @@ CATEG = {
     "liver_burden":("Liver tumor burden",             "liver",    "tumor", "burden_cat"),
     "liver_mult":  ("Liver tumor multiplicity",       "liver",    "tumor", "multiplicity"),
 }
-# a dataset annotates an organ's TUMOR only if it is that organ's specialist set
+OPERATORS = {"less than (<)": "<", "at most (≤)": "<=", "greater than (>)": ">",
+             "at least (≥)": ">=", "equals (=)": "==", "between (range)": "between"}
+SYM = {"<": "<", "<=": "≤", ">": ">", ">=": "≥", "==": "="}
 TUMOR_ANNOTATED = {("pancreas", "pancreas"), ("liver", "lits")}
 
 
@@ -90,259 +92,342 @@ def real_value(rec, organ, field):
     return None if od is None else od.get(field)
 
 
-# ----------------------------------------------------------------------------- app
-st.set_page_config(page_title="OAKG similarity retrieval", layout="wide")
-records = load_records()
-rec_by_id = {r["case_id"]: r for r in records}
-
-st.title("Patient similarity retrieval — OAKG vs the paper's baselines")
-st.caption(
-    "Pick an **anchor patient** in the sidebar via a phenotype range query (OAKG returns only "
-    "observation-backed matches). The anchor drives everything below: similarity retrieval against "
-    "the OAKG paper's baselines, an interactive KG view, and a Llama 3.2 3B explainer."
-)
-
-# ---------------------------------------------------------------- sidebar (all controls)
-with st.sidebar:
-    st.header("Cohort")
-    ds_all = sorted({r["dataset"] for r in records})
-    ds_sel = st.multiselect("Datasets in the KG", ds_all, default=ds_all)
-    cohort = [r for r in records if r["dataset"] in ds_sel]
-    st.caption(f"{len(cohort)} patients · "
-               + ", ".join(f"{d}={sum(1 for r in cohort if r['dataset']==d)}" for d in ds_sel))
-
-    st.header("Anchor patient")
-    st.caption("Find the anchor with a phenotype range query — OAKG returns only observation-backed "
-               "matches; pick one as the anchor for everything on the right.")
-    num_key = st.selectbox("Phenotype", list(NUMERIC), format_func=lambda k: NUMERIC[k][0])
-    nlabel, norgan, nkind, nfield = NUMERIC[num_key]
-    obs_vals = [v for v in (real_value(r, norgan, nfield) for r in cohort
-                            if is_observed(r, norgan, nkind)) if v is not None]
-    vmax = float(max(obs_vals)) if obs_vals else 1.0
-
-    OPERATORS = {"less than (<)": "<", "at most (≤)": "<=", "greater than (>)": ">",
-                 "at least (≥)": ">=", "equals (=)": "==", "between (range)": "between"}
-    SYM = {"<": "<", "<=": "≤", ">": ">", ">=": "≥", "==": "="}
-    op = OPERATORS[st.selectbox("Condition", list(OPERATORS), index=0, key=f"op_{num_key}")]
-    if op == "between":
-        lo, hi = st.slider(f"{nlabel} range", 0.0, round(vmax, 1),
-                           (0.0, round(vmax * 0.25, 1)), key=f"rng_{num_key}")
-        def matches(v): return lo <= v <= hi
-        cond_label = f"in [{lo}, {hi}]"
-    else:
-        thr = st.number_input(f"{nlabel} — threshold", 0.0, round(vmax, 1),
-                              0.0 if op == "==" else round(vmax * 0.25, 1), step=0.5,
-                              key=f"thr_{num_key}_{op}")
-        _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
-                ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
-        matches = _ops[op]
-        cond_label = f"{SYM[op]} {thr}"
-
-    cat_key = st.selectbox("Optional categorical filter", ["(none)"] + list(CATEG),
-                           format_func=lambda k: k if k == "(none)" else CATEG[k][0])
-    cat_allowed = None
-    if cat_key != "(none)":
-        _, corgan, ckind, cfield = CATEG[cat_key]
-        opts = sorted({real_value(r, corgan, cfield) for r in cohort
-                       if is_observed(r, corgan, ckind) and real_value(r, corgan, cfield)
-                       not in (None, "unknown", "none", "na")})
-        cat_allowed = st.multiselect(f"{CATEG[cat_key][0]} in", opts, default=opts[:1] if opts else [])
-
-    def _cat_ok(rec):
-        if cat_allowed is None:
-            return True
-        _, corgan, ckind, cfield = CATEG[cat_key]
-        return is_observed(rec, corgan, ckind) and real_value(rec, corgan, cfield) in set(cat_allowed)
-
-    def _oakg_match(rec):
-        rv = real_value(rec, norgan, nfield)
-        return is_observed(rec, norgan, nkind) and rv is not None and matches(rv) and _cat_ok(rec)
-
-    anchor_matches = sorted((r for r in cohort if _oakg_match(r)),
-                            key=lambda r: real_value(r, norgan, nfield), reverse=op in (">", ">="))
-    st.caption(f"OAKG matches for `{nlabel} {cond_label}`: **{len(anchor_matches)}** "
-               f"(of {len(obs_vals)} that observed this phenotype).")
-    if anchor_matches:
-        a_labels = [f"{r['case_id']}  ·  {r['dataset']}  ·  {round(real_value(r, norgan, nfield), 2)}"
-                    for r in anchor_matches]
-        anchor = st.selectbox("Anchor patient", a_labels,
-                              key=f"anchor_{num_key}_{cond_label}_{cat_key}").split("  ·  ")[0]
-    else:
-        anchor = None
-        st.warning("No observation-backed match — loosen the condition or dataset filter.")
-
-    st.header("Similarity comparison")
-    base = st.selectbox("Paper baseline vs OAKG", list(pr.BASELINE_FUNCTIONS), index=3)  # Masked cosine
-    topk = st.selectbox("top-k neighbours", [5, 10, 15, 20], index=1)
+def naive_value(rec, organ, field, default):
+    od = rec["organs"].get(organ)
+    if od is None:
+        return default
+    v = od.get(field)
+    return default if v is None else v
 
 
-# ---------------------------------------------------------------- main: anchor + similarity
-if anchor is None:
-    st.info("⬅ Pick an **anchor patient** in the sidebar (adjust the range query until OAKG returns "
-            "at least one observation-backed match).")
-    st.stop()
-
-arec = rec_by_id[anchor]
-av = real_value(arec, norgan, nfield)
-st.success(f"**Anchor:** `{anchor}`  ·  {arec['dataset']}  ·  observed organs: "
-           f"{', '.join(arec['observed_organs'])}  ·  {nlabel} = "
-           f"{round(av, 2) if av is not None else '—'}")
-
-st.subheader(f"🔬 Similarity retrieval — OAKG vs {base}")
-st.caption("The OAKG paper's exact baselines: rank every other patient against the anchor over a "
-           "masked phenotype matrix. OAKG restricts to jointly-observed features and weights by "
-           "shared-evidence **γ** (Jaccard of observed organs); baselines don't — so a patient "
-           "sharing only one feature can look like a perfect match (low γ).")
-corpus, Xm, Mm = load_corpus()
-blind = ("⚠️ coverage-blind (fabricates missing values)" if pr.COVERAGE_BLIND[base]
-         else "coverage-aware (jointly-observed features only)")
-oakg_top = pr.rank(anchor, "OAKG", corpus, Xm, Mm, records, topk)
-base_top = pr.rank(anchor, base, corpus, Xm, Mm, records, topk)
-low_oakg = sum(t["low evidence (γ<0.25)"] for t in oakg_top)
-low_base = sum(t["low evidence (γ<0.25)"] for t in base_top)
-
-k1, k2, k3 = st.columns(3)
-k1.metric("Anchor observed organs", ", ".join(sorted(corpus.observation_sets[anchor])) or "—")
-k2.metric(f"OAKG weak-overlap (top-{topk})", low_oakg)
-k3.metric(f"{base} weak-overlap (top-{topk})", low_base, delta=blind, delta_color="off")
-
-
-def sim_table(rows_):
-    df = pd.DataFrame(rows_)
-    df.insert(0, "flag", ["⚠️ weak (γ<0.25)" if r["low evidence (γ<0.25)"] else "✔" for r in rows_])
-    return df[["flag", "patient", "dataset", "score", "shared organs", "γ"]]
-
-
-colL, colR = st.columns(2)
-with colL:
-    st.markdown(f"### ❌ {base}")
-    st.caption(blind)
-    st.dataframe(sim_table(base_top), hide_index=True, width="stretch", height=380)
-with colR:
-    st.markdown("### ✅ OAKG (support-restricted + γ)")
-    st.caption("Jointly-observed, anatomically-supported features; γ-weighted so weak-overlap "
-               "neighbours sink.")
-    st.dataframe(sim_table(oakg_top), hide_index=True, width="stretch", height=380)
-
-if low_base > low_oakg:
-    st.error(f"**{base}** put **{low_base}** weak-overlap neighbours (γ<0.25) in its top-{topk} — "
-             f"patients sharing almost no observed evidence with `{anchor}`. OAKG has {low_oakg}: its "
-             "shared-evidence γ weight pushes those down.")
-else:
-    st.success(f"On this anchor, {base} and OAKG agree on evidence quality "
-               f"(weak-overlap neighbours: {base} {low_base}, OAKG {low_oakg}).")
-
-with st.expander("All paper baselines — weak-overlap neighbours in the top-k (lower = better)"):
-    board = [{"method": "🟢 OAKG", "weak-overlap (γ<0.25)": low_oakg, "coverage-blind": "—"}]
-    for m in pr.BASELINE_FUNCTIONS:
-        rk = pr.rank(anchor, m, corpus, Xm, Mm, records, topk)
-        board.append({"method": m, "weak-overlap (γ<0.25)": sum(r["low evidence (γ<0.25)"] for r in rk),
-                      "coverage-blind": "yes" if pr.COVERAGE_BLIND[m] else "no (masked)"})
-    st.dataframe(pd.DataFrame(board), hide_index=True, width="stretch")
-    st.caption("Baselines vendored verbatim from the OAKG paper (`oakg/baselines.py`). Zero/Mean/"
-               "Missingness are coverage-blind; Masked cosine & Gower are coverage-aware but "
-               "un-weighted, so a tiny overlap still scores high — OAKG's γ is what fixes that.")
-
-# ----------------------------------------------------------------------------- KG visualization
-st.divider()
-st.subheader("🕸 Knowledge graph — the anchor patient")
-import kg_viz
-mappings = load_mappings()
-st.caption("Interactive vis.js graph of the anchor's KG subgraph — drag nodes, hover for properties, "
-           "scroll to zoom. Categorical phenotypes are direct triples, e.g. lesion —tumorBurden→ high.")
-st.markdown(" &nbsp; ".join(f"<span style='color:{c};font-size:18px'>●</span> {t}"
-                            for t, c in kg_viz.TYPE_COLOR.items()), unsafe_allow_html=True)
-components.html(kg_viz.patient_graph_html(arec, mappings, height=560), height=584)
-g1, g2 = st.columns(2)
-g1.plotly_chart(kg_viz.patient_bars_figure(arec, norgan), width="stretch")
-g2.plotly_chart(kg_viz.cohort_bar_figure([rec_by_id[t["patient"]] for t in oakg_top]), width="stretch")
-with st.expander("Anchor raw record (KG properties)"):
-    st.json(arec)
-
-# ----------------------------------------------------------------------------- Llama 3.2 3B
-st.divider()
-st.subheader("🧠 Ask Llama 3.2 3B about these results")
-st.caption("Grounded in the anchor patient and its OAKG-vs-baseline retrieval. The conversation "
-           "**resets when you change the anchor or comparison.**")
-
-
+# ----------------------------------------------------------------------------- Llama helper
 @st.cache_resource(show_spinner="Loading Llama 3.2 3B (first use only)…")
 def get_llm():
     from llm_backend import load_llama
     return load_llama()
 
 
-def query_context():
-    oakg_ex = ", ".join(f"{t['patient']}({t['dataset']},γ={t['γ']})" for t in oakg_top[:6]) or "none"
-    base_ex = ", ".join(f"{t['patient']}({t['dataset']},γ={t['γ']})" for t in base_top[:6]) or "none"
-    return (
-        f"Anchor patient: {anchor} — dataset {arec['dataset']}, observed organs "
-        f"{sorted(arec['observed_organs'])}, {nlabel} = {round(av, 2) if av is not None else 'NA'}.\n"
-        "Task: rank other patients by similarity to the anchor over a masked phenotype matrix.\n"
-        "OAKG restricts comparison to jointly-OBSERVED features and weights similarity by shared-"
-        "evidence gamma (Jaccard of observed organ sets).\n"
-        f"Compared baseline: {base} — "
-        + ("coverage-blind (fabricates missing values)" if pr.COVERAGE_BLIND[base]
-           else "coverage-aware (jointly-observed features only)") + ".\n"
-        f"Weak-overlap neighbours (gamma<0.25) in top-{topk}: OAKG={low_oakg}, {base}={low_base}.\n"
-        f"OAKG top neighbours (id(dataset,gamma)): {oakg_ex}.\n"
-        f"{base} top neighbours: {base_ex}.\n"
-        "Key point: a baseline can rank a patient that shares only one observed feature as a perfect "
-        "match (cosine of a single scalar = 1.0); OAKG's gamma sinks such weak-overlap matches."
-    )
-
-
-SYSTEM = (
-    "You are a data assistant explaining patient-SIMILARITY retrieval results over an imaging "
-    "knowledge graph to a clinical research team. Be concise and grounded ONLY in the CONTEXT; do "
-    "not invent patients, datasets, or numbers. Key idea: OAKG compares patients only on jointly-"
-    "OBSERVED features and weights similarity by shared-evidence gamma (Jaccard of observed organs), "
-    "so patients sharing little real evidence with the anchor are down-ranked. Coverage-blind "
-    "baselines (zero/mean imputation, missingness indicators) fabricate values for unobserved "
-    "features; even coverage-aware ones (masked cosine, Gower) don't weight by gamma, so a tiny "
-    "one-feature overlap can score as a perfect match. Lower 'weak-overlap (gamma<0.25)' is better. "
-    "Prefer plain clinical language."
-)
-
-# reset the chat whenever the anchor or comparison changes
-query_sig = (anchor, base, topk, tuple(sorted(ds_sel)))
-if st.session_state.get("last_sig") != query_sig:
-    st.session_state.chat = []
-    st.session_state.last_sig = query_sig
-st.session_state.setdefault("chat", [])
-
-b1, b2 = st.columns([1, 1])
-if b1.button("📝 Explain these results", width="stretch"):
+def _gen(chat_key, system, context, user_msg, remember=False):
+    if remember:
+        st.session_state[chat_key].append(("user", user_msg))
     with st.spinner("Llama 3.2 3B is thinking…"):
         from llm_backend import generate
-        tok, model, _ = get_llm()
-        msg = [{"role": "system", "content": SYSTEM},
-               {"role": "user", "content": "CONTEXT:\n" + query_context()
-                + f"\n\nWrite a short paragraph for a clinician: who OAKG retrieved as most similar to "
-                  f"the anchor and why {base} differs."}]
-        st.session_state.chat.append(
-            ("assistant", generate(tok, model, msg, max_new_tokens=320, temperature=0.2)))
-if b2.button("🗑 Clear chat", width="stretch"):
-    st.session_state.chat = []
-
-for role, text in st.session_state.chat:
-    with st.chat_message(role):
-        st.markdown(text)
-
-prompt = st.chat_input("Ask about the retrieval (e.g. 'why did masked cosine rank FLARE patients?')")
-if prompt:
-    st.session_state.chat.append(("user", prompt))
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    with st.chat_message("assistant"), st.spinner("Llama 3.2 3B is thinking…"):
-        from llm_backend import generate
         tok, model, repo = get_llm()
-        history = [{"role": r, "content": t} for r, t in st.session_state.chat if r in ("user", "assistant")]
-        msgs = [{"role": "system", "content": SYSTEM + "\n\nCONTEXT (current anchor):\n" + query_context()}] + history
-        reply = generate(tok, model, msgs, max_new_tokens=350, temperature=0.2)
-        st.markdown(reply)
-        st.session_state.chat.append(("assistant", reply))
-        st.caption(f"powered by {repo}")
+        hist = [{"role": r, "content": t} for r, t in st.session_state[chat_key]
+                if r in ("user", "assistant")]
+        base = [{"role": "system", "content": system + "\n\nCONTEXT:\n" + context}]
+        msgs = base + (hist if remember else [{"role": "user", "content": user_msg}])
+        reply = generate(tok, model, msgs, max_new_tokens=340, temperature=0.2)
+    st.session_state[chat_key].append(("assistant", reply))
+    st.session_state[f"{chat_key}_repo"] = repo
+
+
+def llm_block(context, system, sig, key, placeholder):
+    """Reusable Llama explainer + chat (uses a form, so it works inside tabs)."""
+    sig_key, chat_key = f"{key}_sig", f"{key}_chat"
+    if st.session_state.get(sig_key) != sig:                     # new query -> fresh chat
+        st.session_state[chat_key] = []
+        st.session_state[sig_key] = sig
+    st.session_state.setdefault(chat_key, [])
+    c1, c2 = st.columns(2)
+    if c1.button("📝 Explain these results", key=f"{key}_ex", width="stretch"):
+        _gen(chat_key, system, context, "Explain these results for a clinician in a short paragraph.")
+    if c2.button("🗑 Clear chat", key=f"{key}_cl", width="stretch"):
+        st.session_state[chat_key] = []
+    with st.form(key=f"{key}_form", clear_on_submit=True):
+        q = st.text_input("Ask a follow-up", placeholder=placeholder, key=f"{key}_q",
+                          label_visibility="collapsed")
+        if st.form_submit_button("Ask") and q.strip():
+            _gen(chat_key, system, context, q.strip(), remember=True)
+    for role, text in st.session_state[chat_key]:               # render AFTER processing
+        with st.chat_message(role):
+            st.markdown(text)
+    if st.session_state[chat_key]:
+        st.caption(f"powered by {st.session_state.get(f'{chat_key}_repo', 'Llama 3.2 3B')}")
+
+
+# ----------------------------------------------------------------------------- app
+st.set_page_config(page_title="OAKG retrieval demos", layout="wide")
+records = load_records()
+rec_by_id = {r["case_id"]: r for r in records}
+ds_all = sorted({r["dataset"] for r in records})
+
+st.title("OAKG retrieval demos")
+st.caption("Two separate retrievals: **range-based** (OAKG vs coverage-blind imputation) and "
+           "**anchor-based similarity** (OAKG vs the paper's baselines). Pick a tab.")
+
+tab_range, tab_anchor = st.tabs(["🔎 Range-based retrieval", "🧭 Anchor-based similarity"])
+
+# ==================================================================== TAB 1: range-based
+with tab_range:
+    st.caption("Find patients whose phenotype satisfies a condition. OAKG returns only "
+               "observation-backed matches; the competitor fabricates missing values and over-returns.")
+    r1 = st.columns([1.2, 1.4, 1.2, 1.2])
+    ds_sel = r1[0].multiselect("Datasets", ds_all, default=ds_all, key="r_ds")
+    cohort = [r for r in records if r["dataset"] in ds_sel]
+    num_key = r1[1].selectbox("Phenotype", list(NUMERIC), format_func=lambda k: NUMERIC[k][0],
+                              key="r_ph")
+    nlabel, norgan, nkind, nfield = NUMERIC[num_key]
+    obs_vals = [v for v in (real_value(r, norgan, nfield) for r in cohort
+                            if is_observed(r, norgan, nkind)) if v is not None]
+    vmax = float(max(obs_vals)) if obs_vals else 1.0
+    op = OPERATORS[r1[2].selectbox("Condition", list(OPERATORS), index=0, key="r_op")]
+    if op == "between":
+        lo, hi = r1[3].slider("range", 0.0, round(vmax, 1), (0.0, round(vmax * 0.25, 1)),
+                              key="r_rng", label_visibility="collapsed")
+        def matches(v): return lo <= v <= hi
+        target, cond_label = (lo + hi) / 2, f"in [{lo}, {hi}]"
+    else:
+        thr = r1[3].number_input("threshold", 0.0, round(vmax, 1),
+                                 0.0 if op == "==" else round(vmax * 0.25, 1), step=0.5, key="r_thr")
+        _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
+                ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
+        matches = _ops[op]
+        target, cond_label = {"<": 0.0, "<=": 0.0, ">": vmax, ">=": vmax, "==": thr}[op], f"{SYM[op]} {thr}"
+
+    r2 = st.columns([1.4, 1.6, 1.0])
+    cat_key = r2[0].selectbox("Categorical filter", ["(none)"] + list(CATEG),
+                              format_func=lambda k: k if k == "(none)" else CATEG[k][0], key="r_cat")
+    cat_allowed = None
+    if cat_key != "(none)":
+        _, corgan, ckind, cfield = CATEG[cat_key]
+        opts = sorted({real_value(r, corgan, cfield) for r in cohort
+                       if is_observed(r, corgan, ckind) and real_value(r, corgan, cfield)
+                       not in (None, "unknown", "none", "na")})
+        cat_allowed = r2[0].multiselect(f"{CATEG[cat_key][0]} in", opts,
+                                        default=opts[:1] if opts else [], key="r_catv")
+    mean_v = round(statistics.mean(obs_vals), 2) if obs_vals else 0.0
+    median_v = round(statistics.median(obs_vals), 2) if obs_vals else 0.0
+    COMPETITORS = {
+        "Zero imputation (missing → 0)": ("impute", 0.0, "unobserved value filled with 0"),
+        "Mean imputation (missing → cohort mean)":
+            ("impute", mean_v, f"unobserved value filled with the cohort mean ({mean_v})"),
+        "Median imputation (missing → cohort median)":
+            ("impute", median_v, f"unobserved value filled with the cohort median ({median_v})"),
+        "Cross-organ collision (untyped phenotype)":
+            ("cross_organ", None, "any organ's value answers the query — right number, wrong organ"),
+    }
+    comp_label = r2[1].selectbox("Competitor (vs OAKG)", list(COMPETITORS), index=0, key="r_comp")
+    comp_code, comp_const, comp_src = COMPETITORS[comp_label]
+    comp_short = comp_label.split(" (")[0]
+    n_rows = r2[2].selectbox("Rows / panel", [5, 10, 15, 20, 30, 50], index=1, key="r_rows")
+
+    def relevance(v):
+        return 0.0 if v is None else round(max(0.0, 1 - abs(v - target) / (vmax + 1e-9)), 3)
+
+    def cat_ok_oakg(rec):
+        if cat_allowed is None:
+            return True
+        _, corgan, ckind, cfield = CATEG[cat_key]
+        return is_observed(rec, corgan, ckind) and real_value(rec, corgan, cfield) in set(cat_allowed)
+
+    def cat_ok_comp(rec):
+        if cat_allowed is None:
+            return True
+        _, corgan, ckind, cfield = CATEG[cat_key]
+        return naive_value(rec, corgan, cfield, "none") in set(cat_allowed)
+
+    def oakg_match(rec):
+        rv = real_value(rec, norgan, nfield)
+        return is_observed(rec, norgan, nkind) and rv is not None and matches(rv) and cat_ok_oakg(rec)
+
+    def comp_match(rec, code, const):
+        if code == "cross_organ":
+            vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
+            num = any(matches(v) for v in vals)
+        else:
+            num = matches(naive_value(rec, norgan, nfield, const))
+        return num and cat_ok_comp(rec)
+
+    def comp_seen(rec, code, const):
+        if code == "cross_organ":
+            vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
+            return next((v for v in vals if matches(v)), vals[0] if vals else 0.0)
+        return naive_value(rec, norgan, nfield, const)
+
+    oakg_ids = {r["case_id"] for r in cohort if oakg_match(r)}
+
+    def row_of(rec):
+        rv = real_value(rec, norgan, nfield)
+        seen = comp_seen(rec, comp_code, comp_const)
+        oak = rec["case_id"] in oakg_ids
+        comp = comp_match(rec, comp_code, comp_const)
+        sn = seen if isinstance(seen, (int, float)) else None
+        return {"patient": rec["case_id"], "dataset": rec["dataset"],
+                "real": (round(rv, 2) if rv is not None else None),
+                "seen": (round(seen, 2) if sn is not None else seen),
+                "observed": "observed" if is_observed(rec, norgan, nkind) else "UNOBSERVED",
+                "relevance": relevance(rv if oak else sn),
+                "oakg": oak, "comp": comp, "false": comp and not oak}
+
+    rows = [row_of(r) for r in cohort]
+    comp_rows = [r for r in rows if r["comp"]]
+    oakg_rows = [r for r in rows if r["oakg"]]
+    false_rows = [r for r in rows if r["false"]]
+
+    leader = [{"method": "🟢 OAKG (guardrail)", "returned": len(oakg_ids), "false positives": 0,
+               "precision": 1.0}]
+    for lab, (code, const, src) in COMPETITORS.items():
+        ret = {r["case_id"] for r in cohort if comp_match(r, code, const)}
+        prec = round(len(ret & oakg_ids) / len(ret), 3) if ret else 1.0
+        leader.append({"method": ("▶ " if lab == comp_label else "") + lab.split(" (")[0],
+                       "returned": len(ret), "false positives": len(ret - oakg_ids), "precision": prec})
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Cohort", len(cohort))
+    m2.metric("Observed for phenotype", len(obs_vals))
+    m3.metric(f"{comp_short} matches", len(comp_rows),
+              delta=f"{len(false_rows)} false", delta_color="inverse")
+    m4.metric("OAKG matches (reliable)", len(oakg_rows))
+    if false_rows:
+        st.error(f"⚠️ **{comp_short}** returned **{len(false_rows)}** false positives for "
+                 f"'{nlabel} {cond_label}' — not observation-backed ({comp_src}). OAKG excludes them.")
+    else:
+        st.success(f"**{comp_short}** produced no false positives for '{nlabel} {cond_label}' here — "
+                   "its fabricated value doesn't satisfy the condition. Try 'less than' / '= 0'.")
+
+    with st.expander("Retrieval-quality leaderboard — OAKG vs every competitor", expanded=True):
+        st.dataframe(pd.DataFrame(leader).sort_values("precision", ascending=False),
+                     hide_index=True, width="stretch")
+        st.caption("**Precision** = fraction of a method's returns that are observation-backed (agree "
+                   "with OAKG). OAKG is the reference at 1.00.")
+
+    cL, cR = st.columns(2)
+    with cL:
+        st.markdown(f"### ❌ {comp_short}")
+        st.caption(f"{comp_src}. ⚠️ = false positive (not observation-backed).")
+        if comp_rows:
+            df = pd.DataFrame(comp_rows).sort_values("relevance", ascending=False).head(n_rows)
+            df.insert(0, "flag", ["⚠️ false" if r["false"] else "✔" for r in df.to_dict("records")])
+            st.dataframe(df.rename(columns={"seen": "value used"})
+                         [["flag", "patient", "dataset", "value used", "relevance", "observed"]],
+                         hide_index=True, width="stretch", height=360)
+        else:
+            st.info("No matches.")
+    with cR:
+        st.markdown("### ✅ OAKG (missing → unobserved)")
+        st.caption("Only patients that actually observed the phenotype — no fabricated matches.")
+        if oakg_rows:
+            df = pd.DataFrame(oakg_rows).sort_values("relevance", ascending=False).head(n_rows)
+            st.dataframe(df.rename(columns={"real": nlabel})[["patient", "dataset", nlabel, "relevance"]],
+                         hide_index=True, width="stretch", height=360)
+        else:
+            st.info("No observation-backed patient satisfies this query.")
+
+    if oakg_rows:
+        import kg_viz
+        st.plotly_chart(kg_viz.cohort_bar_figure([rec_by_id[r["patient"]] for r in oakg_rows]),
+                        width="stretch")
+
+    st.markdown("**Explain with Llama 3.2 3B**")
+    range_ctx = (
+        f"Range query: {nlabel} {cond_label} (categorical filter: "
+        f"{CATEG[cat_key][0]+' in '+str(cat_allowed) if cat_allowed else 'none'}).\n"
+        f"Cohort {len(cohort)}; {len(obs_vals)} observed this phenotype.\n"
+        f"OAKG (observability guardrail) returned {len(oakg_rows)} reliable patients.\n"
+        f"Competitor {comp_label} ({comp_src}) returned {len(comp_rows)}, {len(false_rows)} FALSE "
+        f"positives.\nLeaderboard: "
+        + " | ".join(f"{d['method']}: returned={d['returned']}, false={d['false positives']}, "
+                     f"precision={d['precision']}" for d in leader))
+    RANGE_SYS = ("You explain a STRUCTURED range retrieval over an imaging KG. OAKG treats a missing "
+                 "phenotype as unobserved (never matches); the competitor fabricates a value and can "
+                 "false-match. Ground ONLY in CONTEXT; be concise; don't invent numbers.")
+    llm_block(range_ctx, RANGE_SYS, (tuple(sorted(ds_sel)), num_key, cond_label, cat_key,
+              tuple(cat_allowed or ()), comp_label), "rangellm",
+              "e.g. why did the competitor return more?")
+
+# ==================================================================== TAB 2: anchor-based
+with tab_anchor:
+    st.caption("Pick any patient as the anchor; rank all others by similarity using the OAKG paper's "
+               "baselines. OAKG restricts to jointly-observed features and weights by shared-evidence "
+               "**γ** (Jaccard of observed organs); baselines don't.")
+    corpus, Xm, Mm = load_corpus()
+    a1, a2, a3 = st.columns([2.4, 1.6, 1.0])
+    a_labels = [f"{r['case_id']}  ·  {r['dataset']}" for r in records]
+    anchor = a1.selectbox("Anchor patient", a_labels, key="a_anchor").split("  ·  ")[0]
+    base = a2.selectbox("Paper baseline vs OAKG", list(pr.BASELINE_FUNCTIONS), index=3, key="a_base")
+    topk = a3.selectbox("top-k", [5, 10, 15, 20], index=1, key="a_topk")
+    arec = rec_by_id[anchor]
+
+    blind = ("⚠️ coverage-blind (fabricates missing values)" if pr.COVERAGE_BLIND[base]
+             else "coverage-aware (jointly-observed features only)")
+    oakg_top = pr.rank(anchor, "OAKG", corpus, Xm, Mm, records, topk)
+    base_top = pr.rank(anchor, base, corpus, Xm, Mm, records, topk)
+    low_oakg = sum(t["low evidence (γ<0.25)"] for t in oakg_top)
+    low_base = sum(t["low evidence (γ<0.25)"] for t in base_top)
+
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Anchor observed organs", ", ".join(sorted(corpus.observation_sets[anchor])) or "—")
+    k2.metric(f"OAKG weak-overlap (top-{topk})", low_oakg)
+    k3.metric(f"{base} weak-overlap (top-{topk})", low_base, delta=blind, delta_color="off")
+
+    def sim_table(rows_):
+        df = pd.DataFrame(rows_)
+        df.insert(0, "flag", ["⚠️ weak (γ<0.25)" if r["low evidence (γ<0.25)"] else "✔" for r in rows_])
+        return df[["flag", "patient", "dataset", "score", "shared organs", "γ"]]
+
+    cL, cR = st.columns(2)
+    with cL:
+        st.markdown(f"### ❌ {base}")
+        st.caption(blind)
+        st.dataframe(sim_table(base_top), hide_index=True, width="stretch", height=360)
+    with cR:
+        st.markdown("### ✅ OAKG (support-restricted + γ)")
+        st.caption("γ-weighted so weak-overlap neighbours sink.")
+        st.dataframe(sim_table(oakg_top), hide_index=True, width="stretch", height=360)
+
+    if low_base > low_oakg:
+        st.error(f"**{base}** put **{low_base}** weak-overlap neighbours (γ<0.25) in its top-{topk} — "
+                 f"patients sharing almost no observed evidence with `{anchor}`. OAKG has {low_oakg}.")
+    else:
+        st.success(f"On this anchor, {base} and OAKG agree on evidence quality "
+                   f"(weak-overlap: {base} {low_base}, OAKG {low_oakg}).")
+
+    with st.expander("All paper baselines — weak-overlap neighbours in the top-k (lower = better)"):
+        board = [{"method": "🟢 OAKG", "weak-overlap (γ<0.25)": low_oakg, "coverage-blind": "—"}]
+        for m in pr.BASELINE_FUNCTIONS:
+            rk = pr.rank(anchor, m, corpus, Xm, Mm, records, topk)
+            board.append({"method": m,
+                          "weak-overlap (γ<0.25)": sum(r["low evidence (γ<0.25)"] for r in rk),
+                          "coverage-blind": "yes" if pr.COVERAGE_BLIND[m] else "no (masked)"})
+        st.dataframe(pd.DataFrame(board), hide_index=True, width="stretch")
+        st.caption("Baselines vendored verbatim from the OAKG paper (`oakg/baselines.py`).")
+
+    st.divider()
+    st.markdown("### 🕸 Knowledge graph — the anchor patient")
+    import kg_viz
+    mappings = load_mappings()
+    st.caption("Interactive vis.js graph — drag nodes, hover, zoom. Categorical phenotypes are direct "
+               "triples, e.g. lesion —tumorBurden→ high.")
+    st.markdown(" &nbsp; ".join(f"<span style='color:{c};font-size:18px'>●</span> {t}"
+                                for t, c in kg_viz.TYPE_COLOR.items()), unsafe_allow_html=True)
+    components.html(kg_viz.patient_graph_html(arec, mappings, height=540), height=564)
+    g1, g2 = st.columns(2)
+    g1.plotly_chart(kg_viz.patient_bars_figure(arec, norgan), width="stretch")
+    g2.plotly_chart(kg_viz.cohort_bar_figure([rec_by_id[t["patient"]] for t in oakg_top]),
+                    width="stretch")
+    with st.expander("Anchor raw record (KG properties)"):
+        st.json(arec)
+
+    st.markdown("**Explain with Llama 3.2 3B**")
+    oakg_ex = ", ".join(f"{t['patient']}({t['dataset']},γ={t['γ']})" for t in oakg_top[:6]) or "none"
+    base_ex = ", ".join(f"{t['patient']}({t['dataset']},γ={t['γ']})" for t in base_top[:6]) or "none"
+    av = real_value(arec, norgan, nfield)
+    anchor_ctx = (
+        f"Anchor: {anchor} (dataset {arec['dataset']}, observed organs {sorted(arec['observed_organs'])}).\n"
+        "Task: rank other patients by similarity; OAKG uses jointly-observed features weighted by "
+        "shared-evidence gamma (Jaccard of observed organs).\n"
+        f"Compared baseline: {base} — "
+        + ("coverage-blind" if pr.COVERAGE_BLIND[base] else "coverage-aware (jointly-observed only)")
+        + f".\nWeak-overlap neighbours (gamma<0.25) in top-{topk}: OAKG={low_oakg}, {base}={low_base}.\n"
+        f"OAKG top neighbours: {oakg_ex}.\n{base} top neighbours: {base_ex}.\n"
+        "A baseline can rank a patient sharing only one observed feature as a perfect match "
+        "(cosine of a single scalar = 1.0); OAKG's gamma sinks such weak-overlap matches.")
+    ANCHOR_SYS = ("You explain patient-SIMILARITY retrieval over an imaging KG. OAKG compares only on "
+                  "jointly-observed features and weights by shared-evidence gamma. Lower weak-overlap "
+                  "is better. Ground ONLY in CONTEXT; be concise; don't invent patients or numbers.")
+    llm_block(anchor_ctx, ANCHOR_SYS, (anchor, base, topk), "anchorllm",
+              "e.g. why did masked cosine rank FLARE patients?")
 
 st.caption(f"KG source: {os.path.relpath(CORPUS, ROOT)} · {len(records)} patient instances · "
            "observability from `observed_organs` + dataset tumor-annotation coverage.")
