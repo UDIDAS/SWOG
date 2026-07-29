@@ -15,7 +15,12 @@ Opens at http://localhost:8501. No data prep — it reads `kg/data/corpus_perpat
 
 ## Controls
 - **Datasets** — restrict the cohort (default: all three).
-- **Numeric phenotype + range slider** — the desirable range to retrieve on.
+- **Numeric phenotype + condition** — `< / ≤ / > / ≥ / = / between` with a threshold. A condition
+  whose satisfying set includes 0 (`< X`, `≤ X`, `= 0`) exposes the imputation problem automatically,
+  no slider fiddling. `= 0` is the sharpest case ("patients with *no* tumor").
+- **Coverage-blind imputation** — fill a missing value with **0 / cohort mean / cohort median**.
+  Shows the false positives don't come from the number 0 specifically — *any* constant fill
+  fabricates matches, it just moves *which* conditions get fooled.
 - **Optional categorical filter** — burden / multiplicity / location.
 - **Rows to show per panel** — 5 → 200 (default 10).
 

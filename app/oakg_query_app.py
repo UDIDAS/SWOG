@@ -23,6 +23,7 @@ Run:  streamlit run app/oakg_query_app.py
 """
 import json
 import os
+import statistics
 import sys
 
 import pandas as pd
@@ -99,9 +100,10 @@ records = load_records()
 
 st.title("Patient retrieval by phenotype — OAKG vs coverage-blind")
 st.caption(
-    "Query the patient-level imaging KG by phenotype and a desirable range. The two panels differ "
-    "only in how they treat **missing** values: coverage-blind imputes 0 (false match); OAKG treats "
-    "missing as **unobserved / unknown** and returns only reliable patients."
+    "Query the patient-level imaging KG by phenotype and a condition (e.g. *< 5 cm³*, *= 0*). The "
+    "two panels differ only in how they treat **missing** values: coverage-blind imputes a constant "
+    "(0 / mean / median → false matches); OAKG treats missing as **unobserved / unknown** and "
+    "returns only reliable patients."
 )
 
 # ---- sidebar: cohort + query builder ----
@@ -114,16 +116,33 @@ with st.sidebar:
                + ", ".join(f"{d}={sum(1 for r in cohort if r['dataset']==d)}" for d in ds_sel))
 
     st.header("Query")
-    st.markdown("**Numeric phenotype + desirable range**")
+    st.markdown("**Numeric phenotype + condition**")
     num_key = st.selectbox("Phenotype", list(NUMERIC), format_func=lambda k: NUMERIC[k][0])
     nlabel, norgan, nkind, nfield = NUMERIC[num_key]
     obs_vals = [real_value(r, norgan, nfield) for r in cohort if is_observed(r, norgan, nkind)]
     obs_vals = [v for v in obs_vals if v is not None]
     vmax = float(max(obs_vals)) if obs_vals else 1.0
-    rng = st.slider(f"{nlabel} — keep patients in range", 0.0, round(vmax, 1),
-                    (0.0, round(vmax * 0.25, 1)), key=f"rng_{num_key}")
-    st.caption(f"{len(obs_vals)} patients actually observed this phenotype "
-               f"(range 0–{vmax:.1f}). The other {len(cohort)-len(obs_vals)} are UNOBSERVED for it.")
+
+    OPERATORS = {"less than (<)": "<", "at most (≤)": "<=", "greater than (>)": ">",
+                 "at least (≥)": ">=", "equals (=)": "==", "between (range)": "between"}
+    SYM = {"<": "<", "<=": "≤", ">": ">", ">=": "≥", "==": "="}
+    op = OPERATORS[st.selectbox("Condition", list(OPERATORS), index=0, key=f"op_{num_key}")]
+    if op == "between":
+        lo, hi = st.slider(f"{nlabel} range", 0.0, round(vmax, 1),
+                           (0.0, round(vmax * 0.25, 1)), key=f"rng_{num_key}")
+        def matches(v): return lo <= v <= hi
+        target, cond_label = (lo + hi) / 2, f"in [{lo}, {hi}]"
+    else:
+        thr = st.number_input(f"{nlabel} — threshold", 0.0, round(vmax, 1),
+                              0.0 if op == "==" else round(vmax * 0.25, 1), step=0.5,
+                              key=f"thr_{num_key}_{op}")
+        _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
+                ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
+        matches = _ops[op]
+        target = {"<": 0.0, "<=": 0.0, ">": vmax, ">=": vmax, "==": thr}[op]
+        cond_label = f"{SYM[op]} {thr}"
+    st.caption(f"{len(obs_vals)} observed this phenotype (0–{vmax:.1f}); the other "
+               f"{len(cohort)-len(obs_vals)} are UNOBSERVED for it.")
 
     st.markdown("**Optional categorical filter**")
     cat_key = st.selectbox("Add a categorical constraint", ["(none)"] + list(CATEG),
@@ -136,29 +155,35 @@ with st.sidebar:
                        not in (None, "unknown", "none", "na")})
         cat_allowed = st.multiselect(f"{clabel} in", opts, default=opts[:1] if opts else [])
 
+    st.header("Coverage-blind imputation")
+    IMPUTE = {"zero (0)": 0.0,
+              "cohort mean": round(statistics.mean(obs_vals), 2) if obs_vals else 0.0,
+              "cohort median": round(statistics.median(obs_vals), 2) if obs_vals else 0.0}
+    imp_label = st.selectbox("Fill a MISSING value with", list(IMPUTE), index=0)
+    impute_value = IMPUTE[imp_label]
+    st.caption("The non-OAKG baseline replaces every unobserved value with this constant. Any "
+               "constant is a fabrication — it just changes *which* queries get false matches.")
+
     st.header("Display")
     n_rows = st.selectbox("Rows to show per panel", [5, 10, 15, 20, 30, 50, 75, 100, 150, 200],
                           index=1)
 
 
 # ---- evaluate both engines ----
-centre = (rng[0] + rng[1]) / 2
-
-
 def relevance(v):
-    """Closeness of a value to the range midpoint (1 = at midpoint, 0 = vmax away)."""
+    """Closeness of a value to the condition's ideal point (1 = ideal, 0 = vmax away)."""
     if v is None:
         return 0.0
-    return round(max(0.0, 1 - abs(v - centre) / (vmax + 1e-9)), 3)
+    return round(max(0.0, 1 - abs(v - target) / (vmax + 1e-9)), 3)
 
 
 def eval_patient(rec):
     obs_n = is_observed(rec, norgan, nkind)
     rv = real_value(rec, norgan, nfield)
-    nv = naive_value(rec, norgan, nfield, 0.0)
-    num_oakg = obs_n and rv is not None and rng[0] <= rv <= rng[1]
-    num_naive = rng[0] <= nv <= rng[1]
-    imputed = num_naive and not obs_n                      # matched only because missing->0
+    nv = naive_value(rec, norgan, nfield, impute_value)
+    num_oakg = obs_n and rv is not None and matches(rv)
+    num_naive = matches(nv)
+    imputed = num_naive and not obs_n                      # matched only via the imputed constant
 
     cat_oakg = cat_naive = True
     if cat_allowed is not None:
@@ -195,18 +220,22 @@ c4.metric("OAKG matches (reliable)", len(oakg_rows))
 
 if false_rows:
     st.error(f"⚠️ Coverage-blind returned **{len(false_rows)}** patients that never observed "
-             f"*{nlabel}* — their value was imputed to 0 and fell in range. OAKG excludes them.")
+             f"*{nlabel}* — their value was filled with **{impute_value}** ({imp_label}), which "
+             f"satisfies '{nlabel} {cond_label}'. OAKG excludes them.")
 else:
-    st.success("No imputation-driven false matches for this query in the current cohort.")
+    st.success(f"No imputation-driven false matches here: the fill value **{impute_value}** "
+               f"({imp_label}) does **not** satisfy '{nlabel} {cond_label}', so unobserved patients "
+               f"can't sneak in. Switch the condition (e.g. 'less than' / '= 0') or the fill value "
+               f"to expose the problem.")
 
 with st.expander("How to read the two panels (and why the ordering matches)"):
     st.markdown(
-        "- **Both panels are ranked by *relevance*** — closeness of the value to your range's "
-        "midpoint (1.0 = dead-centre). So the genuinely-observed patients appear in the **same "
+        "- **Both panels are ranked by *relevance*** — closeness of the value to the condition's "
+        "ideal (1.0 = ideal match). So the genuinely-observed patients appear in the **same "
         "relative order** in both panels; that alignment is expected.\n"
-        "- **❌ Coverage-blind** ranks *every* patient as if a missing value were **0**. Rows tagged "
-        "**⚠️ false (imputed)** matched only because an unobserved phenotype was imputed to 0. These "
-        "are the extra, unreliable rows interleaved among the real ones.\n"
+        "- **❌ Coverage-blind** ranks *every* patient as if a missing value were the **imputed "
+        "constant**. Rows tagged **⚠️ false (imputed)** matched only because an unobserved phenotype "
+        "was filled in. These are the extra, unreliable rows interleaved among the real ones.\n"
         "- **✅ OAKG** ranks *only* patients that **actually observed** the phenotype (missing = "
         "unknown, never 0). Same real patients, none of the imputed noise — the reliable set.\n"
         "- If a real patient sits at a different absolute row number across panels, it is only "
@@ -217,8 +246,9 @@ with st.expander("How to read the two panels (and why the ordering matches)"):
 # ---- side-by-side tables ----
 left, right = st.columns(2)
 with left:
-    st.markdown("### ❌ Coverage-blind (missing → 0)")
-    st.caption("Treats an unmeasured phenotype as 0. ⚠️-tagged rows are false matches from imputation.")
+    st.markdown(f"### ❌ Coverage-blind (missing → {impute_value})")
+    st.caption(f"Treats an unmeasured phenotype as {impute_value} ({imp_label}). ⚠️-tagged rows are "
+               f"false matches from imputation.")
     if naive_rows:
         df = pd.DataFrame(naive_rows).sort_values("relevance", ascending=False).head(n_rows)
         df.insert(0, "flag", ["⚠️ false (imputed)" if r["observed"] == "UNOBSERVED" else "✔ real"
@@ -275,7 +305,7 @@ with st.expander("On this query: who OAKG keeps vs drops", expanded=bool(false_r
 
 # ----------------------------------------------------------------------------- Llama 3.2 3B
 st.divider()
-st.subheader("🧠 Ask Llama 3.2 3B about these results")
+st.subheader("🧠 More questions about these results")
 
 
 @st.cache_resource(show_spinner="Loading Llama 3.2 3B (first use only)…")
@@ -293,7 +323,8 @@ def query_context():
     cat_txt = (f"{CATEG[cat_key][0]} in {cat_allowed}" if cat_allowed else "none")
     return (
         f"Phenotype queried: {nlabel}\n"
-        f"Desirable range: [{rng[0]}, {rng[1]}]   (categorical filter: {cat_txt})\n"
+        f"Condition: {nlabel} {cond_label}   (categorical filter: {cat_txt})\n"
+        f"Coverage-blind fills missing values with: {impute_value} ({imp_label}).\n"
         f"Cohort: {len(cohort)} patients ("
         + ", ".join(f"{d}={sum(1 for r in cohort if r['dataset']==d)}" for d in ds_sel) + ").\n"
         f"Datasets that OBSERVED this phenotype (eligible, reliable): {obs_ds or 'none'}.\n"
