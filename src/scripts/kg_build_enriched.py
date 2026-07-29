@@ -13,7 +13,7 @@ FLARE is intentionally excluded (per request). Out: kg/graph/imaging_kg_pancreas
 """
 import json, os
 from collections import Counter
-from rdflib import Graph, Namespace, Literal, RDF, XSD
+from rdflib import Graph, Namespace, Literal, RDF, XSD, OWL, RDFS
 
 KG = "/home/ud3d4/Desktop/SWOG/kg"
 OUT = f"{KG}/graph"
@@ -32,7 +32,9 @@ SITE_MK = {"PancreaticHead": "AnatomicSite::Head of pancreas", "head": "Anatomic
            "PancreaticBody": "AnatomicSite::Body of pancreas", "body": "AnatomicSite::Body of pancreas",
            "PancreaticTail": "AnatomicSite::Tail of pancreas", "tail": "AnatomicSite::Tail of pancreas"}
 SITE_CLS = {"head": "PancreaticHead", "body": "PancreaticBody", "tail": "PancreaticTail"}
-OBS = {"burden_cat": "TumorBurden", "multiplicity": "LesionMultiplicity", "containment": "OrganContainment"}
+# categorical phenotypes as DIRECT predicate triples:  lesion --<pred>--> "value"
+OBS_PRED = {"burden_cat": "tumorBurden", "multiplicity": "lesionMultiplicity",
+            "containment": "organContainment"}
 
 
 def uri(*p):
@@ -43,6 +45,9 @@ def build(sel, tag, title):
     """Build one enriched KG over datasets in `sel` -> imaging_kg{tag}.ttl (+ unified json)."""
     os.makedirs(OUT, exist_ok=True)
     g = Graph(); g.parse(f"{KG}/schema.owl"); g.bind("mmkg", MMKG); g.bind("inst", INST)
+    for pred in OBS_PRED.values():                     # declare the categorical predicates
+        g.add((MMKG[pred], RDF.type, OWL.DatatypeProperty))
+        g.add((MMKG[pred], RDFS.domain, MMKG.Lesion))
     nodes, edges = {}, []
 
     def node(nid, ntype, label=None, **props):
@@ -118,13 +123,12 @@ def build(sel, tag, title):
                 if info["tumor_mk"] in cu: edge(lu, "mapped_to_concept", cu[info["tumor_mk"]])
                 dp = c.get(f"derived_phenotype_{ds}", {})
                 lit(lu, "lesion_count", dp.get("tumor_lesion_count"), XSD.integer)
-                # categorical observations (GT-derived)
+                # categorical phenotypes as DIRECT triples: (lesion, tumorBurden, "low") etc. (GT-derived)
                 cat = cats.get((cid, info["organ"]), {})
-                for field, cls in OBS.items():
+                for field, pred in OBS_PRED.items():
                     v = cat.get(field)
                     if v in (None, "none", "na", "unknown"): continue
-                    obu = uri("obs", cid, field); node(obu, cls, f"{field}={v}", value=v, source="ground_truth")
-                    typ(obu, cls); lit(obu, "value", v); lit(obu, "source", "ground_truth"); edge(lu, "has_observation", obu)
+                    lit(lu, pred, v); nodes[str(lu)]["properties"][pred] = v
                 loc = dp.get("anatomic_location") or cat.get("anatomic_location")
                 if loc in SITE_MK:
                     su = uri("site", loc); node(su, "AnatomicSite", loc); typ(su, SITE_CLS.get(str(loc).lower().replace("pancreatic","").strip(), "AnatomicSite"))

@@ -33,8 +33,9 @@ ORGAN_MAP = {"pancreas": "Organ::Pancreas", "liver": "Organ::Liver"}
 TUMOR_MAP = {"pancreas": "Lesion::Pancreatic tumor", "liver": "Lesion::Liver tumor"}
 SITE_MAP = {"head": "AnatomicSite::Head of pancreas", "body": "AnatomicSite::Body of pancreas",
             "tail": "AnatomicSite::Tail of pancreas"}
-OBS_CLS = {"burden_cat": "TumorBurden", "multiplicity": "LesionMultiplicity",
-           "containment": "OrganContainment"}
+# categorical phenotypes as DIRECT predicate triples: (lesion) --tumorBurden--> "high"
+OBS_PRED = {"burden_cat": "tumorBurden", "multiplicity": "lesionMultiplicity",
+            "containment": "organContainment"}
 
 _OPTIONS = {
     "interaction": {"hover": True, "tooltipDelay": 80, "navigationButtons": True,
@@ -96,13 +97,13 @@ def patient_graph_html(rec, mappings, height=560):
             if code:
                 add(f"KL:{o}", code, "Concept", f"{code} — {disp}", 14, "box")
                 link(f"L:{o}", f"KL:{o}", "mapped_to_concept")
-            for field, cls in OBS_CLS.items():
+            for field, pred in OBS_PRED.items():
                 v = od.get(field)
                 if v in (None, "none", "na", "unknown"):
                     continue
-                add(f"OB:{o}:{field}", f"{cls}={v}", "Observation",
-                    f"{cls} = {v} (ground truth)", 16, "ellipse")
-                link(f"L:{o}", f"OB:{o}:{field}", "has_observation")
+                add(f"OB:{o}:{field}", str(v), "Observation",
+                    f"{pred} = {v} (ground truth)", 16, "ellipse")
+                link(f"L:{o}", f"OB:{o}:{field}", pred)          # direct triple: lesion -pred-> value
             loc = od.get("anatomic_location")
             if loc in SITE_MAP:
                 add(f"S:{o}", f"{loc} of {o.replace('_', ' ')}", "AnatomicSite",
