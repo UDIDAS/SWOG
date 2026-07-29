@@ -30,7 +30,8 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # make llm_backend importable
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # make sibling modules importable
+import paper_retrieval as pr   # noqa: E402  (needs the path insert above)
 
 
 # ----------------------------------------------------------------------------- data
@@ -75,6 +76,11 @@ def load_records():
 @st.cache_data
 def load_mappings():
     return json.load(open(os.path.join(ROOT, "kg", "ontology_mappings.json")))["mappings"]
+
+
+@st.cache_resource
+def load_corpus():
+    return pr.build_corpus(load_records())
 
 
 def is_observed(rec, organ, kind):
@@ -362,6 +368,73 @@ with st.expander(f"On this query: who OAKG keeps vs what {comp_short} adds", exp
                    "on this query, so there is nothing to drop.")
     else:
         st.info("No patient reliably satisfies this query, so there is no kept example to show.")
+
+# ------------------------------------------------- similarity retrieval (OAKG paper baselines)
+st.divider()
+st.subheader("🔬 Similarity retrieval — OAKG vs the paper's baselines (Section 5)")
+st.caption("The exact competitors from the OAKG paper. Task: rank a **query patient** against all "
+           "others over a masked phenotype matrix. OAKG restricts to jointly-observed features and "
+           "weights by shared-evidence **γ** (Jaccard of observed organs); the baselines don't — so "
+           "a patient sharing only one feature can look like a perfect match (γ is low).")
+corpus, Xm, Mm = load_corpus()
+s1, s2, s3 = st.columns([2, 2, 1])
+q_labels = [f"{r['case_id']}  ·  {r['dataset']}" for r in records]
+qcase = s1.selectbox("Query patient", q_labels, key="sim_q").split("  ·  ")[0]
+base = s2.selectbox("Paper baseline vs OAKG", list(pr.BASELINE_FUNCTIONS), index=3)  # Masked cosine
+topk = s3.selectbox("top-k", [5, 10, 15, 20], index=1)
+blind = ("⚠️ coverage-blind (fabricates missing values)" if pr.COVERAGE_BLIND[base]
+         else "coverage-aware (uses only jointly-observed features)")
+
+oakg_top = pr.rank(qcase, "OAKG", corpus, Xm, Mm, records, topk)
+base_top = pr.rank(qcase, base, corpus, Xm, Mm, records, topk)
+low_oakg = sum(t["low evidence (γ<0.25)"] for t in oakg_top)
+low_base = sum(t["low evidence (γ<0.25)"] for t in base_top)
+
+k1, k2, k3 = st.columns(3)
+k1.metric("Query observed organs", ", ".join(sorted(corpus.observation_sets[qcase])) or "—")
+k2.metric(f"OAKG low-evidence in top-{topk}", low_oakg)
+k3.metric(f"{base} low-evidence in top-{topk}", low_base,
+          delta=f"{blind}", delta_color="off")
+
+
+def sim_table(rows):
+    df = pd.DataFrame(rows)
+    df.insert(0, "flag", ["⚠️ weak match (γ<0.25)" if r["low evidence (γ<0.25)"] else "✔"
+                          for r in rows])
+    return df[["flag", "patient", "dataset", "score", "shared organs", "γ"]]
+
+
+colL, colR = st.columns(2)
+with colL:
+    st.markdown(f"### ❌ {base}")
+    st.caption(blind)
+    st.dataframe(sim_table(base_top), hide_index=True, width="stretch", height=380)
+with colR:
+    st.markdown("### ✅ OAKG (support-restricted + γ)")
+    st.caption("Only jointly-observed, anatomically-supported features; γ-weighted so weak-overlap "
+               "neighbors sink.")
+    st.dataframe(sim_table(oakg_top), hide_index=True, width="stretch", height=380)
+
+if low_base > low_oakg:
+    st.error(f"**{base}** put **{low_base}** weak-overlap neighbours (γ<0.25) in its top-{topk} — "
+             f"patients that share almost no observed evidence with {qcase}. OAKG has {low_oakg}: its "
+             "shared-evidence γ weight pushes those down.")
+else:
+    st.success(f"On this query, {base} and OAKG agree on evidence quality (weak-overlap neighbours: "
+               f"{base} {low_base}, OAKG {low_oakg}).")
+
+with st.expander("All paper baselines — weak-overlap neighbours in the top-k (lower = better)"):
+    board = [{"method": "🟢 OAKG", "weak-overlap neighbours (γ<0.25)": low_oakg,
+              "coverage-blind": "—"}]
+    for m in pr.BASELINE_FUNCTIONS:
+        rk = pr.rank(qcase, m, corpus, Xm, Mm, records, topk)
+        board.append({"method": m,
+                      "weak-overlap neighbours (γ<0.25)": sum(r["low evidence (γ<0.25)"] for r in rk),
+                      "coverage-blind": "yes" if pr.COVERAGE_BLIND[m] else "no (masked)"})
+    st.dataframe(pd.DataFrame(board), hide_index=True, width="stretch")
+    st.caption("Baselines vendored verbatim from the OAKG paper (`oakg/baselines.py`). Zero/Mean/"
+               "Missingness are coverage-blind; Masked cosine & Gower are coverage-aware but "
+               "un-weighted, so tiny overlaps still score high — OAKG's γ is what fixes that.")
 
 # ----------------------------------------------------------------------------- KG visualization
 st.divider()

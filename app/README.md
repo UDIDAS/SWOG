@@ -44,6 +44,27 @@ injects extra ⚠️ false rows among them. The headline metric reports how many
 **false positives**, and the *"who OAKG keeps vs what the competitor adds"* box shows, for the current
 query, one real patient OAKG keeps next to one it drops.
 
+## Similarity retrieval — the OAKG paper's baselines (Section 5)
+A section that uses the **exact competitors from the OAKG paper**, vendored verbatim from
+`oakg/baselines.py` + `oakg/oakg.py` (so the demo and the paper are the same). Task: pick a **query
+patient** and rank all others by similarity over a masked phenotype matrix `X` (NaN = unobserved)
+with observation mask `M`.
+
+| Method | Missing features | Coverage |
+|---|---|---|
+| **Zero imputation** | filled with 0, then cosine | coverage-blind |
+| **Mean imputation** | filled with mean/mode, cosine | coverage-blind |
+| **Missingness indicators** | cosine on `[features, mask]` | partly aware |
+| **Masked cosine** | cosine over **jointly-observed** features only | coverage-aware |
+| **Gower** | Gower over jointly-observed features | coverage-aware |
+| **OAKG** | jointly-observed **+ γ** (shared-evidence Jaccard weight) | the proposed guardrail |
+
+The demo shows the paper's key finding directly: for a pancreas query, **Masked cosine** ranks FLARE
+patients as *perfect* matches (they share only `pancreas_volume`, so a 1-feature cosine is trivially
+1.0), while **OAKG** down-weights them via **γ** (they share 1/5 organs, γ=0.2) and returns true
+pancreas neighbours. The metric is *weak-overlap neighbours (γ<0.25) in the top-k* — lower is better;
+a per-baseline table scores all of them at once. Builders live in `paper_retrieval.py`.
+
 ## KG visualization (the OAKG-retrieved patients)
 Below the panels, an interactive section visualizes *only the reliable OAKG set*:
 - **Cohort at a glance** — a simple **bar** of how many retrieved patients come from each dataset,
@@ -86,4 +107,5 @@ liver tumor.
 ## Files
 - `oakg_query_app.py` — the Streamlit app.
 - `llm_backend.py` — Llama 3.2 3B load + generate helpers (Streamlit-free, so it's reusable/testable).
-- `kg_viz.py` — Plotly/networkx KG visualization builders (Streamlit-free).
+- `kg_viz.py` — Plotly + vis.js KG visualization builders (Streamlit-free).
+- `paper_retrieval.py` — the OAKG paper's baselines + OAKG scorer, vendored verbatim (Streamlit-free).
