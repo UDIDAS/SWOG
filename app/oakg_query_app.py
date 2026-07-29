@@ -155,21 +155,32 @@ with st.sidebar:
                        not in (None, "unknown", "none", "na")})
         cat_allowed = st.multiselect(f"{clabel} in", opts, default=opts[:1] if opts else [])
 
-    st.header("Coverage-blind imputation")
-    IMPUTE = {"zero (0)": 0.0,
-              "cohort mean": round(statistics.mean(obs_vals), 2) if obs_vals else 0.0,
-              "cohort median": round(statistics.median(obs_vals), 2) if obs_vals else 0.0}
-    imp_label = st.selectbox("Fill a MISSING value with", list(IMPUTE), index=0)
-    impute_value = IMPUTE[imp_label]
-    st.caption("The non-OAKG baseline replaces every unobserved value with this constant. Any "
-               "constant is a fabrication — it just changes *which* queries get false matches.")
+    st.header("Competitor (vs OAKG)")
+    mean_v = round(statistics.mean(obs_vals), 2) if obs_vals else 0.0
+    median_v = round(statistics.median(obs_vals), 2) if obs_vals else 0.0
+    COMPETITORS = {
+        "Zero imputation (missing → 0)":
+            ("impute", 0.0, "unobserved value filled with 0"),
+        f"Mean imputation (missing → {mean_v})":
+            ("impute", mean_v, "unobserved value filled with the cohort mean"),
+        f"Median imputation (missing → {median_v})":
+            ("impute", median_v, "unobserved value filled with the cohort median"),
+        "Cross-organ collision (untyped phenotype)":
+            ("cross_organ", None, "any organ's value answers the query — right number, wrong organ"),
+    }
+    comp_label = st.selectbox("Compare OAKG against", list(COMPETITORS), index=0)
+    comp_code, comp_const, comp_src = COMPETITORS[comp_label]
+    comp_short = comp_label.split(" (")[0]
+    st.caption("OAKG is the guardrail (observability-aware). The competitor is a common baseline that "
+               "fabricates a value for unobserved phenotypes — each fabrication raises false positives "
+               "on a different set of queries. The leaderboard below scores all of them at once.")
 
     st.header("Display")
     n_rows = st.selectbox("Rows to show per panel", [5, 10, 15, 20, 30, 50, 75, 100, 150, 200],
                           index=1)
 
 
-# ---- evaluate both engines ----
+# ---- retrieval engines: OAKG guardrail vs a selectable competitor ----
 def relevance(v):
     """Closeness of a value to the condition's ideal point (1 = ideal, 0 = vmax away)."""
     if v is None:
@@ -177,91 +188,135 @@ def relevance(v):
     return round(max(0.0, 1 - abs(v - target) / (vmax + 1e-9)), 3)
 
 
-def eval_patient(rec):
+def cat_ok_oakg(rec):
+    if cat_allowed is None:
+        return True
+    _, corgan, ckind, cfield = CATEG[cat_key]
+    return is_observed(rec, corgan, ckind) and real_value(rec, corgan, cfield) in set(cat_allowed)
+
+
+def cat_ok_comp(rec):
+    if cat_allowed is None:
+        return True
+    _, corgan, ckind, cfield = CATEG[cat_key]
+    return naive_value(rec, corgan, cfield, "none") in set(cat_allowed)
+
+
+def oakg_match(rec):
+    rv = real_value(rec, norgan, nfield)
+    return (is_observed(rec, norgan, nkind) and rv is not None
+            and matches(rv) and cat_ok_oakg(rec))
+
+
+def comp_seen(rec, code, const):
+    """The value a competitor 'uses' for the queried phenotype (display + matching)."""
+    if code == "cross_organ":                       # borrow ANY organ's value for this field
+        vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
+        return next((v for v in vals if matches(v)), vals[0] if vals else 0.0)
+    return naive_value(rec, norgan, nfield, const)  # else fill missing with the imputed constant
+
+
+def comp_match(rec, code, const):
+    if code == "cross_organ":
+        vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
+        num = any(matches(v) for v in vals)
+    else:
+        num = matches(naive_value(rec, norgan, nfield, const))
+    return num and cat_ok_comp(rec)
+
+
+oakg_ids = {r["case_id"] for r in cohort if oakg_match(r)}   # observation-backed reference set
+
+
+def row_of(rec):
     obs_n = is_observed(rec, norgan, nkind)
     rv = real_value(rec, norgan, nfield)
-    nv = naive_value(rec, norgan, nfield, impute_value)
-    num_oakg = obs_n and rv is not None and matches(rv)
-    num_naive = matches(nv)
-    imputed = num_naive and not obs_n                      # matched only via the imputed constant
-
-    cat_oakg = cat_naive = True
-    if cat_allowed is not None:
-        clabel, corgan, ckind, cfield = CATEG[cat_key]
-        cat_obs = is_observed(rec, corgan, ckind)
-        cv = real_value(rec, corgan, cfield)
-        ncv = naive_value(rec, corgan, cfield, "none")
-        cat_oakg = cat_obs and cv in set(cat_allowed)
-        cat_naive = ncv in set(cat_allowed)
-        imputed = imputed or (cat_naive and not cat_obs)
-
+    seen = comp_seen(rec, comp_code, comp_const)
+    oak = rec["case_id"] in oakg_ids
+    comp = comp_match(rec, comp_code, comp_const)
+    seen_num = seen if isinstance(seen, (int, float)) else None
     return {
         "patient": rec["case_id"], "dataset": rec["dataset"],
         "real": (round(rv, 2) if rv is not None else None),
-        "seen": round(nv, 2), "observed": "observed" if obs_n else "UNOBSERVED",
-        "relevance": relevance(rv if obs_n else nv),        # engine-appropriate rank key
-        "oakg": num_oakg and cat_oakg, "naive": num_naive and cat_naive, "imputed": imputed,
+        "seen": (round(seen, 2) if seen_num is not None else seen),
+        "observed": "observed" if obs_n else "UNOBSERVED",
+        "relevance": relevance(rv if oak else seen_num),
+        "oakg": oak, "comp": comp, "false": comp and not oak,
     }
 
 
-rows = [eval_patient(r) for r in cohort]
-naive_rows = [r for r in rows if r["naive"]]
-oakg_rows  = [r for r in rows if r["oakg"]]
-false_rows = [r for r in rows if r["naive"] and r["imputed"] and not r["oakg"]]
+rows = [row_of(r) for r in cohort]
+comp_rows = [r for r in rows if r["comp"]]
+oakg_rows = [r for r in rows if r["oakg"]]
+false_rows = [r for r in rows if r["false"]]
+
+# ---- retrieval-quality leaderboard: OAKG vs ALL competitors ----
+leader = [{"method": "🟢 OAKG (guardrail)", "returned": len(oakg_ids), "false positives": 0,
+           "precision": 1.0, "false-positive source": "— reference (observation-backed)"}]
+for lab, (code, const, src) in COMPETITORS.items():
+    ret = {r["case_id"] for r in cohort if comp_match(r, code, const)}
+    prec = round(len(ret & oakg_ids) / len(ret), 3) if ret else 1.0
+    leader.append({"method": ("▶ " if lab == comp_label else "") + lab, "returned": len(ret),
+                   "false positives": len(ret - oakg_ids), "precision": prec,
+                   "false-positive source": src})
 
 # ---- headline metrics ----
 st.subheader("Result")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Patients in cohort", len(cohort))
 c2.metric("Observed for this phenotype", len(obs_vals))
-c3.metric("Coverage-blind matches", len(naive_rows),
+c3.metric(f"{comp_short} matches", len(comp_rows),
           delta=f"{len(false_rows)} false", delta_color="inverse")
 c4.metric("OAKG matches (reliable)", len(oakg_rows))
 
 if false_rows:
-    st.error(f"⚠️ Coverage-blind returned **{len(false_rows)}** patients that never observed "
-             f"*{nlabel}* — their value was filled with **{impute_value}** ({imp_label}), which "
-             f"satisfies '{nlabel} {cond_label}'. OAKG excludes them.")
+    st.error(f"⚠️ **{comp_short}** returned **{len(false_rows)}** false positives for "
+             f"'{nlabel} {cond_label}' — not observation-backed ({comp_src}). OAKG excludes them.")
 else:
-    st.success(f"No imputation-driven false matches here: the fill value **{impute_value}** "
-               f"({imp_label}) does **not** satisfy '{nlabel} {cond_label}', so unobserved patients "
-               f"can't sneak in. Switch the condition (e.g. 'less than' / '= 0') or the fill value "
-               f"to expose the problem.")
+    st.success(f"**{comp_short}** produced no false positives for '{nlabel} {cond_label}' in this "
+               f"cohort — its fabricated value doesn't satisfy the condition here. Try 'less than' / "
+               f"'= 0', or another competitor, to expose it.")
+
+with st.expander("Retrieval-quality leaderboard — OAKG vs every competitor", expanded=True):
+    st.dataframe(pd.DataFrame(leader).sort_values("precision", ascending=False),
+                 hide_index=True, width="stretch")
+    st.caption("**Precision** = fraction of a method's returned patients that are observation-backed "
+               "(agree with OAKG). OAKG is the reference (1.00 by construction); every competitor "
+               "drops below 1.00 exactly when its fabricated value satisfies the condition. ▶ marks "
+               "the competitor shown on the left below.")
 
 with st.expander("How to read the two panels (and why the ordering matches)"):
     st.markdown(
         "- **Both panels are ranked by *relevance*** — closeness of the value to the condition's "
-        "ideal (1.0 = ideal match). So the genuinely-observed patients appear in the **same "
-        "relative order** in both panels; that alignment is expected.\n"
-        "- **❌ Coverage-blind** ranks *every* patient as if a missing value were the **imputed "
-        "constant**. Rows tagged **⚠️ false (imputed)** matched only because an unobserved phenotype "
-        "was filled in. These are the extra, unreliable rows interleaved among the real ones.\n"
+        "ideal (1.0 = ideal match). So the observation-backed patients appear in the **same relative "
+        "order** in both panels; that alignment is expected.\n"
+        f"- **❌ {comp_short}** ranks *every* patient using a **fabricated** value where the phenotype "
+        f"is missing ({comp_src}). Rows tagged **⚠️ false** are the ones not backed by an actual "
+        "observation — extra, unreliable rows interleaved among the real ones.\n"
         "- **✅ OAKG** ranks *only* patients that **actually observed** the phenotype (missing = "
-        "unknown, never 0). Same real patients, none of the imputed noise — the reliable set.\n"
+        "unknown, never fabricated). Same real patients, none of the noise — the reliable set.\n"
         "- If a real patient sits at a different absolute row number across panels, it is only "
-        "because coverage-blind pushed imputed-zero patients in around it — not because its own "
-        "score changed."
+        "because the competitor pushed fabricated matches in around it — not because its own score "
+        "changed."
     )
 
 # ---- side-by-side tables ----
 left, right = st.columns(2)
 with left:
-    st.markdown(f"### ❌ Coverage-blind (missing → {impute_value})")
-    st.caption(f"Treats an unmeasured phenotype as {impute_value} ({imp_label}). ⚠️-tagged rows are "
-               f"false matches from imputation.")
-    if naive_rows:
-        df = pd.DataFrame(naive_rows).sort_values("relevance", ascending=False).head(n_rows)
-        df.insert(0, "flag", ["⚠️ false (imputed)" if r["observed"] == "UNOBSERVED" else "✔ real"
-                              for r in df.to_dict("records")])
-        st.caption(f"showing top {min(n_rows, len(naive_rows))} of {len(naive_rows)} matches")
-        st.dataframe(df.rename(columns={"seen": "value seen"})
-                     [["flag", "patient", "dataset", "value seen", "relevance", "observed"]],
+    st.markdown(f"### ❌ {comp_short}")
+    st.caption(f"{comp_src}. ⚠️-tagged rows are false positives (not observation-backed).")
+    if comp_rows:
+        df = pd.DataFrame(comp_rows).sort_values("relevance", ascending=False).head(n_rows)
+        df.insert(0, "flag", ["⚠️ false" if r["false"] else "✔ real" for r in df.to_dict("records")])
+        st.caption(f"showing top {min(n_rows, len(comp_rows))} of {len(comp_rows)} matches")
+        st.dataframe(df.rename(columns={"seen": "value used"})
+                     [["flag", "patient", "dataset", "value used", "relevance", "observed"]],
                      hide_index=True, width="stretch", height=430)
     else:
         st.info("No matches.")
 with right:
     st.markdown("### ✅ OAKG (missing → unobserved)")
-    st.caption("Returns only patients that actually observed the phenotype — no imputed-zero matches.")
+    st.caption("Returns only patients that actually observed the phenotype — no fabricated matches.")
     if oakg_rows:
         df = pd.DataFrame(oakg_rows).sort_values("relevance", ascending=False).head(n_rows)
         st.caption(f"showing top {min(n_rows, len(oakg_rows))} of {len(oakg_rows)} reliable matches")
@@ -272,40 +327,40 @@ with right:
         st.info("No patient reliably (observed) satisfies this query.")
 
 # ---- concrete "kept vs dropped" on THIS query ----
-with st.expander("On this query: who OAKG keeps vs drops", expanded=bool(false_rows)):
-    kept_pool = [r for r in rows if r["oakg"]]                       # observed + in range
-    kept = min(kept_pool, key=lambda r: r["real"]) if kept_pool else None  # smallest → nearest the imputed 0
+with st.expander(f"On this query: who OAKG keeps vs what {comp_short} adds", expanded=bool(false_rows)):
+    kept_pool = [r for r in rows if r["oakg"]]
+    kept = min(kept_pool, key=lambda r: (r["real"] if r["real"] is not None else 0)) if kept_pool else None
     dropped = false_rows[0] if false_rows else None
     if kept and dropped:
         demo = pd.DataFrame([
             {"patient": kept["patient"], "dataset": kept["dataset"],
              f"{nlabel}": f"{kept['real']} — observed",
-             "coverage-blind sees": f"{kept['seen']} (real)",
-             "coverage-blind": "✓ returned", "OAKG": "✓ returned (reliable)"},
+             f"{comp_short} used": f"{kept['seen']}",
+             comp_short: "✓ returned", "OAKG": "✓ returned (reliable)"},
             {"patient": dropped["patient"], "dataset": dropped["dataset"],
-             f"{nlabel}": "never measured (unobserved)",
-             "coverage-blind sees": f"{dropped['seen']} (imputed)",
-             "coverage-blind": "✓ returned (FALSE)", "OAKG": "✗ dropped"},
+             f"{nlabel}": "not observation-backed",
+             f"{comp_short} used": f"{dropped['seen']}",
+             comp_short: "✓ returned (FALSE)", "OAKG": "✗ dropped"},
         ])
         st.table(demo)
         st.markdown(
-            f"Both patients look like ~0 to **coverage-blind**, so it returns **both** — it cannot "
-            f"tell a genuinely-measured small tumor (**{kept['patient']}**) from a patient whose "
-            f"organ was never imaged (**{dropped['patient']}**, {dropped['dataset']}). "
-            f"**OAKG** checks observability first: it keeps **{kept['patient']}** (measured) and "
-            f"drops **{dropped['patient']}** (phenotype unknown, not 0). Apply that test to every "
-            f"unobserved patient and all **{len(false_rows)}** false matches fall away — that is the "
-            f"reliability gain, on this exact query."
+            f"**{comp_short}** returns both — it can't tell an observation-backed match "
+            f"(**{kept['patient']}**) from one that isn't (**{dropped['patient']}**, "
+            f"{dropped['dataset']}; {comp_src}). **OAKG** checks observability first: it keeps "
+            f"**{kept['patient']}** and drops **{dropped['patient']}**. Across the cohort that removes "
+            f"all **{len(false_rows)}** false positives for this query."
         )
     elif kept and not dropped:
-        st.success("Every returned patient actually observed this phenotype — coverage-blind and "
-                   "OAKG agree here, so there is nothing for OAKG to drop.")
+        st.success(f"Every patient {comp_short} returned is observation-backed — it and OAKG agree "
+                   "on this query, so there is nothing to drop.")
     else:
         st.info("No patient reliably satisfies this query, so there is no kept example to show.")
 
 # ----------------------------------------------------------------------------- Llama 3.2 3B
 st.divider()
-st.subheader("🧠 More questions about these results")
+st.subheader("🧠 Ask Llama 3.2 3B about these results")
+st.caption("Grounded in the current query, the selected competitor, and the leaderboard. "
+           "The conversation **resets automatically when you change the query.**")
 
 
 @st.cache_resource(show_spinner="Loading Llama 3.2 3B (first use only)…")
@@ -321,23 +376,20 @@ def query_context():
     unobs_ds = sorted({r["dataset"] for r in cohort if not is_observed(r, norgan, nkind)})
     false_by_ds = Counter(r["dataset"] for r in false_rows)
     cat_txt = (f"{CATEG[cat_key][0]} in {cat_allowed}" if cat_allowed else "none")
+    board = " | ".join(f"{d['method']}: returned={d['returned']}, false={d['false positives']}, "
+                       f"precision={d['precision']}" for d in leader)
     return (
-        f"Phenotype queried: {nlabel}\n"
         f"Condition: {nlabel} {cond_label}   (categorical filter: {cat_txt})\n"
-        f"Coverage-blind fills missing values with: {impute_value} ({imp_label}).\n"
         f"Cohort: {len(cohort)} patients ("
         + ", ".join(f"{d}={sum(1 for r in cohort if r['dataset']==d)}" for d in ds_sel) + ").\n"
-        f"Datasets that OBSERVED this phenotype (eligible, reliable): {obs_ds or 'none'}.\n"
-        f"Datasets that did NOT observe this phenotype (these are the source of false matches when "
-        f"imputed to 0): {unobs_ds or 'none'}.\n"
-        f"Patients that actually observed this phenotype: {len(obs_vals)}; the remaining "
-        f"{len(cohort)-len(obs_vals)} are UNOBSERVED for it.\n"
-        f"Coverage-blind retrieval (missing imputed to 0) returned {len(naive_rows)} patients, of "
-        f"which {len(false_rows)} are FALSE matches. False matches by dataset: "
-        f"{dict(false_by_ds) or 'none'} (all of these never observed the phenotype).\n"
-        f"OAKG retrieval (missing treated as unobserved/unknown) returned {len(oakg_rows)} reliable "
-        f"patients — every one comes from an OBSERVED dataset above.\n"
-        f"Example reliable OAKG patients that DID observe it (id: value): "
+        f"Datasets that OBSERVED this phenotype (reliable): {obs_ds or 'none'}.\n"
+        f"Datasets that did NOT observe it (source of false positives): {unobs_ds or 'none'}.\n"
+        f"OAKG (observability guardrail) returned {len(oakg_ids)} reliable patients — all "
+        f"observation-backed.\n"
+        f"Selected competitor: {comp_label} — {comp_src}. It returned {len(comp_rows)} patients, "
+        f"{len(false_rows)} of them FALSE positives (by dataset: {dict(false_by_ds) or 'none'}).\n"
+        f"Retrieval-quality leaderboard (higher precision = fewer false positives): {board}.\n"
+        f"Example reliable OAKG patients (id: value): "
         + (", ".join(f"{r['patient']}: {r['real']}" for r in top_oakg) or "none")
     )
 
@@ -345,14 +397,21 @@ def query_context():
 SYSTEM = (
     "You are a data assistant explaining patient-retrieval results from an imaging knowledge graph "
     "to a clinical research team. Be concise, clear, and grounded ONLY in the CONTEXT provided; do "
-    "not invent patients, datasets, or numbers. RULES: (1) False matches come ONLY from the datasets "
-    "listed as 'did NOT observe this phenotype' — never call an OAKG/observed patient a false match. "
-    "(2) The 'reliable OAKG patients' listed DID observe the phenotype; they are correct, not false. "
+    "not invent patients, datasets, or numbers. RULES: (1) False positives come ONLY from the "
+    "competitor method and the datasets listed as 'did NOT observe this phenotype' — never call an "
+    "OAKG/observation-backed patient a false positive. (2) 'Precision' in the leaderboard = fraction "
+    "of a method's returns that are observation-backed; OAKG is the reference at 1.00. "
     "Key idea: OAKG (observability-aware) treats a missing phenotype as UNOBSERVED/unknown, whereas "
-    "the coverage-blind method imputes it to 0 — creating false matches and making truly-unmeasured "
-    "patients look identical to genuinely-zero ones. Prefer plain clinical language."
+    "competitors fabricate a value (impute a constant, or borrow another organ's value) — which "
+    "creates false positives. Prefer plain clinical language."
 )
 
+# reset the chat whenever the QUERY changes (new query -> fresh conversation)
+query_sig = (tuple(sorted(ds_sel)), num_key, cond_label, cat_key,
+             tuple(cat_allowed or ()), comp_label)
+if st.session_state.get("last_sig") != query_sig:
+    st.session_state.chat = []
+    st.session_state.last_sig = query_sig
 st.session_state.setdefault("chat", [])
 
 b1, b2 = st.columns([1, 1])
