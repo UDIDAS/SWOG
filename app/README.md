@@ -14,7 +14,7 @@ Opens at http://localhost:8501. No prep — reads `kg/data/corpus_perpatient.jso
 
 ## 🔎 Tab 1 — Range-based retrieval
 Structured query: pick a phenotype and a condition (`< / ≤ / > / ≥ / = / between` + threshold,
-optional categorical filter) and a **competitor** to compare against OAKG.
+optional categorical filter) and a **competitor** to compare against OAKG. Describe the query in **natural language** or load a **paper structured query (Table 4)** from the expander at the top — both fill the controls.
 
 - **OAKG** returns only **observation-backed** matches (a patient can only match a phenotype it
   actually observed — missing = unknown, never imputed).
@@ -47,20 +47,12 @@ down-weights them via γ. Includes an **interactive vis.js KG view with a toggle
 patient* (the anchor's own subgraph; categorical phenotypes are direct triples `lesion —tumorBurden→
 high`) — plus companion bars.
 
-## 🗣 Tab 3 — Describe / paper queries
-A natural-language front-end plus the OAKG paper's queries, highlighted.
-
-- **Paper queries (click to load):**
-  - *Structured (Table 4):* High tumor burden, Multifocal disease, Tumor in an organ, Contained
-    tumor, Small tumor. (*Cross-organ distribution* is called out as **indeterminate** under
-    single-organ observability — OAKG returns "unknown" instead of a false answer, the paper's point.)
-  - *Cross-dataset complex (B1–B7):* the paper's cross-dataset queries; each button sends its query
-    patient to the 🧭 Anchor tab (they're the similarity paradigm).
-- **Natural language:** type a description ("small pancreatic tumors that are contained"); the
-  assistant maps it to a structured query and fills the panel (a robust normalizer repairs the
-  model's sloppy keys). Edit the phenotype / condition / categorical panel, then it runs OAKG
-  retrieval inline — OAKG matches vs what coverage-blind (impute 0) would return, a results table,
-  and the retrieved patients drawn as **one merged KG**.
+## 🗣 Tab 3 — Cross-dataset paper queries (B1–B7)
+The OAKG paper's **cross-dataset** queries: find matches in *another* dataset that share an organ +
+phenotype with a query patient (the similarity paradigm). Click a **loadable** one to send its query
+patient to the 🧭 Anchor-based tab. B3/B4/B7 use slice-level FLARE query patients that aren't in this
+patient-level demo, so they're shown disabled. (The natural-language box and the Table-4 structured
+queries now live in the 🔎 Range-based tab.)
 
 ## 💬 Assistant (bottom of the page)
 A single chatbot below the tabs, available regardless of which panel you're on. It's given the

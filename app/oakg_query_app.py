@@ -159,6 +159,8 @@ def _normalize_query(q):
         return None
     if op not in ("<", "<=", ">", ">=", "==", "between"):
         op = ">"
+    if op == "between":                                  # we fill a single threshold, not a range
+        op = "<="
     try:
         thr = float(thr)
     except (TypeError, ValueError):
@@ -200,12 +202,13 @@ def nl_to_query(desc):
         return None, raw
 
 
-def set_panel(num, op_label, thr, cat, catv):
-    st.session_state.nl_num = num
-    st.session_state.nl_op = op_label
-    st.session_state.nl_thr = float(thr if thr is not None else 0.0)
-    st.session_state.nl_cat = cat if cat in CATEG else "(none)"
-    st.session_state.nl_catv = list(catv or [])
+def set_range(num, op_label, thr, cat, catv):
+    """Fill the range-panel controls (used by the NL box + paper-query presets), then rerun."""
+    st.session_state.r_ph = num
+    st.session_state.r_op = op_label
+    st.session_state.r_thr = float(thr if thr is not None else 0.0)
+    st.session_state.r_cat = cat if cat in CATEG else "(none)"
+    st.session_state.r_catv = list(catv or [])
     st.rerun()
 
 
@@ -249,8 +252,36 @@ tab_range, tab_anchor, tab_nl = st.tabs(
 
 # ==================================================================== TAB 1: range-based
 with tab_range:
-    st.caption("Find patients whose phenotype satisfies a condition. OAKG returns only "
-               "observation-backed matches; the competitor fabricates missing values and over-returns.")
+    st.caption("Find patients whose phenotype satisfies a condition — type it in **natural language**, "
+               "load a **paper query**, or set it directly. OAKG returns only observation-backed "
+               "matches; the competitor fabricates missing values and over-returns.")
+    for _k, _v in {"r_ph": "panc_tumor_vol", "r_op": "less than (<)", "r_thr": 5.0,
+                   "r_cat": "(none)", "r_catv": []}.items():
+        st.session_state.setdefault(_k, _v)
+
+    with st.expander("🗣 Describe in natural language / 📄 load a paper query", expanded=False):
+        dc1, dc2 = st.columns([4, 1])
+        desc = dc1.text_input("Description", key="r_desc", label_visibility="collapsed",
+                              placeholder="e.g. small pancreatic tumors that are contained")
+        if dc2.button("💡 Suggest", key="r_suggest", width="stretch") and desc.strip():
+            with st.spinner("Assistant is mapping your description…"):
+                q, raw = nl_to_query(desc.strip())
+            if q:
+                op_lab = next((l for l, c in OPERATORS.items() if c == q.get("operator")),
+                              "greater than (>)")
+                cat = q.get("categorical_field")
+                set_range(q["phenotype"], op_lab, q.get("threshold", 0.0),
+                          cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
+            else:
+                st.warning(f"Could not parse a query. The assistant said: {raw[:200]}")
+        st.caption("**Paper structured queries (Table 4)** — click to load:")
+        pcols = st.columns(3)
+        for i, spec in enumerate(PAPER_STRUCTURED):
+            if pcols[i % 3].button(spec[0], key=f"ps_{i}", width="stretch"):
+                set_range(spec[1], spec[2], spec[3], spec[4], spec[5])
+        st.caption("*Cross-organ distribution* is indeterminate here (single-organ observability); "
+                   "the *cross-dataset* queries B1–B7 live in the 🗣 tab.")
+
     r1 = st.columns([1.2, 1.4, 1.2, 1.2])
     ds_sel = r1[0].multiselect("Datasets", ds_all, default=ds_all, key="r_ds")
     cohort = [r for r in records if r["dataset"] in ds_sel]
@@ -260,15 +291,15 @@ with tab_range:
     obs_vals = [v for v in (real_value(r, norgan, nfield) for r in cohort
                             if is_observed(r, norgan, nkind)) if v is not None]
     vmax = float(max(obs_vals)) if obs_vals else 1.0
-    op = OPERATORS[r1[2].selectbox("Condition", list(OPERATORS), index=0, key="r_op")]
+    op = OPERATORS[r1[2].selectbox("Condition", list(OPERATORS), key="r_op")]
     if op == "between":
         lo, hi = r1[3].slider("range", 0.0, round(vmax, 1), (0.0, round(vmax * 0.25, 1)),
                               key="r_rng", label_visibility="collapsed")
         def matches(v): return lo <= v <= hi
         target, cond_label = (lo + hi) / 2, f"in [{lo}, {hi}]"
     else:
-        thr = r1[3].number_input("threshold", 0.0, round(vmax, 1),
-                                 0.0 if op == "==" else round(vmax * 0.25, 1), step=0.5, key="r_thr")
+        st.session_state.r_thr = min(float(st.session_state.r_thr), round(vmax, 1))
+        thr = r1[3].number_input("threshold", 0.0, round(vmax, 1), step=0.5, key="r_thr")
         _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
                 ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
         matches = _ops[op]
@@ -283,8 +314,9 @@ with tab_range:
         opts = sorted({real_value(r, corgan, cfield) for r in cohort
                        if is_observed(r, corgan, ckind) and real_value(r, corgan, cfield)
                        not in (None, "unknown", "none", "na")})
-        cat_allowed = r2[0].multiselect(f"{CATEG[cat_key][0]} in", opts,
-                                        default=opts[:1] if opts else [], key="r_catv")
+        st.session_state.r_catv = [v for v in st.session_state.r_catv if v in opts] \
+            or (opts[:1] if opts else [])
+        cat_allowed = r2[0].multiselect(f"{CATEG[cat_key][0]} in", opts, key="r_catv")
     mean_v = round(statistics.mean(obs_vals), 2) if obs_vals else 0.0
     median_v = round(statistics.median(obs_vals), 2) if obs_vals else 0.0
     COMPETITORS = {
@@ -432,8 +464,13 @@ with tab_anchor:
                "baselines. OAKG restricts to jointly-observed features and weights by shared-evidence "
                "**γ** (Jaccard of observed organs); baselines don't.")
     corpus, Xm, Mm = load_corpus()
-    a1, a2, a3 = st.columns([2.4, 1.6, 1.0])
     a_labels = [f"{r['case_id']}  ·  {r['dataset']}" for r in records]
+    if "_pending_anchor" in st.session_state:                # loaded from a B-query in the 🗣 tab
+        _cid = st.session_state.pop("_pending_anchor")
+        _m = next((l for l in a_labels if l.split("  ·  ")[0] == _cid), None)
+        if _m:
+            st.session_state.a_anchor = _m
+    a1, a2, a3 = st.columns([2.4, 1.6, 1.0])
     anchor = a1.selectbox("Anchor patient", a_labels, key="a_anchor").split("  ·  ")[0]
     base = a2.selectbox("Paper baseline vs OAKG", list(pr.BASELINE_FUNCTIONS), index=3, key="a_base")
     topk = a3.selectbox("top-k", [5, 10, 15, 20], index=1, key="a_topk")
@@ -521,116 +558,40 @@ with tab_anchor:
         "A baseline can rank a patient sharing only one observed feature as a perfect match "
         "(cosine of a single scalar = 1.0); OAKG's gamma sinks such weak-overlap matches.")
 
-# ==================================================================== TAB 3: describe / paper queries
+# ==================================================================== TAB 3: paper cross-dataset queries
 with tab_nl:
-    st.caption("Describe the patients you want (natural language) → the assistant turns it into a "
-               "structured phenotype query in the panel below → run OAKG retrieval. Or start from a "
-               "paper query.")
-
-    with st.expander("📄 Paper queries — click to load into the panel", expanded=True):
-        st.markdown("**Structured queries (Table 4):**")
-        pc = st.columns(3)
-        for i, spec in enumerate(PAPER_STRUCTURED):
-            if pc[i % 3].button(spec[0], key=f"ps_{i}", width="stretch"):
-                set_panel(spec[1], spec[2], spec[3], spec[4], spec[5])
-        st.caption("*Cross-organ distribution* (tumor in ≥2 organs) is **indeterminate** here — every "
-                   "case observes a single organ, so OAKG returns 'unknown' rather than a false answer.")
-        cds = load_crossds()
-        if cds:
-            st.markdown("**Cross-dataset complex queries (B1–B7)** — similarity from a query patient; "
-                        "send one to the *Anchor-based* tab:")
-            bt = st.columns(4)
-            for i, q in enumerate(cds):
-                cid = q.get("query", {}).get("case_id", "")
-                if bt[i % 4].button(f"{q['code']}: {q['title'].split(' -> ')[0]}",
-                                    key=f"bq_{i}", help=q["title"], width="stretch") and cid:
-                    st.session_state.a_anchor = f"{cid}  ·  {q['query'].get('dataset', '')}"
-                    st.session_state.a_view = "Single patient (anchor)"
-                    st.toast(f"Set anchor to {cid} — open the 🧭 Anchor-based tab.")
-
-    st.markdown("**Describe in natural language**")
-    d1, d2 = st.columns([4, 1])
-    desc = d1.text_input("Description", key="nl_desc", label_visibility="collapsed",
-                         placeholder="e.g. small pancreatic tumors that are contained")
-    if d2.button("💡 Suggest", width="stretch") and desc.strip():
-        with st.spinner("Assistant is mapping your description…"):
-            q, raw = nl_to_query(desc.strip())
-        if q:
-            op_lab = next((l for l, c in OPERATORS.items() if c == q.get("operator")), "greater than (>)")
-            cat = q.get("categorical_field")
-            set_panel(q["phenotype"], op_lab, q.get("threshold", 0.0),
-                      cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
-        else:
-            st.warning(f"Could not parse a query. The assistant said: {raw[:200]}")
-
-    # ---- query panel (session-state driven so presets / suggestions can fill it) ----
-    st.session_state.setdefault("nl_num", "panc_tumor_vol")
-    st.session_state.setdefault("nl_op", "less than (<)")
-    st.session_state.setdefault("nl_thr", 5.0)
-    st.session_state.setdefault("nl_cat", "(none)")
-    st.session_state.setdefault("nl_catv", [])
-    q1, q2, q3, q4 = st.columns(4)
-    num_key = q1.selectbox("Phenotype", list(NUMERIC), format_func=lambda k: NUMERIC[k][0], key="nl_num")
-    nlabel, norgan, nkind, nfield = NUMERIC[num_key]
-    obs_vals = [v for v in (real_value(r, norgan, nfield) for r in records
-                            if is_observed(r, norgan, nkind)) if v is not None]
-    vmax = float(max(obs_vals)) if obs_vals else 1.0
-    op = OPERATORS[q2.selectbox("Condition", list(OPERATORS), key="nl_op")]
-    if op == "between":
-        lo, hi = q3.slider("range", 0.0, round(vmax, 1), (0.0, round(vmax * 0.25, 1)), key="nl_rng")
-        def matches(v): return lo <= v <= hi
-        cond_label = f"in [{lo}, {hi}]"
+    st.caption("The OAKG paper's **cross-dataset** queries (B1–B7): find matches in *another* dataset "
+               "that share an organ + phenotype with a query patient. These are the similarity "
+               "paradigm — click one to load its query patient into the 🧭 Anchor-based tab.")
+    st.caption("(Natural-language description and the Table-4 structured queries now live in the "
+               "🔎 Range-based tab.)")
+    cds = load_crossds()
+    if not cds:
+        st.info("Cross-dataset query definitions not found.")
     else:
-        st.session_state.nl_thr = min(st.session_state.nl_thr, round(vmax, 1))
-        thr = q3.number_input("threshold", 0.0, round(vmax, 1), step=0.5, key="nl_thr")
-        _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
-                ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
-        matches = _ops[op]
-        cond_label = f"{SYM[op]} {thr}"
-    cat_key = q4.selectbox("Categorical filter", ["(none)"] + list(CATEG),
-                           format_func=lambda k: k if k == "(none)" else CATEG[k][0], key="nl_cat")
-    cat_vals = []
-    if cat_key != "(none)":
-        _, corgan, ckind, cfield = CATEG[cat_key]
-        c_opts = CAT_FIELD_VALUES.get(cfield, [])
-        if any(v not in c_opts for v in st.session_state.nl_catv):
-            st.session_state.nl_catv = [v for v in st.session_state.nl_catv if v in c_opts]
-        cat_vals = q4.multiselect(f"{CATEG[cat_key][0]} in", c_opts, key="nl_catv")
-
-    def nl_observed_match(rec):
-        rv = real_value(rec, norgan, nfield)
-        if not (is_observed(rec, norgan, nkind) and rv is not None and matches(rv)):
-            return False
-        if cat_key != "(none)":
-            _, co, ck, cf = CATEG[cat_key]
-            return is_observed(rec, co, ck) and real_value(rec, co, cf) in set(cat_vals)
-        return True
-
-    st.markdown(f"**Query:** `{nlabel} {cond_label}`"
-                + (f" **and** {CATEG[cat_key][0]} ∈ {cat_vals}" if cat_key != "(none)" and cat_vals else ""))
-    hits = [r for r in records if nl_observed_match(r)]
-    blind = sum(1 for r in records if matches(naive_value(r, norgan, nfield, 0.0))
-                and (cat_key == "(none)" or naive_value(r, CATEG[cat_key][1], CATEG[cat_key][3], "none") in set(cat_vals)))
-    m1, m2 = st.columns(2)
-    m1.metric("OAKG matches (observation-backed)", len(hits))
-    m2.metric("Coverage-blind (impute 0) would return", blind,
-              delta=f"{blind-len(hits)} false", delta_color="inverse")
-    if hits:
-        df = pd.DataFrame([{"patient": r["case_id"], "dataset": r["dataset"],
-                            nlabel: round(real_value(r, norgan, nfield), 2)} for r in hits])
-        st.dataframe(df.head(50), hide_index=True, width="stretch", height=300)
-        import kg_viz
-        st.markdown("**Retrieved patients as one KG** (shared Dataset + concept nodes):")
-        top = hits[:8]
-        components.html(kg_viz.merged_kg_html(top, load_mappings(), height=520), height=544)
-    else:
-        st.info("No observation-backed patient matches — adjust the query.")
-
-    CTX["nl"] = (
-        f"Describe/paper query: {nlabel} {cond_label}"
-        + (f" and {CATEG[cat_key][0]} in {cat_vals}" if cat_key != "(none)" and cat_vals else "")
-        + f".\nOAKG returned {len(hits)} observation-backed patients; coverage-blind (impute 0) would "
-        f"return {blind} ({blind-len(hits)} false).")
+        bt = st.columns(4)
+        for i, q in enumerate(cds):
+            cid = q.get("query", {}).get("case_id", "")
+            loadable = cid in rec_by_id
+            tip = q["title"] + ("" if loadable else "  ·  slice-level FLARE query — not in this "
+                                "patient-level demo")
+            if bt[i % 4].button(f"{q['code']}: {q['title'].split(' -> ')[0]}", key=f"bq_{i}",
+                                help=tip, width="stretch", disabled=not loadable):
+                st.session_state["_pending_anchor"] = cid          # consumed at the top of the Anchor tab
+                st.rerun()
+        st.dataframe(pd.DataFrame([{"code": q["code"], "title": q["title"],
+                                    "query patient": q.get("query", {}).get("case_id", ""),
+                                    "loadable": q.get("query", {}).get("case_id", "") in rec_by_id,
+                                    "shared organ": q.get("shared_organ"),
+                                    "phenotype": q.get("phenotype"),
+                                    "target dataset": q.get("target_dataset")} for q in cds]),
+                     hide_index=True, width="stretch")
+        st.caption("Click a **loadable** query to send its patient to the 🧭 Anchor-based tab (OAKG vs "
+                   "the paper's baselines). B3/B4/B7 use slice-level FLARE queries that aren't in this "
+                   "patient-level demo, so they're disabled.")
+    CTX["crossds"] = ("Cross-dataset paper queries B1–B7 available (similarity from a query patient to "
+                      "another dataset, sharing an organ + phenotype): "
+                      + ", ".join(f"{q['code']} {q['title']}" for q in cds) if cds else "none")
 
 # ==================================================================== bottom: assistant
 st.divider()
@@ -640,7 +601,7 @@ st.caption("Ask about any panel above — the assistant sees the current range, 
 universal_ctx = "\n\n".join([
     "RANGE-BASED PANEL —\n" + CTX.get("range", "(not run)"),
     "ANCHOR-BASED PANEL —\n" + CTX.get("anchor", "(not run)"),
-    "DESCRIBE / PAPER PANEL —\n" + CTX.get("nl", "(not run)"),
+    "CROSS-DATASET PAPER QUERIES —\n" + CTX.get("crossds", "(none)"),
 ])
 ASSIST_SYS = (
     "You are an assistant for an OAKG retrieval dashboard with three panels: range-based (OAKG vs "
