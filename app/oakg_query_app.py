@@ -202,13 +202,12 @@ def nl_to_query(desc):
         return None, raw
 
 
-def set_range(num, op_label, thr, cat, catv):
-    """Fill the range-panel controls (used by the NL box + paper-query presets), then rerun."""
-    st.session_state.r_ph = num
-    st.session_state.r_op = op_label
-    st.session_state.r_thr = float(thr if thr is not None else 0.0)
-    st.session_state.r_cat = cat if cat in CATEG else "(none)"
-    st.session_state.r_catv = list(catv or [])
+def load_range_query(num, op_label, thr, cat, catv, flash=None):
+    """Queue a range query (from the NL box or a paper preset); consumed at the top of the Range tab."""
+    st.session_state["_pending_range"] = (num, op_label, float(thr if thr is not None else 0.0),
+                                          cat if cat in CATEG else "(none)", list(catv or []))
+    if flash:
+        st.session_state["_flash"] = flash
     st.rerun()
 
 
@@ -242,24 +241,28 @@ rec_by_id = {r["case_id"]: r for r in records}
 ds_all = sorted({r["dataset"] for r in records})
 
 st.title("OAKG retrieval demos")
-st.caption("Three retrieval panels — **range-based** (OAKG vs coverage-blind imputation), "
-           "**anchor-based similarity** (OAKG vs the paper's baselines), and **describe / paper "
-           "queries** — with an assistant at the bottom.")
+st.caption("Three panels — **Range query** (OAKG vs coverage-blind imputation), **Similar patients** "
+           "(OAKG vs the paper's baselines), and **Paper queries** — with an assistant at the bottom.")
+if "_flash" in st.session_state:
+    st.toast(st.session_state.pop("_flash"))
 
 CTX = {}   # each panel records a short context string; the bottom assistant reads all of them
 tab_range, tab_anchor, tab_nl = st.tabs(
-    ["🔎 Range-based retrieval", "🧭 Anchor-based similarity", "🗣 Describe / paper queries"])
+    ["🔎 Range query", "🧭 Similar patients", "📄 Paper queries"])
 
 # ==================================================================== TAB 1: range-based
 with tab_range:
-    st.caption("Find patients whose phenotype satisfies a condition — type it in **natural language**, "
-               "load a **paper query**, or set it directly. OAKG returns only observation-backed "
-               "matches; the competitor fabricates missing values and over-returns.")
+    st.caption("Find patients whose phenotype satisfies a condition — set it directly below, or "
+               "**describe it in natural language**. OAKG returns only observation-backed matches; the "
+               "competitor fabricates missing values and over-returns.")
     for _k, _v in {"r_ph": "panc_tumor_vol", "r_op": "less than (<)", "r_thr": 5.0,
                    "r_cat": "(none)", "r_catv": []}.items():
         st.session_state.setdefault(_k, _v)
+    if "_pending_range" in st.session_state:                 # loaded from the NL box or a paper query
+        (st.session_state.r_ph, st.session_state.r_op, st.session_state.r_thr,
+         st.session_state.r_cat, st.session_state.r_catv) = st.session_state.pop("_pending_range")
 
-    with st.expander("🗣 Describe in natural language / 📄 load a paper query", expanded=False):
+    with st.expander("🗣 Describe the patients in natural language", expanded=False):
         dc1, dc2 = st.columns([4, 1])
         desc = dc1.text_input("Description", key="r_desc", label_visibility="collapsed",
                               placeholder="e.g. small pancreatic tumors that are contained")
@@ -270,17 +273,11 @@ with tab_range:
                 op_lab = next((l for l, c in OPERATORS.items() if c == q.get("operator")),
                               "greater than (>)")
                 cat = q.get("categorical_field")
-                set_range(q["phenotype"], op_lab, q.get("threshold", 0.0),
-                          cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
+                load_range_query(q["phenotype"], op_lab, q.get("threshold", 0.0),
+                                 cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
             else:
                 st.warning(f"Could not parse a query. The assistant said: {raw[:200]}")
-        st.caption("**Paper structured queries (Table 4)** — click to load:")
-        pcols = st.columns(3)
-        for i, spec in enumerate(PAPER_STRUCTURED):
-            if pcols[i % 3].button(spec[0], key=f"ps_{i}", width="stretch"):
-                set_range(spec[1], spec[2], spec[3], spec[4], spec[5])
-        st.caption("*Cross-organ distribution* is indeterminate here (single-organ observability); "
-                   "the *cross-dataset* queries B1–B7 live in the 🗣 tab.")
+        st.caption("The paper's structured & cross-dataset queries are in the 📄 Paper queries tab.")
 
     r1 = st.columns([1.2, 1.4, 1.2, 1.2])
     ds_sel = r1[0].multiselect("Datasets", ds_all, default=ds_all, key="r_ds")
@@ -465,7 +462,7 @@ with tab_anchor:
                "**γ** (Jaccard of observed organs); baselines don't.")
     corpus, Xm, Mm = load_corpus()
     a_labels = [f"{r['case_id']}  ·  {r['dataset']}" for r in records]
-    if "_pending_anchor" in st.session_state:                # loaded from a B-query in the 🗣 tab
+    if "_pending_anchor" in st.session_state:                # loaded from a cross-dataset query (Paper tab)
         _cid = st.session_state.pop("_pending_anchor")
         _m = next((l for l in a_labels if l.split("  ·  ")[0] == _cid), None)
         if _m:
@@ -560,38 +557,49 @@ with tab_anchor:
 
 # ==================================================================== TAB 3: paper cross-dataset queries
 with tab_nl:
-    st.caption("The OAKG paper's **cross-dataset** queries (B1–B7): find matches in *another* dataset "
-               "that share an organ + phenotype with a query patient. These are the similarity "
-               "paradigm — click one to load its query patient into the 🧭 Anchor-based tab.")
-    st.caption("(Natural-language description and the Table-4 structured queries now live in the "
-               "🔎 Range-based tab.)")
+    st.caption("The OAKG paper's queries. **Structured** queries load into the 🔎 Range query tab; "
+               "**cross-dataset** queries load a query patient into the 🧭 Similar patients tab.")
+
+    st.markdown("#### Structured queries (Table 4)")
+    st.caption("Boolean phenotype queries over the KG. Click one to load it into the 🔎 Range query tab.")
+    pcols = st.columns(3)
+    for i, spec in enumerate(PAPER_STRUCTURED):
+        if pcols[i % 3].button(spec[0], key=f"ps_{i}", width="stretch"):
+            load_range_query(spec[1], spec[2], spec[3], spec[4], spec[5],
+                             flash=f"Loaded '{spec[0]}' into the 🔎 Range query tab.")
+    st.caption("*Cross-organ distribution* (tumor in ≥2 organs) is **indeterminate** here — every case "
+               "observes a single organ, so OAKG returns 'unknown' rather than a false answer.")
+
+    st.divider()
+    st.markdown("#### Cross-dataset queries (B1–B7)")
+    st.markdown(
+        "Each one **starts from a single patient** and looks for similar patients in a **different "
+        "dataset** that share an organ. They test whether the shared schema lets OAKG match *across* "
+        "datasets that image different organs (e.g. a Pancreas case vs FLARE cases — both observe the "
+        "pancreas). Click **Load** to run one in the 🧭 Similar patients tab.")
     cds = load_crossds()
-    if not cds:
-        st.info("Cross-dataset query definitions not found.")
-    else:
-        bt = st.columns(4)
-        for i, q in enumerate(cds):
-            cid = q.get("query", {}).get("case_id", "")
-            loadable = cid in rec_by_id
-            tip = q["title"] + ("" if loadable else "  ·  slice-level FLARE query — not in this "
-                                "patient-level demo")
-            if bt[i % 4].button(f"{q['code']}: {q['title'].split(' -> ')[0]}", key=f"bq_{i}",
-                                help=tip, width="stretch", disabled=not loadable):
-                st.session_state["_pending_anchor"] = cid          # consumed at the top of the Anchor tab
-                st.rerun()
-        st.dataframe(pd.DataFrame([{"code": q["code"], "title": q["title"],
-                                    "query patient": q.get("query", {}).get("case_id", ""),
-                                    "loadable": q.get("query", {}).get("case_id", "") in rec_by_id,
-                                    "shared organ": q.get("shared_organ"),
-                                    "phenotype": q.get("phenotype"),
-                                    "target dataset": q.get("target_dataset")} for q in cds]),
-                     hide_index=True, width="stretch")
-        st.caption("Click a **loadable** query to send its patient to the 🧭 Anchor-based tab (OAKG vs "
-                   "the paper's baselines). B3/B4/B7 use slice-level FLARE queries that aren't in this "
-                   "patient-level demo, so they're disabled.")
-    CTX["crossds"] = ("Cross-dataset paper queries B1–B7 available (similarity from a query patient to "
-                      "another dataset, sharing an organ + phenotype): "
-                      + ", ".join(f"{q['code']} {q['title']}" for q in cds) if cds else "none")
+    for q in cds:
+        query = q.get("query", {})
+        cid = query.get("case_id", "")
+        organ = q.get("shared_organ", "")
+        od = query.get(organ, {}) if isinstance(query.get(organ), dict) else {}
+        feats = [f for f in [od.get("burden_cat") and f"{od['burden_cat']}-burden",
+                             od.get("multiplicity"), od.get("containment")] if f]
+        pheno = ", ".join(feats) if feats else "a tumor"
+        loadable = cid in rec_by_id
+        c1, c2 = st.columns([6, 1])
+        c1.markdown(
+            f"**{q['code']}** — from `{cid}` ({query.get('dataset', '?')}): a **{pheno}** "
+            f"{organ.replace('_', ' ')} tumor → find similar patients in "
+            f"**{q.get('target_dataset', '?')}** that share the {organ.replace('_', ' ')}."
+            + ("" if loadable else "  \n*(slice-level FLARE query — not in this patient-level demo)*"))
+        if c2.button("Load", key=f"bq_{q['code']}", width="stretch", disabled=not loadable):
+            st.session_state["_pending_anchor"] = cid
+            st.session_state["_flash"] = f"Loaded {cid} into the 🧭 Similar patients tab."
+            st.rerun()
+    CTX["crossds"] = ("Cross-dataset paper queries B1–B7 (similarity from a query patient to another "
+                      "dataset sharing an organ): " + ", ".join(f"{q['code']} {q['title']}" for q in cds)
+                      if cds else "none")
 
 # ==================================================================== bottom: assistant
 st.divider()
