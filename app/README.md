@@ -13,8 +13,10 @@ Opens at http://localhost:8501. No prep — reads `kg/data/corpus_perpatient.jso
 (512 patient-level KG instances: 281 Pancreas, 131 LiTS, 100 FLARE).
 
 ## 🔎 Tab 1 — Range query
-Structured query: pick a phenotype and a condition (`< / ≤ / > / ≥ / = / between` + threshold,
-optional categorical filter) and a **competitor** to compare against OAKG. You can also **describe the query in natural language** (expander at the top): the assistant fills the controls **and narrows the dropdown options to that organ scope** (e.g. describe pancreatic tumors → phenotype/dataset/categorical options limit to the pancreas; **Show all options** resets). Paper queries live in their own tab.
+Structured query: pick a phenotype and a condition. **Phenotypes are numeric (organ / tumor volumes)
+OR categorical (tumor burden / multiplicity / containment / location)** — numeric ones take an
+operator + threshold (`< / ≤ / > / ≥ / = / between`), categorical ones take a value set; an optional
+extra categorical filter can be AND-ed on and a **competitor** to compare against OAKG. You can also **describe the query in natural language** (expander at the top): the assistant fills the controls **and narrows the dropdown options to that organ scope** (e.g. describe pancreatic tumors → phenotype/dataset/categorical options limit to the pancreas; **Show all options** resets). Paper queries live in their own tab.
 
 - **OAKG** returns only **observation-backed** matches (a patient can only match a phenotype it
   actually observed — missing = unknown, never imputed).

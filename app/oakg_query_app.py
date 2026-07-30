@@ -78,6 +78,16 @@ PAPER_STRUCTURED = [
     ("Small pancreatic tumor (< 5 cm³)", "panc_tumor_vol", "less than (<)", 5.0, "(none)", []),
 ]
 
+# phenotypes = numeric (volumes) + categorical (burden/multiplicity/containment/location)
+ALL_PHENO = list(NUMERIC) + list(CATEG)
+
+
+def pmeta(key):
+    """(ptype, label, organ, kind, field) for a phenotype key — numeric or categorical."""
+    if key in NUMERIC:
+        return ("num",) + NUMERIC[key]
+    return ("cat",) + CATEG[key]
+
 
 @st.cache_data
 def load_records():
@@ -318,7 +328,7 @@ with tab_range:
 
     # natural-language scope narrows the dropdown OPTIONS to the query's organ (else show all)
     scope = st.session_state.r_scope
-    ph_opts = [k for k in NUMERIC if scope is None or NUMERIC[k][1] == scope]
+    ph_opts = [k for k in ALL_PHENO if scope is None or pmeta(k)[2] == scope]
     ds_opts = [d for d in ds_all if scope is None or scope in DATASET_ORGANS.get(d, set())]
     cat_opts = ["(none)"] + [k for k in CATEG if scope is None or CATEG[k][1] == scope]
     if st.session_state.r_ph not in ph_opts:
@@ -337,25 +347,43 @@ with tab_range:
     r1 = st.columns([1.2, 1.4, 1.2, 1.2])
     ds_sel = r1[0].multiselect("Datasets", ds_opts, key="r_ds")
     cohort = [r for r in records if r["dataset"] in ds_sel]
-    num_key = r1[1].selectbox("Phenotype", ph_opts, format_func=lambda k: NUMERIC[k][0], key="r_ph")
-    nlabel, norgan, nkind, nfield = NUMERIC[num_key]
+    ph_key = r1[1].selectbox("Phenotype", ph_opts, format_func=lambda k: pmeta(k)[1], key="r_ph")
+    ptype, nlabel, norgan, nkind, nfield = pmeta(ph_key)
     obs_vals = [v for v in (real_value(r, norgan, nfield) for r in cohort
                             if is_observed(r, norgan, nkind)) if v is not None]
-    vmax = float(max(obs_vals)) if obs_vals else 1.0
-    op = OPERATORS[r1[2].selectbox("Condition", list(OPERATORS), key="r_op")]
-    if op == "between":
-        lo, hi = r1[3].slider("range", 0.0, round(vmax, 1), (0.0, round(vmax * 0.25, 1)),
-                              key="r_rng", label_visibility="collapsed")
-        def matches(v): return lo <= v <= hi
-        target, cond_label = (lo + hi) / 2, f"in [{lo}, {hi}]"
-    else:
-        st.session_state.r_thr = min(float(st.session_state.r_thr), round(vmax, 1))
-        thr = r1[3].number_input("threshold", 0.0, round(vmax, 1), step=0.5, key="r_thr")
-        matches = make_condition(op, thr)
-        target, cond_label = {"<": 0.0, "<=": 0.0, ">": vmax, ">=": vmax, "==": thr}[op], f"{SYM[op]} {thr}"
+
+    if ptype == "num":                                     # numeric phenotype -> operator + threshold
+        _num = [v for v in obs_vals if isinstance(v, (int, float))]
+        vmax = float(max(_num)) if _num else 1.0
+        op = OPERATORS[r1[2].selectbox("Condition", list(OPERATORS), key="r_op")]
+        if op == "between":
+            lo, hi = r1[3].slider("range", 0.0, round(vmax, 1), (0.0, round(vmax * 0.25, 1)),
+                                  key="r_rng", label_visibility="collapsed")
+            def _cond(v): return lo <= v <= hi
+            target, cond_label = (lo + hi) / 2, f"in [{lo}, {hi}]"
+        else:
+            st.session_state.r_thr = min(float(st.session_state.r_thr), round(vmax, 1))
+            thr = r1[3].number_input("threshold", 0.0, round(vmax, 1), step=0.5, key="r_thr")
+            _cond = make_condition(op, thr)
+            target, cond_label = {"<": 0.0, "<=": 0.0, ">": vmax, ">=": vmax, "==": thr}[op], f"{SYM[op]} {thr}"
+        def satisfies(v): return isinstance(v, (int, float)) and _cond(v)
+        def relevance(v): return round(max(0.0, 1 - abs(v - target) / (vmax + 1e-9)), 3) \
+            if isinstance(v, (int, float)) else 0.0
+        naive_default = 0.0
+    else:                                                  # categorical phenotype -> value(s)
+        vmax = 1.0
+        val_opts = CAT_FIELD_VALUES.get(nfield, [])
+        st.session_state.setdefault("r_pvals", val_opts[:1])
+        st.session_state.r_pvals = [v for v in st.session_state.r_pvals if v in val_opts] \
+            or (val_opts[:1] if val_opts else [])
+        sel_vals = r1[2].multiselect("is one of", val_opts, key="r_pvals")
+        cond_label = "∈ " + (str(sel_vals) if sel_vals else "[]")
+        def satisfies(v): return v in set(sel_vals)
+        def relevance(v): return 1.0 if v in set(sel_vals) else 0.0
+        naive_default = "none"
 
     r2 = st.columns([1.4, 1.6, 1.0])
-    cat_key = r2[0].selectbox("Categorical filter", cat_opts,
+    cat_key = r2[0].selectbox("Extra categorical filter", cat_opts,
                               format_func=lambda k: k if k == "(none)" else CATEG[k][0], key="r_cat")
     cat_allowed = None
     if cat_key != "(none)":
@@ -366,24 +394,28 @@ with tab_range:
         st.session_state.r_catv = [v for v in st.session_state.r_catv if v in opts] \
             or (opts[:1] if opts else [])
         cat_allowed = r2[0].multiselect(f"{CATEG[cat_key][0]} in", opts, key="r_catv")
-    mean_v = round(statistics.mean(obs_vals), 2) if obs_vals else 0.0
-    median_v = round(statistics.median(obs_vals), 2) if obs_vals else 0.0
-    COMPETITORS = {
-        "Zero imputation (missing → 0)": ("impute", 0.0, "unobserved value filled with 0"),
-        "Mean imputation (missing → cohort mean)":
-            ("impute", mean_v, f"unobserved value filled with the cohort mean ({mean_v})"),
-        "Median imputation (missing → cohort median)":
-            ("impute", median_v, f"unobserved value filled with the cohort median ({median_v})"),
-        "Cross-organ collision (untyped phenotype)":
-            ("cross_organ", None, "any organ's value answers the query — right number, wrong organ"),
-    }
-    comp_label = r2[1].selectbox("Competitor (vs OAKG)", list(COMPETITORS), index=0, key="r_comp")
+
+    if ptype == "num":
+        mean_v = round(statistics.mean(_num), 2) if _num else 0.0
+        median_v = round(statistics.median(_num), 2) if _num else 0.0
+        COMPETITORS = {
+            "Zero imputation (missing → 0)": ("impute", 0.0, "unobserved value filled with 0"),
+            "Mean imputation (missing → cohort mean)":
+                ("impute", mean_v, f"unobserved value filled with the cohort mean ({mean_v})"),
+            "Median imputation (missing → cohort median)":
+                ("impute", median_v, f"unobserved value filled with the cohort median ({median_v})"),
+            "Cross-organ collision (untyped phenotype)":
+                ("cross_organ", None, "any organ's value answers the query — right number, wrong organ"),
+        }
+        comp_label = r2[1].selectbox("Competitor (vs OAKG)", list(COMPETITORS), index=0, key="r_comp")
+    else:
+        COMPETITORS = {"Coverage-blind (impute 'none')":
+                       ("impute", "none", "unobserved categorical filled with 'none'")}
+        comp_label = "Coverage-blind (impute 'none')"
+        r2[1].caption("Competitor: **coverage-blind** — an unobserved categorical is filled with 'none'.")
     comp_code, comp_const, comp_src = COMPETITORS[comp_label]
     comp_short = comp_label.split(" (")[0]
     n_rows = r2[2].selectbox("Rows / panel", [5, 10, 15, 20, 30, 50], index=1, key="r_rows")
-
-    def relevance(v):
-        return 0.0 if v is None else round(max(0.0, 1 - abs(v - target) / (vmax + 1e-9)), 3)
 
     def cat_ok_oakg(rec):
         if cat_allowed is None:
@@ -399,35 +431,34 @@ with tab_range:
 
     def oakg_match(rec):
         rv = real_value(rec, norgan, nfield)
-        return is_observed(rec, norgan, nkind) and rv is not None and matches(rv) and cat_ok_oakg(rec)
+        return is_observed(rec, norgan, nkind) and rv is not None and satisfies(rv) and cat_ok_oakg(rec)
+
+    def comp_value(rec, code, const):
+        if code == "cross_organ":
+            vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
+            return next((v for v in vals if satisfies(v)), vals[0] if vals else naive_default)
+        return naive_value(rec, norgan, nfield, const)
 
     def comp_match(rec, code, const):
         if code == "cross_organ":
             vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
-            num = any(matches(v) for v in vals)
+            hit = any(satisfies(v) for v in vals)
         else:
-            num = matches(naive_value(rec, norgan, nfield, const))
-        return num and cat_ok_comp(rec)
-
-    def comp_seen(rec, code, const):
-        if code == "cross_organ":
-            vals = [od.get(nfield) for od in rec["organs"].values() if od.get(nfield) is not None]
-            return next((v for v in vals if matches(v)), vals[0] if vals else 0.0)
-        return naive_value(rec, norgan, nfield, const)
+            hit = satisfies(naive_value(rec, norgan, nfield, const))
+        return hit and cat_ok_comp(rec)
 
     oakg_ids = {r["case_id"] for r in cohort if oakg_match(r)}
 
     def row_of(rec):
         rv = real_value(rec, norgan, nfield)
-        seen = comp_seen(rec, comp_code, comp_const)
+        seen = comp_value(rec, comp_code, comp_const)
         oak = rec["case_id"] in oakg_ids
         comp = comp_match(rec, comp_code, comp_const)
-        sn = seen if isinstance(seen, (int, float)) else None
         return {"patient": rec["case_id"], "dataset": rec["dataset"],
-                "real": (round(rv, 2) if rv is not None else None),
-                "seen": (round(seen, 2) if sn is not None else seen),
+                "real": (round(rv, 2) if isinstance(rv, (int, float)) else rv),
+                "seen": (round(seen, 2) if isinstance(seen, (int, float)) else seen),
                 "observed": "observed" if is_observed(rec, norgan, nkind) else "UNOBSERVED",
-                "relevance": relevance(rv if oak else sn),
+                "relevance": relevance(rv if oak else seen),
                 "oakg": oak, "comp": comp, "false": comp and not oak}
 
     rows = [row_of(r) for r in cohort]
