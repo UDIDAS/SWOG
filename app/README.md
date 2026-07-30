@@ -14,7 +14,7 @@ Opens at http://localhost:8501. No prep — reads `kg/data/corpus_perpatient.jso
 
 ## 🔎 Tab 1 — Range query
 Structured query: pick a phenotype and a condition (`< / ≤ / > / ≥ / = / between` + threshold,
-optional categorical filter) and a **competitor** to compare against OAKG. You can also **describe the query in natural language** (expander at the top) and the assistant fills the controls. (Paper queries live in their own tab.)
+optional categorical filter) and a **competitor** to compare against OAKG. You can also **describe the query in natural language** (expander at the top): the assistant fills the controls **and narrows the dropdown options to that organ scope** (e.g. describe pancreatic tumors → phenotype/dataset/categorical options limit to the pancreas; **Show all options** resets). Paper queries live in their own tab.
 
 - **OAKG** returns only **observation-backed** matches (a patient can only match a phenotype it
   actually observed — missing = unknown, never imputed).
@@ -48,14 +48,15 @@ patient* (the anchor's own subgraph; categorical phenotypes are direct triples `
 high`) — plus companion bars.
 
 ## 📄 Tab 3 — Paper queries
-The OAKG paper's queries, in two groups:
+The OAKG paper's queries — **run within this tab** (no loading into other tabs):
 - **Structured (Table 4):** boolean phenotype queries (High burden, Multifocal, Tumor-in-organ,
-  Contained, Small). Click one to load it into the 🔎 Range query tab and run. *Cross-organ
-  distribution* is flagged **indeterminate** (single-organ observability → OAKG returns "unknown").
+  Contained, Small). Click one and it runs OAKG's observation-backed retrieval right here (OAKG
+  matches vs coverage-blind, table, merged KG). *Cross-organ distribution* is flagged
+  **indeterminate** (single-organ observability → OAKG returns "unknown").
 - **Cross-dataset (B1–B7):** each is a plain-English sentence — *start from patient X (one dataset),
-  find similar patients in another dataset that share an organ*. Click **Load** to run it in the
-  🧭 Similar patients tab. B3/B4/B7 use slice-level FLARE query patients absent from this
-  patient-level demo, so they're disabled.
+  find similar patients in another dataset that share an organ*. Click **Run** and it scores OAKG vs
+  Masked cosine here. B3/B4/B7 use slice-level FLARE query patients absent from this patient-level
+  demo, so they're disabled.
 
 ## 💬 Assistant (bottom of the page)
 A single chatbot below the tabs, available regardless of which panel you're on. It's given the

@@ -202,12 +202,51 @@ def nl_to_query(desc):
         return None, raw
 
 
-def load_range_query(num, op_label, thr, cat, catv, flash=None):
-    """Queue a range query (from the NL box or a paper preset); consumed at the top of the Range tab."""
-    st.session_state["_pending_range"] = (num, op_label, float(thr if thr is not None else 0.0),
-                                          cat if cat in CATEG else "(none)", list(catv or []))
-    if flash:
-        st.session_state["_flash"] = flash
+def make_condition(op, thr):
+    return {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
+            ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}.get(op, lambda v: v > thr)
+
+
+def oakg_range_hits(recs, num_key, matches_fn, cat_key, cat_vals):
+    """Observation-backed patients whose phenotype satisfies the condition (+ optional categorical)."""
+    _, no, nk, nf = NUMERIC[num_key]
+    hits = []
+    for r in recs:
+        rv = real_value(r, no, nf)
+        if not (is_observed(r, no, nk) and rv is not None and matches_fn(rv)):
+            continue
+        if cat_key and cat_key != "(none)":
+            _, co, ck, cf = CATEG[cat_key]
+            if not (is_observed(r, co, ck) and real_value(r, co, cf) in set(cat_vals)):
+                continue
+        hits.append(r)
+    return hits
+
+
+def blind_count(recs, num_key, matches_fn, cat_key, cat_vals):
+    """How many a coverage-blind (impute-0 / 'none') reader would return."""
+    _, no, nk, nf = NUMERIC[num_key]
+    n = 0
+    for r in recs:
+        if not matches_fn(naive_value(r, no, nf, 0.0)):
+            continue
+        if cat_key and cat_key != "(none)" \
+                and naive_value(r, CATEG[cat_key][1], CATEG[cat_key][3], "none") not in set(cat_vals):
+            continue
+        n += 1
+    return n
+
+
+def apply_nl_query(num, op_label, thr, cat, catv):
+    """Fill the Range tab controls AND narrow their options to the query's organ scope."""
+    scope = NUMERIC[num][1]
+    st.session_state.r_scope = scope
+    st.session_state.r_ph = num
+    st.session_state.r_op = op_label
+    st.session_state.r_thr = float(thr if thr is not None else 0.0)
+    st.session_state.r_cat = cat if cat in CATEG else "(none)"
+    st.session_state.r_catv = list(catv or [])
+    st.session_state.r_ds = [d for d in sorted(DATASET_ORGANS) if scope in DATASET_ORGANS[d]]
     st.rerun()
 
 
@@ -239,12 +278,13 @@ st.set_page_config(page_title="OAKG retrieval demos", layout="wide")
 records = load_records()
 rec_by_id = {r["case_id"]: r for r in records}
 ds_all = sorted({r["dataset"] for r in records})
+DATASET_ORGANS = {}                                    # dataset -> set of organs it observes
+for _r in records:
+    DATASET_ORGANS.setdefault(_r["dataset"], set()).update(_r["observed_organs"])
 
 st.title("OAKG retrieval demos")
 st.caption("Three panels — **Range query** (OAKG vs coverage-blind imputation), **Similar patients** "
            "(OAKG vs the paper's baselines), and **Paper queries** — with an assistant at the bottom.")
-if "_flash" in st.session_state:
-    st.toast(st.session_state.pop("_flash"))
 
 CTX = {}   # each panel records a short context string; the bottom assistant reads all of them
 tab_range, tab_anchor, tab_nl = st.tabs(
@@ -256,13 +296,10 @@ with tab_range:
                "**describe it in natural language**. OAKG returns only observation-backed matches; the "
                "competitor fabricates missing values and over-returns.")
     for _k, _v in {"r_ph": "panc_tumor_vol", "r_op": "less than (<)", "r_thr": 5.0,
-                   "r_cat": "(none)", "r_catv": []}.items():
+                   "r_cat": "(none)", "r_catv": [], "r_scope": None, "r_ds": list(ds_all)}.items():
         st.session_state.setdefault(_k, _v)
-    if "_pending_range" in st.session_state:                 # loaded from the NL box or a paper query
-        (st.session_state.r_ph, st.session_state.r_op, st.session_state.r_thr,
-         st.session_state.r_cat, st.session_state.r_catv) = st.session_state.pop("_pending_range")
 
-    with st.expander("🗣 Describe the patients in natural language", expanded=False):
+    with st.expander("🗣 Describe the patients in natural language", expanded=bool(st.session_state.r_scope)):
         dc1, dc2 = st.columns([4, 1])
         desc = dc1.text_input("Description", key="r_desc", label_visibility="collapsed",
                               placeholder="e.g. small pancreatic tumors that are contained")
@@ -273,17 +310,34 @@ with tab_range:
                 op_lab = next((l for l, c in OPERATORS.items() if c == q.get("operator")),
                               "greater than (>)")
                 cat = q.get("categorical_field")
-                load_range_query(q["phenotype"], op_lab, q.get("threshold", 0.0),
-                                 cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
+                apply_nl_query(q["phenotype"], op_lab, q.get("threshold", 0.0),
+                               cat if cat in CATEG else "(none)", q.get("categorical_values") or [])
             else:
                 st.warning(f"Could not parse a query. The assistant said: {raw[:200]}")
         st.caption("The paper's structured & cross-dataset queries are in the 📄 Paper queries tab.")
 
+    # natural-language scope narrows the dropdown OPTIONS to the query's organ (else show all)
+    scope = st.session_state.r_scope
+    ph_opts = [k for k in NUMERIC if scope is None or NUMERIC[k][1] == scope]
+    ds_opts = [d for d in ds_all if scope is None or scope in DATASET_ORGANS.get(d, set())]
+    cat_opts = ["(none)"] + [k for k in CATEG if scope is None or CATEG[k][1] == scope]
+    if st.session_state.r_ph not in ph_opts:
+        st.session_state.r_ph = ph_opts[0]
+    if st.session_state.r_cat not in cat_opts:
+        st.session_state.r_cat = "(none)"
+    st.session_state.r_ds = [d for d in st.session_state.r_ds if d in ds_opts] or list(ds_opts)
+    if scope:
+        sc1, sc2 = st.columns([3, 1])
+        sc1.caption(f"🔒 Options limited to the **{scope.replace('_', ' ')}** (from your description).")
+        if sc2.button("🔓 Show all options", width="stretch"):
+            st.session_state.r_scope = None
+            st.session_state.r_ds = list(ds_all)
+            st.rerun()
+
     r1 = st.columns([1.2, 1.4, 1.2, 1.2])
-    ds_sel = r1[0].multiselect("Datasets", ds_all, default=ds_all, key="r_ds")
+    ds_sel = r1[0].multiselect("Datasets", ds_opts, key="r_ds")
     cohort = [r for r in records if r["dataset"] in ds_sel]
-    num_key = r1[1].selectbox("Phenotype", list(NUMERIC), format_func=lambda k: NUMERIC[k][0],
-                              key="r_ph")
+    num_key = r1[1].selectbox("Phenotype", ph_opts, format_func=lambda k: NUMERIC[k][0], key="r_ph")
     nlabel, norgan, nkind, nfield = NUMERIC[num_key]
     obs_vals = [v for v in (real_value(r, norgan, nfield) for r in cohort
                             if is_observed(r, norgan, nkind)) if v is not None]
@@ -297,13 +351,11 @@ with tab_range:
     else:
         st.session_state.r_thr = min(float(st.session_state.r_thr), round(vmax, 1))
         thr = r1[3].number_input("threshold", 0.0, round(vmax, 1), step=0.5, key="r_thr")
-        _ops = {"<": lambda v: v < thr, "<=": lambda v: v <= thr, ">": lambda v: v > thr,
-                ">=": lambda v: v >= thr, "==": lambda v: abs(v - thr) < 1e-9}
-        matches = _ops[op]
+        matches = make_condition(op, thr)
         target, cond_label = {"<": 0.0, "<=": 0.0, ">": vmax, ">=": vmax, "==": thr}[op], f"{SYM[op]} {thr}"
 
     r2 = st.columns([1.4, 1.6, 1.0])
-    cat_key = r2[0].selectbox("Categorical filter", ["(none)"] + list(CATEG),
+    cat_key = r2[0].selectbox("Categorical filter", cat_opts,
                               format_func=lambda k: k if k == "(none)" else CATEG[k][0], key="r_cat")
     cat_allowed = None
     if cat_key != "(none)":
@@ -462,11 +514,6 @@ with tab_anchor:
                "**γ** (Jaccard of observed organs); baselines don't.")
     corpus, Xm, Mm = load_corpus()
     a_labels = [f"{r['case_id']}  ·  {r['dataset']}" for r in records]
-    if "_pending_anchor" in st.session_state:                # loaded from a cross-dataset query (Paper tab)
-        _cid = st.session_state.pop("_pending_anchor")
-        _m = next((l for l in a_labels if l.split("  ·  ")[0] == _cid), None)
-        if _m:
-            st.session_state.a_anchor = _m
     a1, a2, a3 = st.columns([2.4, 1.6, 1.0])
     anchor = a1.selectbox("Anchor patient", a_labels, key="a_anchor").split("  ·  ")[0]
     base = a2.selectbox("Paper baseline vs OAKG", list(pr.BASELINE_FUNCTIONS), index=3, key="a_base")
@@ -557,27 +604,48 @@ with tab_anchor:
 
 # ==================================================================== TAB 3: paper cross-dataset queries
 with tab_nl:
-    st.caption("The OAKG paper's queries. **Structured** queries load into the 🔎 Range query tab; "
-               "**cross-dataset** queries load a query patient into the 🧭 Similar patients tab.")
+    st.caption("The OAKG paper's queries — **run here**. Structured queries run OAKG's observation-"
+               "backed retrieval; cross-dataset queries run OAKG-vs-baseline similarity from a query "
+               "patient.")
 
     st.markdown("#### Structured queries (Table 4)")
-    st.caption("Boolean phenotype queries over the KG. Click one to load it into the 🔎 Range query tab.")
+    st.caption("Boolean phenotype queries over the KG. Click one to run it.")
+    st.session_state.setdefault("paper_struct", 0)
     pcols = st.columns(3)
     for i, spec in enumerate(PAPER_STRUCTURED):
         if pcols[i % 3].button(spec[0], key=f"ps_{i}", width="stretch"):
-            load_range_query(spec[1], spec[2], spec[3], spec[4], spec[5],
-                             flash=f"Loaded '{spec[0]}' into the 🔎 Range query tab.")
+            st.session_state.paper_struct = i
     st.caption("*Cross-organ distribution* (tumor in ≥2 organs) is **indeterminate** here — every case "
                "observes a single organ, so OAKG returns 'unknown' rather than a false answer.")
+
+    _spec = PAPER_STRUCTURED[st.session_state.paper_struct]
+    _nk, _op, _thr, _catk, _catv = _spec[1], OPERATORS[_spec[2]], _spec[3], _spec[4], _spec[5]
+    _mfn = make_condition(_op, _thr)
+    _hits = oakg_range_hits(records, _nk, _mfn, _catk, _catv)
+    _bl = blind_count(records, _nk, _mfn, _catk, _catv)
+    st.markdown(f"**Running _{_spec[0]}_** → `{NUMERIC[_nk][0]} {SYM[_op]} {_thr}`"
+                + (f"  and  {CATEG[_catk][0]} ∈ {_catv}" if _catk != "(none)" else ""))
+    sm1, sm2 = st.columns(2)
+    sm1.metric("OAKG matches (observation-backed)", len(_hits))
+    sm2.metric("Coverage-blind (impute 0) would return", _bl,
+               delta=f"{_bl-len(_hits)} false", delta_color="inverse")
+    if _hits:
+        st.dataframe(pd.DataFrame([{"patient": r["case_id"], "dataset": r["dataset"],
+                                    NUMERIC[_nk][0]: round(real_value(r, NUMERIC[_nk][1],
+                                                                      NUMERIC[_nk][3]), 2)}
+                                   for r in _hits]).head(50), hide_index=True, width="stretch", height=240)
+        import kg_viz
+        components.html(kg_viz.merged_kg_html(_hits[:8], load_mappings(), height=440), height=464)
 
     st.divider()
     st.markdown("#### Cross-dataset queries (B1–B7)")
     st.markdown(
         "Each one **starts from a single patient** and looks for similar patients in a **different "
-        "dataset** that share an organ. They test whether the shared schema lets OAKG match *across* "
+        "dataset** that share an organ — testing whether the shared schema lets OAKG match *across* "
         "datasets that image different organs (e.g. a Pancreas case vs FLARE cases — both observe the "
-        "pancreas). Click **Load** to run one in the 🧭 Similar patients tab.")
+        "pancreas). Click **Run** to score OAKG vs Masked cosine for that patient.")
     cds = load_crossds()
+    st.session_state.setdefault("paper_anchor", "")
     for q in cds:
         query = q.get("query", {})
         cid = query.get("case_id", "")
@@ -593,10 +661,28 @@ with tab_nl:
             f"{organ.replace('_', ' ')} tumor → find similar patients in "
             f"**{q.get('target_dataset', '?')}** that share the {organ.replace('_', ' ')}."
             + ("" if loadable else "  \n*(slice-level FLARE query — not in this patient-level demo)*"))
-        if c2.button("Load", key=f"bq_{q['code']}", width="stretch", disabled=not loadable):
-            st.session_state["_pending_anchor"] = cid
-            st.session_state["_flash"] = f"Loaded {cid} into the 🧭 Similar patients tab."
-            st.rerun()
+        if c2.button("Run", key=f"bq_{q['code']}", width="stretch", disabled=not loadable):
+            st.session_state.paper_anchor = cid
+
+    if st.session_state.paper_anchor in rec_by_id:
+        _ac = st.session_state.paper_anchor
+        _corpus, _Xm, _Mm = load_corpus()
+        _otop = pr.rank(_ac, "OAKG", _corpus, _Xm, _Mm, records, 10)
+        _btop = pr.rank(_ac, "Masked cosine", _corpus, _Xm, _Mm, records, 10)
+        _lo = sum(t["low evidence (γ<0.25)"] for t in _otop)
+        _lb = sum(t["low evidence (γ<0.25)"] for t in _btop)
+        st.markdown(f"**Most similar to `{_ac}`** — OAKG vs Masked cosine "
+                    f"(weak-overlap γ<0.25: OAKG {_lo}, Masked cosine {_lb}):")
+
+        def _simtab(rows_):
+            df = pd.DataFrame(rows_)
+            df.insert(0, "flag", ["⚠️ weak" if r["low evidence (γ<0.25)"] else "✔" for r in rows_])
+            return df[["flag", "patient", "dataset", "score", "shared organs", "γ"]]
+        xc1, xc2 = st.columns(2)
+        xc1.markdown("**❌ Masked cosine**")
+        xc1.dataframe(_simtab(_btop), hide_index=True, width="stretch", height=300)
+        xc2.markdown("**✅ OAKG (support-restricted + γ)**")
+        xc2.dataframe(_simtab(_otop), hide_index=True, width="stretch", height=300)
     CTX["crossds"] = ("Cross-dataset paper queries B1–B7 (similarity from a query patient to another "
                       "dataset sharing an organ): " + ", ".join(f"{q['code']} {q['title']}" for q in cds)
                       if cds else "none")
