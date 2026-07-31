@@ -95,6 +95,20 @@ def load_records():
     return json.load(open(CORPUS))["records"]
 
 
+INGESTED_FILE = os.path.join(ROOT, "kg", "data", "corpus_ingested.json")
+
+
+def read_ingested():
+    """Persisted patients added via the New-CT tab (part of the GLOBAL corpus, survives reloads)."""
+    return json.load(open(INGESTED_FILE)) if os.path.exists(INGESTED_FILE) else []
+
+
+def persist_ingested(rec):
+    data = [r for r in read_ingested() if r.get("case_id") != rec.get("case_id")] + [rec]
+    with open(INGESTED_FILE, "w") as f:
+        json.dump(data, f)
+
+
 @st.cache_data
 def load_mappings():
     return json.load(open(os.path.join(ROOT, "kg", "ontology_mappings.json")))["mappings"]
@@ -286,13 +300,14 @@ def llm_block(context, system, sig, key, placeholder):
 
 # ----------------------------------------------------------------------------- app
 st.set_page_config(page_title="OAKG retrieval demos", layout="wide")
-records = load_records() + st.session_state.get("ingested_records", [])   # + newly ingested cases
+_ingested = read_ingested()                              # persisted, part of the global corpus
+records = load_records() + _ingested
 rec_by_id = {r["case_id"]: r for r in records}
 ds_all = sorted({r["dataset"] for r in records})
-DATASET_ORGANS = {}                                    # dataset -> set of organs it observes
+DATASET_ORGANS = {}                                      # dataset -> set of organs it observes
 for _r in records:
     DATASET_ORGANS.setdefault(_r["dataset"], set()).update(_r["observed_organs"])
-for _r in st.session_state.get("ingested_records", []):   # ingested tumors are observation-backed
+for _r in _ingested:                                     # ingested tumors are observation-backed
     for _o, _od in _r["organs"].items():
         if _od.get("has_tumor"):
             TUMOR_ANNOTATED.add((_o, _r["dataset"]))
@@ -780,16 +795,38 @@ with tab_new:
         rc1, rc2 = st.columns([1, 1.2])
         rc1.image(res["png"], caption="prediction overlay (busiest slice)", width="stretch")
         rc2.dataframe(pd.DataFrame(res["val"]), hide_index=True, width="stretch")
+        all_ok = all(r["status"].startswith("✓") for r in res["val"])
+        (st.success if all_ok else st.warning)(
+            "✅ Verified — all organ volumes plausible." if all_ok else
+            "⚠️ Some organ volumes are out of range — review before adding.")
         with st.expander("KG record (extracted phenotypes)"):
             st.json(res["rec"])
-        if st.button("➕ Add this patient to the KG (queryable in the other tabs)"):
-            st.session_state.setdefault("ingested_records", []).append(res["rec"])
+        if st.button("✓ Verify & add to the GLOBAL KG", type="primary"):
+            persist_ingested(res["rec"])                 # -> corpus_ingested.json (global, persisted)
             st.session_state["_new_result"] = None
-            st.toast(f"Added {res['rec']['case_id']} — now queryable in the other tabs.")
+            st.toast(f"{res['rec']['case_id']} added to the global KG.")
             st.rerun()
-    if st.session_state.get("ingested_records"):
-        st.caption("Ingested this session: "
-                   + ", ".join(r["case_id"] for r in st.session_state["ingested_records"]))
+
+    ing = read_ingested()
+    if ing:
+        st.divider()
+        st.subheader("🌐 Modified global KG")
+        st.caption(f"Global corpus is now **{len(records)}** patients ("
+                   + ", ".join(f"{d}={sum(1 for r in records if r['dataset']==d)}" for d in ds_all)
+                   + "). Ingested & persisted: **" + ", ".join(r["case_id"] for r in ing) + "**. "
+                   "These are now retrievable in every tab and to the assistant.")
+        import kg_viz
+        organs_ing = set().union(*[set(r["observed_organs"]) for r in ing])
+        neigh = [r for r in records if r["dataset"] != "ingested"
+                 and set(r["observed_organs"]) & organs_ing][:4]
+        st.caption("Your ingested patient(s) shown wired into existing ones through shared **Dataset** "
+                   "and **SNOMED/NCIt concept** nodes:")
+        components.html(kg_viz.merged_kg_html(ing + neigh, load_mappings(), height=520), height=544)
+        rm1, rm2 = st.columns([1, 3])
+        if rm1.button("🗑 Remove all ingested"):
+            if os.path.exists(INGESTED_FILE):
+                os.remove(INGESTED_FILE)
+            st.rerun()
 
 # ==================================================================== bottom: assistant
 st.divider()
