@@ -60,6 +60,18 @@ The OAKG paper's queries — **run within this tab** (no loading into other tabs
   Masked cosine here. B3/B4/B7 use slice-level FLARE query patients absent from this patient-level
   demo, so they're disabled.
 
+## ➕ Tab 4 — New CT → KG
+Ingest a **new labeled CT**: upload the CT + its label mask (organs 1 liver, 2 R-kidney, 3 spleen,
+4 pancreas, 13 L-kidney; tumor 14). SAM3 produces **accurate GT-box-prompted** predictions (liver
+Dice ~0.97, pancreas ~0.87), we **validate** them (per-organ volume plausibility + Dice vs the mask),
+show a prediction overlay, extract the KG phenotypes, and on **Add** the patient becomes queryable in
+the other tabs + the assistant.
+
+**A label mask is required** — and that is a real limitation, not a shortcut: our SAM3 models are
+box-prompted, and without a mask to supply localization the segmentation isn't good enough for a
+quality KG (autonomous tumor Dice ≈ 0.11; organs over-segment). The mask gives the box; SAM3 refines
+it into an accurate prediction. (Backend: `ingest.py`, reusing `src/scripts/infer_sam3.py`.)
+
 ## 💬 Assistant (bottom of the page)
 A single chatbot below the tabs, available regardless of which panel you're on. It's given the
 **current state of all three panels** (queries + results), so it can *Summarize the current panels*

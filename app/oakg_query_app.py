@@ -28,6 +28,7 @@ import streamlit.components.v1 as components
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # make sibling modules importable
 import paper_retrieval as pr   # noqa: E402  (needs the path insert above)
+import ingest                  # noqa: E402  (cheap import; SAM3/torch load lazily on first segment)
 
 
 # ----------------------------------------------------------------------------- data
@@ -285,20 +286,29 @@ def llm_block(context, system, sig, key, placeholder):
 
 # ----------------------------------------------------------------------------- app
 st.set_page_config(page_title="OAKG retrieval demos", layout="wide")
-records = load_records()
+records = load_records() + st.session_state.get("ingested_records", [])   # + newly ingested cases
 rec_by_id = {r["case_id"]: r for r in records}
 ds_all = sorted({r["dataset"] for r in records})
 DATASET_ORGANS = {}                                    # dataset -> set of organs it observes
 for _r in records:
     DATASET_ORGANS.setdefault(_r["dataset"], set()).update(_r["observed_organs"])
+for _r in st.session_state.get("ingested_records", []):   # ingested tumors are observation-backed
+    for _o, _od in _r["organs"].items():
+        if _od.get("has_tumor"):
+            TUMOR_ANNOTATED.add((_o, _r["dataset"]))
+
+
+@st.cache_resource(show_spinner="Loading SAM3 segmentation model (first use only)…")
+def get_segmenter():
+    return ingest.Segmenter()
 
 st.title("OAKG retrieval demos")
 st.caption("Three panels — **Range query** (OAKG vs coverage-blind imputation), **Similar patients** "
            "(OAKG vs the paper's baselines), and **Paper queries** — with an assistant at the bottom.")
 
 CTX = {}   # each panel records a short context string; the bottom assistant reads all of them
-tab_range, tab_anchor, tab_nl = st.tabs(
-    ["🔎 Range query", "🧭 Similar patients", "📄 Paper queries"])
+tab_range, tab_anchor, tab_nl, tab_new = st.tabs(
+    ["🔎 Range query", "🧭 Similar patients", "📄 Paper queries", "➕ New CT → KG"])
 
 # ==================================================================== TAB 1: range-based
 with tab_range:
@@ -543,7 +553,7 @@ with tab_anchor:
     st.caption("Pick any patient as the anchor; rank all others by similarity using the OAKG paper's "
                "baselines. OAKG restricts to jointly-observed features and weights by shared-evidence "
                "**γ** (Jaccard of observed organs); baselines don't.")
-    corpus, Xm, Mm = load_corpus()
+    corpus, Xm, Mm = pr.build_corpus(records)          # rebuilt so ingested patients are included
     a_labels = [f"{r['case_id']}  ·  {r['dataset']}" for r in records]
     a1, a2, a3 = st.columns([2.4, 1.6, 1.0])
     anchor = a1.selectbox("Anchor patient", a_labels, key="a_anchor").split("  ·  ")[0]
@@ -697,7 +707,7 @@ with tab_nl:
 
     if st.session_state.paper_anchor in rec_by_id:
         _ac = st.session_state.paper_anchor
-        _corpus, _Xm, _Mm = load_corpus()
+        _corpus, _Xm, _Mm = pr.build_corpus(records)
         _otop = pr.rank(_ac, "OAKG", _corpus, _Xm, _Mm, records, 10)
         _btop = pr.rank(_ac, "Masked cosine", _corpus, _Xm, _Mm, records, 10)
         _lo = sum(t["low evidence (γ<0.25)"] for t in _otop)
@@ -717,6 +727,69 @@ with tab_nl:
     CTX["crossds"] = ("Cross-dataset paper queries B1–B7 (similarity from a query patient to another "
                       "dataset sharing an organ): " + ", ".join(f"{q['code']} {q['title']}" for q in cds)
                       if cds else "none")
+
+# ==================================================================== TAB 4: new CT -> KG
+with tab_new:
+    st.caption("Ingest a **new labeled CT**: upload the CT + its label mask (organs 1 liver, 2 R-kidney, "
+               "3 spleen, 4 pancreas, 13 L-kidney; tumor 14). SAM3 produces accurate GT-box-prompted "
+               "predictions → we validate them → build the KG → the patient becomes queryable in the "
+               "other tabs.")
+    st.info("A **label mask is required** — with current box-prompted SAM3, unlabeled abdominal CT "
+            "can't be segmented well enough for a good-quality KG (autonomous tumor Dice ≈ 0.11, organs "
+            "over-segment). The mask supplies the localization; SAM3 then produces the accurate masks.")
+    u1, u2 = st.columns(2)
+    ct_file = u1.file_uploader("CT volume (.nii / .nii.gz)", type=["nii", "gz"], key="up_ct")
+    gt_file = u2.file_uploader("Label mask (.nii / .nii.gz)", type=["nii", "gz"], key="up_gt")
+    organs_sel = st.multiselect("Organs to segment", list(ingest.ORGAN_MODELS),
+                                default=list(ingest.ORGAN_MODELS), key="up_organs")
+    o1, o2 = st.columns([1, 2])
+    want_tumor = o1.checkbox("Also segment tumor (label 14)", value=True, key="up_tumor")
+    case_name = o2.text_input("Case id", value="new_case_01", key="up_name")
+
+    if st.button("▶ Segment + build KG", type="primary", disabled=not (ct_file and gt_file)):
+        import tempfile
+        import nibabel as nib
+        d = tempfile.mkdtemp()
+        cp, gp = os.path.join(d, "ct.nii.gz"), os.path.join(d, "gt.nii.gz")
+        open(cp, "wb").write(ct_file.getbuffer())
+        open(gp, "wb").write(gt_file.getbuffer())
+        ctn = nib.load(cp)
+        ct = ctn.get_fdata()
+        import numpy as _np
+        gt = nib.load(gp).get_fdata().astype(_np.uint8)
+        sp = float(_np.prod(ctn.header.get_zooms()[:3])) / 1000.0
+        seg = get_segmenter()
+        bar = st.progress(0.0, "starting…")
+
+        def cb(si, ns, zi, nz, name, mode):
+            if zi == 0:
+                bar.progress(si / ns, f"{name} ({mode})…")
+        with st.spinner("Segmenting with SAM3 (≈1 min)…"):
+            mask, modes = seg.run(ct, organs_sel, gt=gt, want_tumor=want_tumor, progress=cb)
+        bar.empty()
+        rec = ingest.phenotypes(mask, sp)
+        rec["case_id"] = case_name or "new_case"
+        st.session_state["_new_result"] = {
+            "rec": rec, "modes": modes,
+            "val": ingest.validate(rec, gt=gt, mask=mask, spacing_cm3=sp),
+            "png": ingest.overlay_png(ct, mask)}
+
+    res = st.session_state.get("_new_result")
+    if res:
+        st.success(f"Segmented **{res['rec']['case_id']}** — modes: {res['modes']}")
+        rc1, rc2 = st.columns([1, 1.2])
+        rc1.image(res["png"], caption="prediction overlay (busiest slice)", width="stretch")
+        rc2.dataframe(pd.DataFrame(res["val"]), hide_index=True, width="stretch")
+        with st.expander("KG record (extracted phenotypes)"):
+            st.json(res["rec"])
+        if st.button("➕ Add this patient to the KG (queryable in the other tabs)"):
+            st.session_state.setdefault("ingested_records", []).append(res["rec"])
+            st.session_state["_new_result"] = None
+            st.toast(f"Added {res['rec']['case_id']} — now queryable in the other tabs.")
+            st.rerun()
+    if st.session_state.get("ingested_records"):
+        st.caption("Ingested this session: "
+                   + ", ".join(r["case_id"] for r in st.session_state["ingested_records"]))
 
 # ==================================================================== bottom: assistant
 st.divider()
