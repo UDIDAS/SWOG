@@ -95,11 +95,13 @@ def load_records():
     return json.load(open(CORPUS))["records"]
 
 
-INGESTED_FILE = os.path.join(ROOT, "kg", "data", "corpus_ingested.json")
+INGESTED_FILE = os.path.join(ROOT, "kg", "data", "corpus_ingested.json")   # living additions layer
+GLOBAL_FILE = os.path.join(ROOT, "kg", "data", "corpus_global.json")       # base ∪ additions (query KG)
 
 
 def read_ingested():
-    """Persisted patients added via the New-CT tab (part of the GLOBAL corpus, survives reloads)."""
+    """Validated test patients added via the New-CT tab. These accumulate in the GLOBAL query KG only
+    (a separate living layer) — they are NEVER written back into any frozen train KG."""
     return json.load(open(INGESTED_FILE)) if os.path.exists(INGESTED_FILE) else []
 
 
@@ -107,6 +109,10 @@ def persist_ingested(rec):
     data = [r for r in read_ingested() if r.get("case_id") != rec.get("case_id")] + [rec]
     with open(INGESTED_FILE, "w") as f:
         json.dump(data, f)
+    # materialize the single global query KG = base cohort ∪ validated test patients (train KGs excluded)
+    with open(GLOBAL_FILE, "w") as f:
+        json.dump({"records": load_records() + data, "note": "global query KG = base cohort + "
+                   "validated test patients; frozen train KGs (corpus_*_train.json) excluded"}, f)
 
 
 @st.cache_data

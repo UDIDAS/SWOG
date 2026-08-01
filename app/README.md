@@ -65,7 +65,12 @@ Ingest a **new labeled CT**: upload the CT + its label mask (organs 1 liver, 2 R
 4 pancreas, 13 L-kidney; tumor 14). SAM3 produces **accurate GT-box-prompted** predictions (liver
 Dice ~0.97, pancreas ~0.87), we **validate** them (per-organ volume plausibility + Dice vs the mask),
 show a prediction overlay, extract the KG phenotypes, and on **Add** the patient becomes queryable in
-the other tabs + the assistant. **Adding persists the patient to the global corpus** (`kg/data/corpus_ingested.json`) so the modified KG survives reloads; a *Modified global KG* view shows the new patient wired into existing ones through shared Dataset/concept nodes.
+the other tabs + the assistant. **Adding appends the validated patient to the living additions layer**
+(`kg/data/corpus_ingested.json`) and re-materializes the single **global query KG**
+(`kg/data/corpus_global.json` = base cohort ∪ every validated test patient) so the modified KG survives
+reloads. This is a **separate layer from the frozen train KGs** (`corpus_*_train.json`): ingesting a test
+patient **never** adds an instance to a train KG. A *Modified global KG* view shows the new patient wired
+into existing ones through shared Dataset/concept nodes.
 
 **A label mask is required** — and that is a real limitation, not a shortcut: our SAM3 models are
 box-prompted, and without a mask to supply localization the segmentation isn't good enough for a
