@@ -36,18 +36,68 @@ import ingest, infer_sam3 as I
 os.chdir(ROOT)
 print("ready")""")
 
-md("""## 1. The train KGs (per dataset)
+md("""## 1. Datasets — inventory & analytics
 
-Each dataset's training patients become a KG of phenotypes (organ/tumor volumes, burden, etc.).
-Pancreas & LiTS are single-organ + tumor; FLARE23 was rebuilt to the same schema (organ + tumor).""")
+How many **patients** and **CT images** we are dealing with, per dataset:
+
+| Dataset | Patients (in KG) | CT images | Label masks | Tumor labels | Structures |
+|---|---|---|---|---|---|
+| **Pancreas** (MSD Task07) | 281 | 281 train + 146 test | 281 | ✅ per patient | pancreas + pancreatic tumor |
+| **LiTS** | 131 | 131 | 131 | ✅ per patient | liver + liver tumor |
+| **FLARE22** (current KG) | 100 | 100 | 100 | ❌ organs only | 5 organs, no tumor |
+| **FLARE23** (`Metadata.zip`) | 1,312 organ (of 2,200 labeled) | **950** | **2,200** | ⚠️ partial (separate cases) | 13 organs + tumor (14) |
+
+*Sources:* MSD Pancreas (`imagesTr/labelsTr/imagesTs`), LiTS challenge (131 volumes), FLARE22 Task2
+(100 labeled), FLARE23 in `Metadata.zip` (950 images + 2,200 masks). The KG columns are the patients
+we actually turned into KG records. Each training set's patients become the **train KG**.""")
 
 co("""base = json.load(open("kg/data/corpus_perpatient.json"))["records"]
 from collections import Counter
-print("base corpus:", dict(Counter(r["dataset"] for r in base)))
+print("base corpus (current KG):", dict(Counter(r["dataset"] for r in base)))
 if os.path.exists("kg/data/corpus_flare_train.json"):
     fl = json.load(open("kg/data/corpus_flare_train.json"))
-    print("FLARE23 train KG:", fl["summary"])
-    print("example record:", json.dumps(fl["records"][0])[:300])""")
+    print("FLARE23 train KG:", fl["summary"])""")
+
+md("""### 1a. Live analytics from the KGs
+
+Patient counts, tumor prevalence, and organ/tumor volume distributions computed straight from the
+phenotype records.""")
+
+co("""import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+
+def stats(records, name):
+    n = len(records)
+    tum = sum(1 for r in records if any(o.get("has_tumor") for o in r["organs"].values()))
+    ov = [o["organ_volume_cm3"] for r in records for o in r["organs"].values() if o.get("organ_volume_cm3")]
+    tv = [o["tumor_volume_cm3"] for r in records for o in r["organs"].values() if o.get("has_tumor")]
+    return {"dataset": name, "patients": n, "with_tumor": tum,
+            "%_tumor": round(100 * tum / n) if n else 0,
+            "organ_vol_median_cm3": round(float(np.median(ov)), 1) if ov else None,
+            "tumor_vol_median_cm3": round(float(np.median(tv)), 1) if tv else None,
+            "organs_observed": sorted({o for r in records for o in r["observed_organs"]})}
+
+rows = [stats([r for r in base if r["dataset"] == d], d) for d in ["pancreas", "lits", "flare"]]
+if os.path.exists("kg/data/corpus_flare_train.json"):
+    rows.append(stats(json.load(open("kg/data/corpus_flare_train.json"))["records"], "flare23_train"))
+display(pd.DataFrame(rows))
+
+fig, ax = plt.subplots(1, 2, figsize=(11, 3.3))
+for d, c in [("pancreas", "tab:blue"), ("lits", "tab:orange")]:
+    tv = [o["tumor_volume_cm3"] for r in base if r["dataset"] == d
+          for o in r["organs"].values() if o.get("has_tumor")]
+    ax[0].hist(tv, bins=30, alpha=0.6, label=d, color=c)
+ax[0].set_title("tumor volume (cm³)"); ax[0].set_xlim(0, 60); ax[0].legend()
+for d, c in [("pancreas", "tab:blue"), ("lits", "tab:orange"), ("flare", "tab:green")]:
+    ov = [o["organ_volume_cm3"] for r in base if r["dataset"] == d
+          for o in r["organs"].values() if o.get("organ_volume_cm3")]
+    ax[1].hist(ov, bins=30, alpha=0.5, label=d, color=c)
+ax[1].set_title("organ volume (cm³)"); ax[1].legend()
+plt.tight_layout(); plt.show()""")
+
+md("""### 1b. The train KGs
+Each dataset's training patients become a KG of phenotypes (Pancreas & LiTS: single-organ + tumor;
+FLARE23: organ, with tumor only on the minority of cases that annotate both).""")
 
 md("""**Note (honest):** FLARE23 uses **partial labels** — most cases annotate *either* the organs *or* a
 tumor, rarely both — so a FLARE patient with organ **and** tumor in one record is rare (unlike
@@ -161,9 +211,55 @@ unlabeled CT you need **patient-specific localization** — a dedicated autonomo
 (e.g. TotalSegmentator / nnU-Net) — after which the KG serves as the validator. **With a label mask,
 the semi-oracle path already gives accurate test KGs today (liver Dice ~0.97).**""")
 
-md("""## 7. Takeaways
+md("""## 7. Validate the test KG → add it to the **global query KG** (train KGs stay frozen)
+
+Two layers, kept deliberately separate:
+
+- **Train KGs** (`corpus_*_train.json`) — *frozen reference cohorts* built once from the training masks.
+  They seed the atlas/priors and are the validation reference. **Ingesting a test patient never adds an
+  instance to a train KG.**
+- **Global query KG** (`corpus_global.json`) — the *living* corpus you keep developing and query later.
+  It is `base cohort ∪ every validated test patient`. New test KGs are appended **here only**.
+
+**Validation gate.** A test KG is admitted only if every organ's volume is plausible (train-KG range)
+and — when a label mask is present — Dice ≥ 0.5 vs GT. Semi-oracle test KGs pass; autonomous ones are
+flagged for **review**, not silently added. (The Streamlit app writes the *same* `corpus_global.json`,
+so a patient validated here is queryable in the app and vice-versa.)""")
+
+co("""import hashlib
+def fp(p): return hashlib.md5(open(p,"rb").read()).hexdigest()[:8] if os.path.exists(p) else "-"
+TRAIN_KGS = [f"kg/data/{f}" for f in os.listdir("kg/data") if f.endswith("_train.json")]
+before = {p: fp(p) for p in TRAIN_KGS}
+
+# 1) validate the semi-oracle test KG built in section 4
+val = ingest.validate(rec, gt=gt, mask=mask_semi, spacing_cm3=sp)
+plausible = all(r["status"].startswith(chr(0x2713)) for r in val)     # ✓ plausible
+dices = [r["Dice vs GT"] for r in val if r["Dice vs GT"] is not None]
+admit = plausible and all(d >= 0.5 for d in dices)
+print("validation:", "ADMIT" if admit else "REVIEW", "| plausible:", plausible, "| Dice:", dices)
+
+# 2) append to the LIVING additions layer (the query app reads this too) — dedup by case_id
+ADD = "kg/data/corpus_ingested.json"
+add = json.load(open(ADD)) if os.path.exists(ADD) else []
+if admit:
+    add = [r for r in add if r.get("case_id") != rec["case_id"]] + [rec]
+    json.dump(add, open(ADD, "w"))
+
+# 3) materialize the single global query KG = base cohort + validated test patients (NOT the train KGs)
+glob = base + add
+json.dump({"records": glob, "note": "global query KG = base cohort + validated test patients; "
+           "frozen train KGs excluded"}, open("kg/data/corpus_global.json", "w"))
+
+# 4) prove the train KGs were not touched
+after = {p: fp(p) for p in TRAIN_KGS}
+print(f"global query KG: {len(base)} base + {len(add)} validated test = {len(glob)} patients")
+print("train KGs:", [os.path.basename(p) for p in TRAIN_KGS], "-> unchanged:", before == after)""")
+
+md("""## 8. Takeaways
+- **Two KGs, separate:** train KGs stay **frozen** (reference/priors); validated test patients accumulate
+  in a **separate global query KG** (`corpus_global.json`) — that's the one you keep developing and query.
 - **Train KGs**: Pancreas & LiTS (organ+tumor) + FLARE23 (organ; tumor is rare due to partial labels).
-- **Test KG with labels** → accurate now (semi-oracle SAM3 + `ingest.py`).
+- **Test KG with labels** → accurate now (semi-oracle SAM3 + `ingest.py`); validated then admitted.
 - **Test KG without labels** → atlas prior helps *plausibility* but not *accuracy*; needs a real
   autonomous organ segmenter as the front-end. Tumors remain box/label-dependent.""")
 
