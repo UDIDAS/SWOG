@@ -335,7 +335,7 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
         for images_batch, labels_batch in tl:
             inputs, gt_masks = prepare_sam3_batch(
                 images_batch, labels_batch, processor, device,
-                text_prompt=text_prompt, use_boxes=True
+                text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
             )
             optimizer.zero_grad()
             with autocast("cuda"):
@@ -366,7 +366,7 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
             for images_batch, labels_batch in vl:
                 inputs, gt_masks = prepare_sam3_batch(
                     images_batch, labels_batch, processor, device,
-                    text_prompt=text_prompt, use_boxes=True
+                    text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
                 )
                 with autocast("cuda"):
                     outputs = sam3(**inputs)
@@ -560,7 +560,7 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
         for images_batch, labels_batch in tl:
             inputs, gt_masks = prepare_sam3_batch(
                 images_batch, labels_batch, processor, device,
-                text_prompt=text_prompt, use_boxes=True
+                text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
             )
             optimizer.zero_grad()
             with autocast("cuda"):
@@ -595,7 +595,7 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
             for images_batch, labels_batch in vl:
                 inputs, gt_masks = prepare_sam3_batch(
                     images_batch, labels_batch, processor, device,
-                    text_prompt=text_prompt, use_boxes=True
+                    text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
                 )
                 with autocast("cuda"):
                     outputs = sam3(**inputs)
