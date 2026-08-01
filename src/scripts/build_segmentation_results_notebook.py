@@ -157,6 +157,6 @@ trained tumor model produce organ masks, tumor masks, and the imaging KG for new
 
 nb = new_notebook(); nb["cells"] = c
 nb.metadata["kernelspec"] = {"name": "python3", "display_name": "Python 3"}
-out = "/home/ud3d4/Desktop/SWOG/notebooks/Segmentation_Results.ipynb"
+out = "/home/ud3d4/Desktop/SWOG/src/notebooks/Segmentation_Results.ipynb"
 nbf.write(nb, out)
 print("wrote", out, "with", len(c), "cells")

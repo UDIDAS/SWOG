@@ -48,31 +48,45 @@ new CT (no labels)
   → ontology-grounded KG  →  retrieval · GT-free validation · growth
 ```
 Segmentation: `infer_ensemble.py`. KG build: `build_flare23_enriched_kg.py` + `kg_grounding.py`.
-Interactive KG: `app/oakg_query_app.py`. Walkthroughs: `notebooks/`.
+Interactive KG: `app/oakg_query_app.py`. Walkthroughs: `src/notebooks/`.
 
 ## Segmentation results (held-out, honest)
 
-**Autonomous — the deployment numbers (no ground truth, concept prompts):**
+**How to read these.** *Dice* = overlap between the predicted and ground-truth mask (0–1; higher is
+better, ≈0.9+ is strong). Each result depends on **how the model is prompted**:
 
-| Structure | Autonomous (concept) | Semi-oracle ceiling (GT box) | Note |
-|---|---|---|---|
-| Liver organ | **0.964** | 0.974 | ≈ no cost to dropping the label |
-| Pancreas organ | 0.642 | 0.75–0.88 | weaker; generic organ model in progress |
-| Kidney / spleen | *sweep in progress* | 0.96 | large & distinct — expected strong |
-| **Tumor** (generic model, v3) | **~0.93** | 0.91 (per-organ box) | training closes the gap |
-| Tumor, *unseen* type (cross-dataset) | 0.02 | — | must train the type in |
+- **Autonomous (concept prompt)** — the model gets *only the image + a word* (e.g. `"liver"`), no
+  annotation. **This is the real deployment number** — what runs on a new, unlabeled scan.
+- **Semi-oracle ceiling (GT box)** — the model is *handed a bounding box drawn from the ground-truth
+  mask* (told *where* the structure is). It's an **upper bound**: needs a label, so it can't run on new
+  data — it only shows how much a label would be worth.
+- The **gap** between the two columns = the cost of working without annotations.
 
-Tumor trajectory as coverage grew: **0.37 → 0.909 → 0.9145 → 0.93** (base concept → LiTS+Pancreas →
-+FLARE → +KiTS). Generic tumor pool ≈ 20.7k slices; generic organ pool ≈ 16k (liver/kidney/pancreas).
+**Autonomous vs. ceiling, per structure:**
 
-**Semi-oracle backbone (fine-tuned SAM3, GT box) — per-dataset ceilings.** Case-level = whole patients
-held out (the honest generalization number); slice-level leaks patient features and reads higher.
+| Structure | Autonomous *(concept, no label)* | Semi-oracle ceiling *(given GT box)* | Gap → what it means |
+|---|:--:|:--:|---|
+| Liver organ | **0.964** | 0.974 | 0.01 — the label barely helps |
+| Pancreas organ | 0.642 | 0.75–0.88 | ~0.10 — weaker; organ model in progress |
+| Kidney / spleen | *sweep pending* | ~0.96 | large & distinct — expect strong |
+| **Tumor** (generic model) | **~0.93** | 0.91 *(per-organ box)* | training *closes* the gap |
+| Tumor, *unseen* type | 0.02 | — | fails until that type is in training |
 
-| Dataset | Split | Organ Dice | Tumor Dice |
-|---|---|---|---|
-| Pancreas (MSD Task07) | case-level | 0.866 | 0.894 |
-| LiTS (liver tumor) | case-level | — | 0.840 |
-| FLARE (13 organs + tumor) | slice-level | liver 0.973 · pancreas 0.907 · duodenum 0.913 | 0.883 |
+*Tumor Dice as training coverage grew:* **0.37 → 0.909 → 0.9145 → 0.93**
+(base concept → LiTS+Pancreas → +FLARE → +KiTS). Pools ≈ 20.7k tumor slices, ≈ 16k organ slices.
+
+**Semi-oracle backbone ceilings, per dataset** (fine-tuned SAM3 given the GT box). Here *Split* = how
+train/test were divided, which decides whether the number is honest:
+
+- **case-level** = *whole patients* held out → honest (predicts performance on a brand-new patient).
+- **slice-level** = random 2D slices → a patient's near-identical slices can land in *both* train and
+  test (data leakage → inflated). Only used where the dataset has no patient IDs.
+
+| Dataset | Split *(how test was held out)* | Organ Dice | Tumor Dice |
+|---|---|:--:|:--:|
+| Pancreas (MSD Task07) | case-level *(whole patients)* | 0.866 | 0.894 |
+| LiTS (liver tumor) | case-level *(whole patients)* | — *(liver copied from GT)* | 0.840 |
+| FLARE (13 organs + tumor) | slice-level *(no patient IDs)* | liver 0.973 · pancreas 0.907 · duodenum 0.913 | 0.883 |
 
 ## The knowledge graph — how it's used and how it evolves
 
@@ -101,18 +115,18 @@ new CT → autonomous segmentation → phenotypes
 It is **open-world**: a new patient may carry a phenotype never seen before — the mapper grounds the new
 term and it joins the graph with **no schema migration**. The graph that stores the data is the same one
 that **interprets and validates** new, unlabeled scans, and it improves as it grows.
-Interactive: `app/oakg_query_app.py` · runnable demo: `notebooks/KG_as_Knowledge_Base.ipynb`.
+Interactive: `app/oakg_query_app.py` · runnable demo: `src/notebooks/KG_as_Knowledge_Base.ipynb`.
 
 ## Repository
 
 ```
-notebooks/      Segmentation_Results · KG_as_Knowledge_Base · Test_KG_from_CT   (runnable)
 app/            oakg_query_app.py — interactive KG retrieval/validation
 kg/             schema.owl · ontology_mappings.json (grounding cache) · graph/ (gitignored outputs)
-src/scripts/    segmentation (train_tumor_generic, build_*_pool, extract_*, infer_ensemble),
+src/
+  notebooks/    Segmentation_Results · KG_as_Knowledge_Base · Test_KG_from_CT   (runnable)
+  scripts/      segmentation (train_tumor_generic, build_*_pool, extract_*, infer_ensemble),
                 KG (kg_grounding, build_flare23_enriched_kg, flare23_predict, kg_build_*),
                 AUSAM/SAM3 backbones (run_flare, run_*_sam3, infer_sam3)
-archive/        superseded scripts/notebooks/docs (local; gitignored)
 ```
 
 ## Environment
