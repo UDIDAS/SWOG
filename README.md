@@ -155,7 +155,19 @@ more datasets (PanTS, K-Prism), this problem *grows* — and no one is addressin
 3. **Autonomous CT→KG as infrastructure** (SAM3 concept organs + generic tumor model), positioned on
    SOTA segmentation rather than competing with it.
 
-**Experimental program.**
+**Experiments & results at a glance** (all real, reproducible from `results/*.json`):
+
+| Exp | Question | Result | Status |
+|---|---|---|:--:|
+| **A2** | Does evidence-calibration (γ) beat imputation on a merged multi-source KG? | Precision@10 **0.78** vs **0.08** without γ; spurious matches **0.14** vs **0.84** | ✅ |
+| **B1** | Does a KG built from *autonomous* masks answer like a GT-KG? | volume **r=0.992**, "rank by size" **Spearman 0.986** (at Dice 0.919) | ✅ |
+| **B2** | Does GT-free validation improve as the KG grows? | joint model **0.78** vs marginal 0.66 AUROC; climbs with N, then plateaus | ✅ |
+| **C** | Autonomous full-volume organ Dice vs the semi-oracle ceiling | liver **0.82**; small organs 0.31–0.59 → need per-organ fine-tuning | ✅ |
+| **Seg.** | Generic autonomous tumor model | Dice **0.938** (beats the 0.906 GT-box ceiling) | ✅ |
+
+Runnable write-up with figures: `src/notebooks/OAKG_Experiments.ipynb`.
+
+**Experimental program (detail).**
 - **A. OAKG (method) — first result in.** Structured multi-source benchmark: patients are drawn from
   single-site "datasets" with **disjoint observed organs** (Pancreas→pancreas, LiTS→liver, KiTS→kidneys)
   plus a full-observation FLARE hub — mirroring the real merge. In the realistic mixed regime OAKG gives
@@ -182,6 +194,16 @@ more datasets (PanTS, K-Prism), this problem *grows* — and no one is addressin
   (above): base concept prompting is strong on liver (0.82) but weak on small organs full-volume →
   per-organ fine-tuning is the next step. Remaining: cross-dataset generalization and comparison against
   K-Prism / GF-Screen / PanTS. Script: `src/scripts/exp_autonomous_organ_sweep.py`.
+
+**Planned next steps.**
+1. **Per-organ fine-tuned concept models** — close the small-organ gap experiment C exposed (same recipe
+   that took liver 0.82 base → 0.964 fine-tuned; the tumor model already reaches 0.938 this way).
+2. **Multi-organ predicted-KG fidelity** — extend B1 beyond pancreas to full multi-organ predicted graphs
+   (needs the autonomous multi-organ prediction masks, now unblocked on the free GPU).
+3. **Cross-dataset segmentation generalization** and a like-for-like comparison against **K-Prism /
+   GF-Screen / PanTS**.
+4. **Query-type false-positive breakdown** — extend A2 to per-clinical-query (largest-tumor, burden, …).
+5. **Paper draft** around the OAKG contribution (benchmark and method framings).
 
 **Target venues.** NeurIPS Datasets & Benchmarks (benchmark framing) or ICLR/AAAI (OAKG-as-method);
 MICCAI / health-AI as strong domain fits.
