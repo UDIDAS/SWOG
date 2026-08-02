@@ -149,14 +149,20 @@ more datasets (PanTS, K-Prism), this problem *grows* — and no one is addressin
   (a single shared organ reads as a perfect match); γ recovers it to **0.78 / 0.14**. At extreme
   disjointness (no shared evidence) no method can retrieve — OAKG returns the honest floor instead of
   fabricating a signal, unlike imputation. Script: `src/scripts/exp_oakg_structured.py`.
-- **B. Framework — B2 result in.** GT-free validation of a new patient, and how it self-evolves. We
-  plant realistic segmentation errors (a volume leak that breaks the volume↔diameter relation) and score
-  plausibility with **no ground truth**. The KG's **joint** model (cohort covariance over 5 organs ×
-  {log-volume, log-diameter}) separates clean-vs-error at **AUROC 0.78 vs 0.66** for a marginal per-organ
-  range check (**+0.12** — it sees inconsistencies the marginal check can't), and it **improves as the KG
-  grows** (0.74→0.79 over N=15→120) then plateaus once the 10-D covariance is well-estimated; the marginal
-  baseline stays flat. Richer phenotypes (13 organs + tumor) would extend the curve. Remaining: **B1**
-  predicted-KG vs GT-KG answer fidelity. Script: `src/scripts/exp_oakg_evolve.py`.
+- **B. Framework — B1 + B2 results in.**
+  - **B1 (predicted-KG vs GT-KG fidelity).** Does the KG built from *autonomous* masks answer like the
+    GT-KG? On 20 paired pancreas cases (mean Dice **0.919**) it matches almost exactly: volume MAPE
+    **4.8%** (r=0.992), diameter MAPE 0.9% (r=0.997), centroid within **1.4 mm**, **95%** size-bin
+    agreement, and the "rank by pancreas size" query has **Spearman 0.986 / top-3 overlap 1.0**. Takeaway:
+    at good segmentation the predicted KG is faithful — **segmentation quality, not KG construction, is
+    the bottleneck**. Script: `src/scripts/exp_kg_fidelity.py`.
+  - **B2 (self-evolving GT-free validation).** Plant realistic segmentation errors (a volume leak that
+    breaks the volume↔diameter relation) and score plausibility with **no ground truth**. The KG's
+    **joint** model (cohort covariance over 5 organs × {log-volume, log-diameter}) separates clean-vs-error
+    at **AUROC 0.78 vs 0.66** for a marginal per-organ range check (**+0.12** — it sees inconsistencies the
+    marginal check can't), and it **improves as the KG grows** (0.74→0.79 over N=15→120) then plateaus once
+    the 10-D covariance is well-estimated; the marginal baseline stays flat. Richer phenotypes (13 organs +
+    tumor) would extend the curve. Script: `src/scripts/exp_oakg_evolve.py`.
 - **C. Segmentation:** autonomous per-structure Dice, cross-dataset generalization, vs the semi-oracle
   ceiling — compared against K-Prism / GF-Screen / PanTS.
 
