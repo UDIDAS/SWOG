@@ -69,10 +69,10 @@ better, ≈0.9+ is strong). Each result depends on **how the model is prompted**
 | Liver organ | **0.964** | 0.974 | 0.01 — the label barely helps |
 | Pancreas organ | 0.642 | 0.75–0.88 | ~0.10 — weaker; organ model in progress |
 | Kidney / spleen | *sweep pending* | ~0.96 | large & distinct — expect strong |
-| **Tumor** (generic model) | **~0.93** | 0.91 *(per-organ box)* | training *closes* the gap |
+| **Tumor** (generic model) | **0.938** | 0.91 *(per-organ box)* | training *beats* the per-organ box |
 | Tumor, *unseen* type | 0.02 | — | fails until that type is in training |
 
-*Tumor Dice as training coverage grew:* **0.37 → 0.909 → 0.9145 → 0.93**
+*Tumor Dice as training coverage grew:* **0.37 → 0.909 → 0.9145 → 0.938**
 (base concept → LiTS+Pancreas → +FLARE → +KiTS). Pools ≈ 20.7k tumor slices, ≈ 16k organ slices.
 
 **Semi-oracle backbone ceilings, per dataset** (fine-tuned SAM3 given the GT box). Here *Split* = how

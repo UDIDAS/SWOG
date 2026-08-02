@@ -84,7 +84,7 @@ tumor_progress = {
     "base concept (no training)":              0.370,
     "v1  LiTS+Pancreas  (8,137 sl)":           0.909,
     "v2  +FLARE         (15,406 sl)":          0.9145,
-    "v3  +KiTS          (20,673 sl)":          0.9268,   # still climbing
+    "v3  +KiTS          (20,673 sl)":          0.9384,   # final (converged; stopped at plateau)
 }
 barh(tumor_progress, "Generic TUMOR model — Dice vs training data", ceiling=None)
 
@@ -95,7 +95,7 @@ ax.bar(pool.keys(), pool.values(), color=['#1f77b4','#ff7f0e','#2ca02c','#9467bd
 for i,(k,v) in enumerate(pool.items()): ax.text(i, v+80, str(v), ha='center', fontsize=9)
 ax.set_ylabel('tumor slices'); ax.set_title('Pooled tumor-slice sources (abdominal CT)', fontweight='bold')
 plt.tight_layout(); plt.show()""")
-md("""**Finding.** Autonomous tumor Dice climbs **0.37 → 0.909 → 0.9145 → 0.9268** as we pool more
+md("""**Finding.** Autonomous tumor Dice climbs **0.37 → 0.909 → 0.9145 → 0.9384** as we pool more
 tumor types (liver, pancreas, then FLARE organs, then kidney via KiTS). **Cross-dataset medical
 training is what makes autonomous tumor segmentation work** — and coverage keeps improving it.""")
 
@@ -147,12 +147,12 @@ md("""## 7. Summary
 | Liver organ | **0.964** (concept) | 0.974 | autonomous ≈ semi-oracle |
 | Pancreas organ | 0.642 (concept) | 0.746 | usable, weaker — fine-tune target |
 | Other organs (spleen/kidney) | *TBD* | 0.95–0.96 | likely fine; measure autonomously |
-| Tumor (generic model) | **0.927** (text, v3) | 0.906 (per-organ box) | training closes the gap |
+| Tumor (generic model) | **0.938** (text, v3) | 0.906 (per-organ box) | training beats the per-organ box |
 | Tumor, unseen type (cross-dataset) | 0.020 | — | must include the type in training |
 
 **Overall.** Foundation-model concept prompting is excellent for large organs and essentially free of
 manual localization; small organs (pancreas) and tumors need medical fine-tuning; and tumor coverage
-must be grown deliberately (LiTS→Pancreas→FLARE→KiTS: 0.909→0.927). Combined, autonomous organs + the
+must be grown deliberately (LiTS→Pancreas→FLARE→KiTS: 0.909→0.938). Combined, autonomous organs + the
 trained tumor model produce organ masks, tumor masks, and the imaging KG for new unlabeled CT.""")
 
 nb = new_notebook(); nb["cells"] = c
