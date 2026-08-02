@@ -117,6 +117,45 @@ term and it joins the graph with **no schema migration**. The graph that stores 
 that **interprets and validates** new, unlabeled scans, and it improves as it grows.
 Interactive: `app/oakg_query_app.py` · runnable demo: `src/notebooks/KG_as_Knowledge_Base.ipynb`.
 
+## Research direction & contribution
+
+**Thesis.** The novelty is *not* the segmentation — that builds on foundation models (SAM3) and is on
+par with, not ahead of, SOTA (K-Prism, GF-Screen). It is the **downstream reasoning layer**: an
+**observability-aware, self-evolving clinical knowledge graph (OAKG)** built end-to-end from
+*label-free* autonomous segmentation.
+
+**The problem we own.** Unifying many imaging datasets into one global KG creates **structural
+partial-observability** — each source annotated different organs (Pancreas→pancreas, LiTS→liver,
+FLARE→5 organs). Standard retrieval either **imputes** the missing values (→ false matches) or does
+**naive masked similarity** (→ a "perfect match" on a single shared feature). As the field unifies ever
+more datasets (PanTS, K-Prism), this problem *grows* — and no one is addressing it.
+
+**Contribution, precisely.**
+1. **OAKG** — *evidence-calibrated* retrieval/reasoning under structural partial-observability:
+   unobserved is never imputed, and matches are weighted by joint observability (**γ**), so answers
+   stay correct as the graph scales. Eliminates the false positives/negatives that imputation and
+   masked-similarity produce on a merged multi-source KG.
+2. **A GT-free, self-evolving pipeline** — autonomous segmentation → ontology-grounded KG that
+   validates each new *unlabeled* patient against the cohort and *improves as it grows*.
+3. **Autonomous CT→KG as infrastructure** (SAM3 concept organs + generic tumor model), positioned on
+   SOTA segmentation rather than competing with it.
+
+**Experimental program.**
+- **A. OAKG (method) — first result in.** Structured multi-source benchmark: patients are drawn from
+  single-site "datasets" with **disjoint observed organs** (Pancreas→pancreas, LiTS→liver, KiTS→kidneys)
+  plus a full-observation FLARE hub — mirroring the real merge. In the realistic mixed regime OAKG gives
+  the **best retrieval (Precision@10 0.78 vs 0.73 mean-impute)** and the **fewest spurious matches (0.14
+  vs 0.17)**. The **γ ablation is decisive**: masked-cosine *without* γ collapses to **0.08 / 0.84**
+  (a single shared organ reads as a perfect match); γ recovers it to **0.78 / 0.14**. At extreme
+  disjointness (no shared evidence) no method can retrieve — OAKG returns the honest floor instead of
+  fabricating a signal, unlike imputation. Script: `src/scripts/exp_oakg_structured.py`.
+- **B. Framework:** predicted-KG vs GT-KG answer fidelity; **self-evolving GT-free validation curve**.
+- **C. Segmentation:** autonomous per-structure Dice, cross-dataset generalization, vs the semi-oracle
+  ceiling — compared against K-Prism / GF-Screen / PanTS.
+
+**Target venues.** NeurIPS Datasets & Benchmarks (benchmark framing) or ICLR/AAAI (OAKG-as-method);
+MICCAI / health-AI as strong domain fits.
+
 ## Repository
 
 ```
