@@ -1,0 +1,99 @@
+{
+  "summary": {
+    "liver": {
+      "autonomous_mean": 0.82,
+      "n": 5,
+      "semi_oracle_ceiling": 0.973,
+      "gap": 0.153
+    },
+    "right kidney": {
+      "autonomous_mean": 0.438,
+      "n": 5,
+      "semi_oracle_ceiling": 0.957,
+      "gap": 0.519
+    },
+    "spleen": {
+      "autonomous_mean": 0.585,
+      "n": 5,
+      "semi_oracle_ceiling": 0.962,
+      "gap": 0.377
+    },
+    "pancreas": {
+      "autonomous_mean": 0.306,
+      "n": 5,
+      "semi_oracle_ceiling": 0.882,
+      "gap": 0.576
+    },
+    "left kidney": {
+      "autonomous_mean": 0.462,
+      "n": 5,
+      "semi_oracle_ceiling": 0.956,
+      "gap": 0.494
+    }
+  },
+  "per_case": {
+    "FLARE23_0217": {
+      "liver": 0.646,
+      "right kidney": 0.327,
+      "spleen": 0.592,
+      "pancreas": 0.356,
+      "left kidney": 0.401
+    },
+    "FLARE23_0491": {
+      "liver": 0.813,
+      "right kidney": 0.622,
+      "spleen": 0.465,
+      "pancreas": 0.281,
+      "left kidney": 0.606
+    },
+    "FLARE23_0583": {
+      "liver": null,
+      "right kidney": null,
+      "spleen": null,
+      "pancreas": null,
+      "left kidney": null
+    },
+    "FLARE23_0747": {
+      "liver": 0.784,
+      "right kidney": 0.199,
+      "spleen": 0.43,
+      "pancreas": 0.199,
+      "left kidney": 0.266
+    },
+    "FLARE23_1047": {
+      "liver": null,
+      "right kidney": null,
+      "spleen": null,
+      "pancreas": null,
+      "left kidney": null
+    },
+    "FLARE23_1283": {
+      "liver": 0.95,
+      "right kidney": 0.658,
+      "spleen": 0.778,
+      "pancreas": 0.278,
+      "left kidney": 0.586
+    },
+    "FLARE23_1391": {
+      "liver": null,
+      "right kidney": null,
+      "spleen": null,
+      "pancreas": null,
+      "left kidney": null
+    },
+    "FLARE23_1517": {
+      "liver": null,
+      "right kidney": null,
+      "spleen": null,
+      "pancreas": null,
+      "left kidney": null
+    },
+    "FLARE23_1823": {
+      "liver": 0.908,
+      "right kidney": 0.384,
+      "spleen": 0.661,
+      "pancreas": 0.415,
+      "left kidney": 0.451
+    }
+  }
+}

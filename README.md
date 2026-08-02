@@ -66,14 +66,29 @@ better, ≈0.9+ is strong). Each result depends on **how the model is prompted**
 
 | Structure | Autonomous *(concept, no label)* | Semi-oracle ceiling *(given GT box)* | Gap → what it means |
 |---|:--:|:--:|---|
-| Liver organ | **0.964** | 0.974 | 0.01 — the label barely helps |
-| Pancreas organ | 0.642 | 0.75–0.88 | ~0.10 — weaker; organ model in progress |
-| Kidney / spleen | *sweep pending* | ~0.96 | large & distinct — expect strong |
+| Liver organ *(fine-tuned, organ slices)* | **0.964** | 0.974 | 0.01 — the label barely helps |
+| Pancreas organ *(fine-tuned, organ slices)* | 0.642 | 0.75–0.88 | ~0.10 — weaker; organ model in progress |
 | **Tumor** (generic model) | **0.938** | 0.91 *(per-organ box)* | training *beats* the per-organ box |
 | Tumor, *unseen* type | 0.02 | — | fails until that type is in training |
 
 *Tumor Dice as training coverage grew:* **0.37 → 0.909 → 0.9145 → 0.938**
 (base concept → LiTS+Pancreas → +FLARE → +KiTS). Pools ≈ 20.7k tumor slices, ≈ 16k organ slices.
+
+**Full-volume autonomous organ sweep (experiment C).** The rows above are best-case (fine-tuned concept,
+organ-containing slices). The conservative deployment number — *base* SAM3 concept prompting over the
+**whole** volume (it must also decide *which* slices contain the organ), on 5 held-out FLARE cases — is:
+
+| Organ | Autonomous (full-vol, base concept) | Semi-oracle ceiling | Gap |
+|---|:--:|:--:|:--:|
+| Liver | **0.82** | 0.973 | 0.15 |
+| Spleen | 0.585 | 0.962 | 0.38 |
+| Left / right kidney | 0.46 / 0.44 | 0.956 | ~0.50 |
+| Pancreas | 0.306 | 0.882 | 0.58 |
+
+*Finding:* base concept prompting holds up full-volume only for the **liver**; small organs collapse and
+need **per-organ fine-tuning** (the same recipe that took liver from 0.82 base → 0.964 fine-tuned, and
+that trains the tumor model). This is the clear next segmentation step. Script:
+`src/scripts/exp_autonomous_organ_sweep.py`.
 
 **Semi-oracle backbone ceilings, per dataset** (fine-tuned SAM3 given the GT box). Here *Split* = how
 train/test were divided, which decides whether the number is honest:
@@ -163,8 +178,10 @@ more datasets (PanTS, K-Prism), this problem *grows* — and no one is addressin
     marginal check can't), and it **improves as the KG grows** (0.74→0.79 over N=15→120) then plateaus once
     the 10-D covariance is well-estimated; the marginal baseline stays flat. Richer phenotypes (13 organs +
     tumor) would extend the curve. Script: `src/scripts/exp_oakg_evolve.py`.
-- **C. Segmentation:** autonomous per-structure Dice, cross-dataset generalization, vs the semi-oracle
-  ceiling — compared against K-Prism / GF-Screen / PanTS.
+- **C. Segmentation — first sweep in.** Full-volume autonomous per-organ Dice vs the semi-oracle ceiling
+  (above): base concept prompting is strong on liver (0.82) but weak on small organs full-volume →
+  per-organ fine-tuning is the next step. Remaining: cross-dataset generalization and comparison against
+  K-Prism / GF-Screen / PanTS. Script: `src/scripts/exp_autonomous_organ_sweep.py`.
 
 **Target venues.** NeurIPS Datasets & Benchmarks (benchmark framing) or ICLR/AAAI (OAKG-as-method);
 MICCAI / health-AI as strong domain fits.
