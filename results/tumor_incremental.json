@@ -1,0 +1,94 @@
+{
+  "stages": [
+    {
+      "name": "s1_lits",
+      "trained_on": [
+        "lits"
+      ],
+      "per_dataset_test": {
+        "pancreas": 0.0041,
+        "lits": 0.6672,
+        "flare": 0.348,
+        "kits": 0.3887
+      },
+      "in_distribution": {
+        "lits": 0.6672
+      },
+      "cross_dataset_heldout": {
+        "pancreas": 0.0041,
+        "flare": 0.348,
+        "kits": 0.3887
+      },
+      "overall_indist": 0.6672
+    },
+    {
+      "name": "s2_pancreas",
+      "trained_on": [
+        "lits",
+        "pancreas"
+      ],
+      "per_dataset_test": {
+        "pancreas": 0.6245,
+        "lits": 0.674,
+        "flare": 0.405,
+        "kits": 0.469
+      },
+      "in_distribution": {
+        "pancreas": 0.6245,
+        "lits": 0.674
+      },
+      "cross_dataset_heldout": {
+        "flare": 0.405,
+        "kits": 0.469
+      },
+      "overall_indist": 0.6493
+    },
+    {
+      "name": "s3_kits",
+      "trained_on": [
+        "kits",
+        "lits",
+        "pancreas"
+      ],
+      "per_dataset_test": {
+        "pancreas": 0.6166,
+        "lits": 0.6589,
+        "flare": 0.5143,
+        "kits": 0.7847
+      },
+      "in_distribution": {
+        "pancreas": 0.6166,
+        "lits": 0.6589,
+        "kits": 0.7847
+      },
+      "cross_dataset_heldout": {
+        "flare": 0.5143
+      },
+      "overall_indist": 0.6867
+    },
+    {
+      "name": "s4_flare",
+      "trained_on": [
+        "flare",
+        "kits",
+        "lits",
+        "pancreas"
+      ],
+      "per_dataset_test": {
+        "pancreas": 0.6476,
+        "lits": 0.6712,
+        "flare": 0.7077,
+        "kits": 0.7885
+      },
+      "in_distribution": {
+        "pancreas": 0.6476,
+        "lits": 0.6712,
+        "flare": 0.7077,
+        "kits": 0.7885
+      },
+      "cross_dataset_heldout": {},
+      "overall_indist": 0.7037
+    }
+  ],
+  "epochs": 14
+}

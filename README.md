@@ -35,7 +35,7 @@ gives us 100 fully-paired cases to actually train organ segmentation on.
 
 | Model | Trained on | How | Tested on |
 |---|---|---|---|
-| **Generic tumor model** (one model, prompt `"tumor"`) | pooled tumor slices: LiTS + Pancreas + KiTS + FLARE (~20.7k) | SAM3 fine-tune, no box | held-out **patients** per dataset → **≈0.85** ([§5](#5-segmentation-results--the-generic-tumor-model)) |
+| **Generic tumor model** (one model, prompt `"tumor"`) | pooled tumor slices: LiTS + Pancreas + KiTS + FLARE (~20.7k) | SAM3 fine-tune, no box | held-out **patients** per dataset → **≈0.70** (strict); cross-dataset curve 0.35→0.51 ([§5](#5-segmentation-results--the-generic-tumor-model)) |
 | **Organ models** — fine-tuned | FLARE-Task2 (100 image+label pairs) | SAM3 + GT box (semi-oracle) | 20 held-out **patients** → 0.92–0.99 ([§4a](#4a-organ-ceiling--flare-task2-models-patient-level-test-the-honest-organ-numbers)) |
 | **Organ models** — autonomous | *no training* (base SAM3 `"liver"` prompt) | concept prompt, no box | 5 held-out FLARE23 CTs → liver 0.82; small organs need fine-tuning (§4b) |
 
@@ -198,26 +198,38 @@ Fine-tuned SAM3, semi-oracle (GT-box), **case-level** test. These are the `sam3_
 | MSD Pancreas | 2,537 | case-level |
 | **total** | **20,673** | → train / val / test = **14,589 / 1,615 / 4,469** |
 
-### 5a. Headline: validation vs. honest per-dataset test
-- **Validation Dice (during training) = 0.938.** This is the *slice-level* validation split used to pick
-  the model — **slightly optimistic** (a val slice can share a patient with a train slice).
-- **Held-out TEST Dice (never used for selection)** — the numbers to trust. Autonomous (`"tumor"`, no
-  box), per source dataset (`eval_tumor_per_dataset.py`):
+### 5a. Two results — the cross-dataset curve, and the deployment model (both strictly patient-level)
+A single incremental run (`train_tumor_incremental.py`) — LiTS → +Pancreas → +KiTS (FLARE held out) →
++FLARE — with **val AND test held out by whole patient** (0 patient overlap, verified). It produces both:
 
-| Dataset | Autonomous **test** Dice | Split |
-|---|:--:|---|
-| LiTS | **0.840** † | **case-level** (patient-held-out) |
-| KiTS | **0.864** | case-level |
-| Pancreas | **0.856** | case-level |
-| FLARE | **0.833** | case-level |
-| **mean** | **≈0.85** | all patient/case-level |
+**(i) Cross-dataset generalization — held-out FLARE, never trained until the last stage:**
 
-† LiTS tumor is scored by the **dedicated patient-level LiTS model** (`lits_sam3_v3_caselevel_tumor` — the
-131 volumes split **by patient**, seed 42, the same model delivered as per-patient reconstructions). Every
-tumor number here is **strictly patient/case-level** (whole patients held out).
+| Trained on | FLARE Dice (unseen dataset) |
+|---|:--:|
+| LiTS only | 0.348 |
+| + Pancreas | 0.405 |
+| + KiTS | **0.514** |
+
+*Generalization to a completely unseen dataset improves monotonically with coverage — the rigorous version
+of the old "0.02 on unseen FLARE" anecdote.*
+
+**(ii) Deployment model — trained on all four, per-dataset patient-level test:**
+
+| Dataset | Autonomous **test** Dice |
+|---|:--:|
+| KiTS | 0.789 |
+| FLARE | 0.708 |
+| LiTS | 0.671 |
+| Pancreas | 0.648 |
+| **overall** | **0.704** |
+
+*Honesty note.* This **≈0.70** is the **strictly patient-level** number (val + test held out by patient,
+14 epochs/stage). An earlier **≈0.85** was optimistic — it mixed a longer 25-epoch model with a
+slice-level LiTS split. **0.70 is the number to trust**; a longer training budget would likely lift the
+deployment model (the cross-dataset curve is unaffected — it is the headline result).
 
 *Meaning:* on genuinely unseen **patients** the autonomous tumor model scores **≈0.83–0.86** depending on
-dataset (KiTS highest, FLARE lowest), **≈0.85 overall**. (The 0.938 sometimes quoted is a *validation*
+dataset (KiTS highest, Pancreas lowest), **≈0.70 overall** at the strict patient-level. (The 0.938 sometimes quoted is a *validation*
 number, not a held-out patient test — we don't report it as the result.)
 
 ### 5b. Coverage grows the model
@@ -339,7 +351,7 @@ Covered in §4b: with no training and no labels, base SAM3 segments the **liver*
 | **B** | Is an AI-built graph as good as a doctor-built one? | Yes — volumes within ~5%, identical query rankings |
 | **C** | Does bad-mask detection improve as the graph grows? | Yes — 0.78 vs 0.66 baseline, and it climbs with size |
 | **D** | Can it segment organs with no labels? | Liver yes (0.82); small organs need fine-tuning |
-| **Tumor** | How good is the tumor model on unseen patients? | ≈0.85, all patient-level (LiTS 0.84 / KiTS 0.86 / Pancreas 0.86 / FLARE 0.83) |
+| **Tumor** | How good is the tumor model on unseen patients? | ≈0.70 strict patient-level (KiTS 0.79 / FLARE 0.71 / LiTS 0.67 / Pancreas 0.65); cross-dataset 0.35→0.51 |
 
 ---
 
@@ -349,7 +361,7 @@ Covered in §4b: with no training and no labels, base SAM3 segments the **liver*
    Adding more complex CTs **with tumors** (varied pathology, scanners, sizes) is the most direct win.
    Needs image+label pairs → a scoped, storage-aware download (candidate sources: more FLARE23 cases that
    ship images, PanTS for pancreas).
-2. **Per-organ fine-tuned concept models** — close the small-organ gap Experiment D exposed (per-organ fine-tuning is the proven fix; the tumor model already reaches ≈0.85 patient-level this way).
+2. **Per-organ fine-tuned concept models** — close the small-organ gap Experiment D exposed (per-organ fine-tuning is the proven fix, the same recipe that trains the tumor model).
 3. **Multi-organ predicted-KG fidelity** — extend Experiment B beyond pancreas to full multi-organ predicted graphs.
 4. **Cross-dataset segmentation generalization** + like-for-like comparison vs **K-Prism / GF-Screen / PanTS**.
 5. **Query-type false-positive breakdown** — extend Experiment A to per-clinical-query (largest-tumor, burden, …).
