@@ -44,12 +44,12 @@ How many **patients** and **CT images** we are dealing with, per dataset:
 |---|---|---|---|---|---|
 | **Pancreas** (MSD Task07) | 281 | 281 train + 146 test | 281 | ✅ per patient | pancreas + pancreatic tumor |
 | **LiTS** | 131 | 131 | 131 | ✅ per patient | liver + liver tumor |
-| **FLARE22** (current KG) | 100 | 100 | 100 | ❌ organs only | 5 organs, no tumor |
-| **FLARE23** (`Metadata.zip`) | 1,312 organ (of 2,200 labeled) | **950** | **2,200** | ⚠️ partial (separate cases) | 13 organs + tumor (14) |
+| **FLARE23** (current KG) | **1,312** | (labels-only) | 1,312 | ✅ 608 patients | 13 organs + tumor (liver/kidney/pancreas) |
 
-*Sources:* MSD Pancreas (`imagesTr/labelsTr/imagesTs`), LiTS challenge (131 volumes), FLARE22 Task2
-(100 labeled), FLARE23 in `Metadata.zip` (950 images + 2,200 masks). The KG columns are the patients
-we actually turned into KG records. Each training set's patients become the **train KG**.""")
+*Sources:* MSD Pancreas (`imagesTr/labelsTr/imagesTs`), LiTS challenge (131 volumes), and the **full
+FLARE23** label set — **1,312 patients, 13 organs + tumor**. This is the single FLARE we use (the earlier
+100-case FLARE22 "demo" has been retired). The KG columns are the patients we actually turned into KG
+records. Each training set's patients become the **train KG**.""")
 
 co("""base = json.load(open("kg/data/corpus_perpatient.json"))["records"]
 from collections import Counter

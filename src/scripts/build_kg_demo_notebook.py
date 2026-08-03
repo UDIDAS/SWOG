@@ -33,7 +33,7 @@ imaging_kg.ttl  +  unified_mmkg.json         ── the persisted KG
 patient-level queries                        ── explainable reasoning
 ```
 
-Datasets: **Pancreas (MSD), LiTS, FLARE** — 512 per-patient studies.""")
+Datasets: **Pancreas (MSD) 281 · LiTS 131 · FLARE23 1,312** — **1,724 per-patient studies**.""")
 
 md("## 0 · Setup")
 code("""import sys, os, json, subprocess
@@ -176,12 +176,11 @@ print(f"KG loaded: {len(kg.patients)} patients, {len(kg.nodes)} nodes")
 res = QUERIES(kg)
 pd.DataFrame([{"query": k, "count": (len(v) if isinstance(v, list) else v)} for k, v in res.items()])""")
 
-md("""> **Reading the results (data honesty).** Tumor queries resolve for **Pancreas** and **LiTS** patients
-> (per-patient tumor annotations). `cross_organ_tumor = 0` is **expected, not a bug**: the per-patient
-> **FLARE (FLARE22) set is organs-only — no tumor label** — so its 100 patients contribute organ/observability
-> facts but no lesions. (Cross-organ tumor is a property of the *slice-level* FLARE23 reconstruction, which is
-> a separate, non-patient-level graph.) So patient-level *tumor* reasoning currently covers the 412
-> tumor-annotated patients; FLARE contributes the multi-organ coverage.""")
+md("""> **Reading the results (data honesty).** Tumor queries resolve across all three datasets:
+> **Pancreas** and **LiTS** carry per-patient tumor annotations, and the full **FLARE23** set (1,312
+> patients) adds tumor on **liver, kidney, and pancreas** for **608** patients, plus 13-organ coverage
+> for observability. So patient-level *tumor* reasoning now spans Pancreas + LiTS + FLARE23, and FLARE23
+> also provides the multi-organ (up to 13) coverage that drives the observability-aware retrieval.""")
 
 md("""## 8 · The SWOG use-case — Q1: *Whipple surgery, lymph-node recurrence*
 
@@ -217,7 +216,7 @@ md("""## Summary
 
 nb["cells"] = C
 nb.metadata["kernelspec"] = {"name": "python3", "display_name": "Python 3", "language": "python"}
-path = "/home/ud3d4/Desktop/SWOG/notebooks/SWOG_KG_Pipeline_Demo.ipynb"
+path = "/home/ud3d4/Desktop/SWOG/src/notebooks/SWOG_KG_Pipeline_Demo.ipynb"
 import os
 os.makedirs(os.path.dirname(path), exist_ok=True)
 nbf.write(nb, path)
