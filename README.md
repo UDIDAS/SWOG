@@ -35,7 +35,7 @@ gives us 100 fully-paired cases to actually train organ segmentation on.
 
 | Model | Trained on | How | Tested on |
 |---|---|---|---|
-| **Generic tumor model** (one model, prompt `"tumor"`) | pooled tumor slices: LiTS + Pancreas + KiTS + FLARE (~20.7k) | SAM3 fine-tune, no box | held-out **patients** per dataset → **≈0.86** ([§5](#5-segmentation-results--the-generic-tumor-model)) |
+| **Generic tumor model** (one model, prompt `"tumor"`) | pooled tumor slices: LiTS + Pancreas + KiTS + FLARE (~20.7k) | SAM3 fine-tune, no box | held-out **patients** per dataset → **≈0.85** ([§5](#5-segmentation-results--the-generic-tumor-model)) |
 | **Organ models** — fine-tuned | FLARE-Task2 (100 image+label pairs) | SAM3 + GT box (semi-oracle) | 20 held-out **patients** → 0.92–0.99 ([§4a](#4a-organ-ceiling--flare-task2-models-patient-level-test-the-honest-organ-numbers)) |
 | **Organ models** — autonomous | *no training* (base SAM3 `"liver"` prompt) | concept prompt, no box | 5 held-out FLARE23 CTs → liver 0.82; small organs need fine-tuning (§4b) |
 
@@ -95,7 +95,7 @@ patients** — the earlier 100-case "FLARE22 demo" has been retired everywhere.
 
 | Dataset | What it labels | Size | How we split train/test | Used for |
 |---|---|---|---|---|
-| **LiTS** (Liver Tumor Seg.) | liver + liver tumor | 131 volumes (pre-sliced, no patient IDs) | **slice-level** (no IDs available) | tumor pool (5,600 tumor slices); LiTS tumor delivery model |
+| **LiTS** (Liver Tumor Seg.) | liver + liver tumor | 131 per-patient volumes | **case-level** for the dedicated LiTS model (patient-held-out); slice-level only inside the *pooled* tumor model | tumor pool (5,600 slices); dedicated case-level LiTS tumor model |
 | **MSD Pancreas** (Decathlon Task07) | pancreas + pancreatic tumor | 281 labeled | **case-level** | tumor pool (2,537); pancreas organ+tumor delivery models |
 | **KiTS23** (Kidney Tumor Seg. 2023) | kidney + kidney tumor | 489 cases | **case-level** | tumor pool (5,267) |
 | **FLARE23** (full) | **13 organs + tumor** | **1,312 patients** (labels-only), 608 with tumor (liver/kidney/pancreas) | **case-level** | **the knowledge graph**; OAKG experiments **A and C**; tumor pool (7,269 FLARE tumor slices) |
@@ -190,7 +190,7 @@ Fine-tuned SAM3, semi-oracle (GT-box), **case-level** test. These are the `sam3_
 
 | Source | Tumor slices | Split type |
 |---|:--:|---|
-| LiTS | 5,600 | slice-level *(no patient IDs)* |
+| LiTS | 5,600 | slice-level in the *pooled* model *(honest patient-level LiTS = 0.840, see §5a †)* |
 | KiTS23 | 5,267 | case-level |
 | FLARE23 | 7,269 | case-level |
 | MSD Pancreas | 2,537 | case-level |
@@ -202,17 +202,24 @@ Fine-tuned SAM3, semi-oracle (GT-box), **case-level** test. These are the `sam3_
 - **Held-out TEST Dice (never used for selection)** — the numbers to trust. Autonomous (`"tumor"`, no
   box), per source dataset (`eval_tumor_per_dataset.py`):
 
-| Dataset | Autonomous **test** Dice | # test slices | Split |
-|---|:--:|:--:|---|
-| LiTS | **0.897** | 1,120 | slice-level |
-| KiTS | **0.864** | 1,122 | case-level |
-| Pancreas | **0.856** | 465 | case-level |
-| FLARE | **0.833** | 1,762 | case-level |
-| **mean** | **≈0.86** | 4,469 | — |
+| Dataset | Autonomous **test** Dice | Split |
+|---|:--:|---|
+| LiTS | **0.840** † | **case-level** (patient-held-out) |
+| KiTS | **0.864** | case-level |
+| Pancreas | **0.856** | case-level |
+| FLARE | **0.833** | case-level |
+| **mean** | **≈0.85** | all patient/case-level |
 
-*Meaning:* on genuinely unseen patients the autonomous tumor model scores **≈0.83–0.90** depending on
-dataset (LiTS highest, FLARE lowest). The often-quoted **0.938** is the validation number; **≈0.86 is the
-honest cross-dataset test performance.**
+† **LiTS honesty note.** The *pooled* model's own LiTS split was slice-level, which reads **0.897** —
+inflated by adjacent-slice leakage (neighbouring slices of one patient in both train and test). The
+**honest patient-held-out** LiTS number is **0.840**, from a dedicated case-level LiTS tumor model
+(`lits_sam3_v3_caselevel_tumor`, the 131 raw volumes split **by patient**, seed 42) — the same model whose
+per-patient reconstructions were delivered to collaborators. The ~0.07 drop (0.910/0.897 slice → 0.840
+patient) *is* the leakage the slice-level split hid. **All four datasets are now reported case/patient-level.**
+
+*Meaning:* on genuinely unseen **patients** the autonomous tumor model scores **≈0.83–0.86** depending on
+dataset (KiTS highest, FLARE lowest). The often-quoted **0.938** is the *validation* number (slice-level,
+optimistic); **≈0.85 is the honest patient-level test performance.**
 
 ### 5b. Coverage grows the model
 Validation Dice as the pool grew: **0.37** (base, no training) → **0.909** (v1: LiTS+Pancreas) →
@@ -326,7 +333,7 @@ Covered in §4b: with no training and no labels, base SAM3 segments the **liver*
 | **B** | Is an AI-built graph as good as a doctor-built one? | Yes — volumes within ~5%, identical query rankings |
 | **C** | Does bad-mask detection improve as the graph grows? | Yes — 0.78 vs 0.66 baseline, and it climbs with size |
 | **D** | Can it segment organs with no labels? | Liver yes (0.82); small organs need fine-tuning |
-| **Tumor** | How good is the tumor model on unseen patients? | ≈0.86 (LiTS 0.90 / KiTS 0.86 / Pancreas 0.86 / FLARE 0.83) |
+| **Tumor** | How good is the tumor model on unseen patients? | ≈0.85, all patient-level (LiTS 0.84 / KiTS 0.86 / Pancreas 0.86 / FLARE 0.83) |
 
 ---
 
