@@ -230,14 +230,14 @@ universally; coverage must be trained in.
 
 ## 6. The knowledge graph
 
-**The graph spans all three training datasets — 1,724 patients:** **FLARE23** (1,312, 13 organs + tumor),
-**MSD Pancreas** (281, pancreas + tumor), and **LiTS** (131, liver + tumor). FLARE23 is the largest
-component and the richest (up to 13 organs per patient); Pancreas and LiTS add organ+tumor detail for
-their sites. (`corpus_perpatient.json` is the unified cohort; `imaging_kg_flare23.ttl` is the FLARE23
-component in RDF/Turtle.) Each patient is a subgraph `ImagingCase → Organ / Lesion`, phenotypes as
-**direct triples** (`gt_volume_cm3`, `gt_max_diameter_mm`, `gt_centroid_mm`, `tumorBurden`,
-`lesionMultiplicity`, `lesion_count`), every entity grounded to **SNOMED / LOINC / ICD / MeSH** via a live
-mapper — no hard-coded codes; open-world.
+**The graph spans all four training datasets — 2,113 patients:** **FLARE23** (1,312, 13 organs + tumor),
+**KiTS23** (389, kidney + tumor), **MSD Pancreas** (281, pancreas + tumor), and **LiTS** (131, liver +
+tumor). Because organs are pooled across sources, each organ's evidence compounds — **KiTS enriches the
+kidney priors, LiTS the liver, MSD the pancreas, FLARE all of them.** (`corpus_perpatient.json` is the
+unified cohort; `imaging_kg_flare23.ttl` is the FLARE23 component in RDF/Turtle.) Each patient is a
+subgraph `ImagingCase → Organ / Lesion`, phenotypes as **direct triples** (`gt_volume_cm3`,
+`gt_max_diameter_mm`, `gt_centroid_mm`, `tumorBurden`, `lesionMultiplicity`, `lesion_count`), every entity
+grounded to **SNOMED / LOINC / ICD / MeSH** via a live mapper — no hard-coded codes; open-world.
 
 **Used as a knowledge base, not a store:**
 - **Retrieval** — SPARQL ("largest kidney tumors", "tumors per organ") **and observability-aware
@@ -248,10 +248,17 @@ mapper — no hard-coded codes; open-world.
 - **GT-free validation of a new patient** — each autonomously-segmented phenotype is scored against the
   cohort distribution (percentile / z-score / joint covariance); an implausible value (e.g. a 4,900 cc
   "liver") is flagged as a segmentation error — **no ground truth required**.
+- **KG-guided segmentation (closing the loop)** — the KG doesn't just validate; it **helps** segmentation.
+  From the cohort it builds an **anatomical atlas** (`kg/data/kg_atlas.json`) of per-organ plausible size,
+  diameter, and location — pooled across every dataset that observes that organ. Those priors (a) **repair**
+  autonomous masks (drop spurious components, keep the plausible one, enforce tumor-⊂-organ / kidney-pair
+  rules) and (b) **guide the prompt** to where an organ typically sits — directly targeting the small-organ
+  full-volume weakness (§4b). This makes the self-evolving property **bidirectional**: segmentation feeds
+  the KG, and the growing KG sharpens the priors that improve the next segmentation.
 
 **How it evolves:** `new CT → autonomous segmentation → phenotypes → GT-free plausibility check (admit /
-flag) → admitted patient joins the global query KG → cohort model sharpens → the NEXT patient is validated
-better.` Interactive: `app/oakg_query_app.py` (now over the 1,312-patient FLARE23 + Pancreas + LiTS) ·
+flag) → admitted patient joins the global query KG → cohort model + atlas sharpen → the NEXT patient is
+validated AND segmented better.` Interactive: `app/oakg_query_app.py` (over all four datasets) ·
 runnable demo: `src/notebooks/KG_as_Knowledge_Base.ipynb`.
 
 ---
