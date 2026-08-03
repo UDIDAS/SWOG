@@ -30,8 +30,12 @@ POOLS = {"tumor_pool": "/scratch/ud3d4/acm_data/tumor_pool",           # LiTS + 
          "kits_tumor_pool": "/scratch/ud3d4/acm_data/kits_tumor_pool"}
 CKPT_DIR = "/scratch/ud3d4/acm_data/tumor_pool"
 OUT = "/home/ud3d4/Desktop/SWOG/results/tumor_incremental.json"
-STAGES = [("v1", {"lits", "pancreas"}), ("v2", {"lits", "pancreas", "flare"}),
-          ("v3", {"lits", "pancreas", "flare", "kits"})]
+# 4 stages: FLARE is HELD OUT (never trained) for s1-s3 -> its test set is the cross-dataset generalization
+# probe; added at s4 for the full deployment model. FLARE's TEST patients stay held out throughout.
+STAGES = [("s1_lits", {"lits"}),
+          ("s2_pancreas", {"lits", "pancreas"}),
+          ("s3_kits", {"lits", "pancreas", "kits"}),          # <- headline cross-dataset number vs FLARE
+          ("s4_flare", {"lits", "pancreas", "kits", "flare"})]  # <- full deployment model
 EPOCHS, PATIENCE = 14, 5
 
 
@@ -110,20 +114,23 @@ def main():
             port = find_free_port()
             mp.spawn(train_worker_v3, args=(WORLD_SIZE, port, cfg, X[tr_s], Y[tr_s], X[va_s], Y[va_s]),
                      nprocs=WORLD_SIZE, join=True)
-        # eval on EVERY dataset's fixed patient-level test set (trained ones = in-dist, others = cross-dataset)
+        # eval on EVERY dataset's fixed patient-level test set (trained = in-dist, untrained = cross-dataset)
         per = eval_per_dataset(ckpt, X, Y, M, te)
-        trained = {d: per.get(d) for d in dss}
-        overall = round(float(np.mean([v for d, v in per.items() if d in dss])), 4)
-        print(f"  {name} per-dataset test Dice: {per}", flush=True)
-        print(f"  {name} overall (trained datasets): {overall}", flush=True)
+        indist = {d: v for d, v in per.items() if d in dss}
+        cross = {d: v for d, v in per.items() if d not in dss}     # held-out datasets = cross-dataset probe
+        overall = round(float(np.mean(list(indist.values()))), 4)
+        print(f"  {name} IN-DIST: {indist}  overall={overall}", flush=True)
+        print(f"  {name} CROSS-DATASET (held-out): {cross}", flush=True)
         results["stages"].append({"name": name, "trained_on": sorted(dss), "per_dataset_test": per,
-                                  "overall_trained": overall})
+                                  "in_distribution": indist, "cross_dataset_heldout": cross,
+                                  "overall_indist": overall})
         json.dump(results, open(OUT, "w"), indent=2)
         warm = ckpt
-    # canonicalize final
+    # canonicalize the final (all-4-datasets) stage as the deployment model
     import shutil
-    shutil.copy(f"{CKPT_DIR}/sam3_tumor_v3_patientlevel.pth", f"{CKPT_DIR}/sam3_tumor_generic.pth")
-    print("\ncanonicalized v3 patient-level -> sam3_tumor_generic.pth", flush=True)
+    final_ckpt = f"{CKPT_DIR}/sam3_tumor_{STAGES[-1][0]}_patientlevel.pth"
+    shutil.copy(final_ckpt, f"{CKPT_DIR}/sam3_tumor_generic.pth")
+    print(f"\ncanonicalized {STAGES[-1][0]} (all 4 datasets, patient-level) -> sam3_tumor_generic.pth", flush=True)
     print("-> " + OUT, flush=True)
 
 
