@@ -2,44 +2,31 @@
 
 **Aim.** Given a **new abdominal CT with no annotations**, automatically segment **liver, kidney, and
 pancreas + their tumors**, turn them into an **ontology-grounded knowledge graph**, and use that KG to
-retrieve similar patients, validate new cases, and grow over time — a knowledge base that keeps
-improving as patients arrive.
+retrieve similar patients, validate new cases without ground truth, and grow over time — a knowledge base
+that keeps improving as patients arrive.
+
+> **Reading this README.** Every score below is stated with **what it was trained on**, **what it was
+> tested on**, and **what the number means**. Two short reference sections make that unambiguous:
+> [§2 Datasets & splits](#2-datasets--how-each-is-split) and [§3 How to read every score](#3-how-to-read-every-score).
 
 ---
 
-## Why the current method — how we got here (results-driven)
+## 1. How we got here (results-driven)
 
-**1. The blocker: our models needed ground truth to run.**
-We began by reproducing AUSAM (SAM1 + prompts derived from the GT mask). It gave strong Dice
-(pancreas organ ~0.83, tumor ~0.91), but **every prediction required a ground-truth box/point** — so it
-could not touch a *new, unlabeled* scan. That defeats the whole "new patient → KG" goal.
-
-**2. Decision → switch the backbone to SAM3.** SAM3 adds **concept/text prompting** (segment `"liver"`
-with no box). On a held-out CT this gave **liver Dice 0.964 autonomous vs 0.974 semi-oracle** — a
-0.01 gap. *Result: organ segmentation without any label is real.*
-
-**3. Concept prompting fails on tumors (0.37).** Foundation models don't know medical tumors. *Decision
-→ train one generic tumor model* (prompt `"tumor"`, no box) on **pooled** abdominal-CT tumors. *Result:
-0.37 → 0.93* as we pooled LiTS → +Pancreas → +FLARE → +KiTS.
-
-**4. It doesn't transfer to unseen tumor types (measured: 0.02 cross-dataset).** The liver+pancreas
-model scored **0.02** on unseen kidney tumors. *So coverage must be trained in* — which is exactly why
-the pool grows, and each dataset lifts it. Not a caveat; the design principle.
-
-**5. Scope → liver / kidney / pancreas.** These are the three organs with matching tumor datasets
-(LiTS→liver, KiTS→kidney, Pancreas→pancreas), with **FLARE** for cross-dataset diversity. Organs get
-the *same* recipe as tumors (a generic organ model). Everything is tested on **held-out test sets with
-no GT**.
-
-**6. The KG is a living knowledge base, not a dump.** RDF/OWL, **direct triples**
-(`lesion —tumorBurden→ "high"`), grounded to **SNOMED/LOINC/ICD/MeSH** via a live mapper (no hard-coded
-codes), open-world. For a new (GT-free) patient it **validates** each phenotype against the cohort
-distribution and **retrieves** similar cases — and every admitted patient sharpens the next validation.
-
----
+1. **The blocker.** We first reproduced AUSAM (SAM1 + prompts derived from the GT mask). Strong Dice, but
+   **every prediction needed a ground-truth box/point** — so it could not touch a *new, unlabeled* scan.
+2. **Switch backbone → SAM3.** SAM3 adds **concept/text prompting** (segment `"liver"` with no box). On a
+   held-out CT this gave liver Dice **0.964 autonomous vs 0.974 semi-oracle** — organ segmentation without
+   a label is real.
+3. **Concept prompting fails on tumors (0.27–0.37).** Foundation models don't know medical tumors → we
+   **train one generic tumor model** (`"tumor"`, no box) on **pooled** abdominal-CT tumors.
+4. **It doesn't transfer to unseen tumor types (0.02).** A liver+pancreas tumor model scored 0.02 on
+   unseen kidney tumors → **coverage must be trained in**; each dataset added lifts it.
+5. **Scope → liver / kidney / pancreas** — the three organs with matching tumor datasets (LiTS→liver,
+   KiTS→kidney, MSD→pancreas), plus **FLARE23** for multi-organ diversity and the knowledge graph.
+6. **The KG is a living knowledge base**, not a dump — see [§6](#6-the-knowledge-graph).
 
 ## The pipeline today
-
 ```
 new CT (no labels)
   → organs:  SAM3 concept prompt  ("liver"/"kidney"/"pancreas")      [autonomous]
@@ -47,180 +34,276 @@ new CT (no labels)
   → masks → phenotypes (volume, diameter, centroid, burden, …)
   → ontology-grounded KG  →  retrieval · GT-free validation · growth
 ```
-Segmentation: `infer_ensemble.py`. KG build: `build_flare23_enriched_kg.py` + `kg_grounding.py`.
-Interactive KG: `app/oakg_query_app.py`. Walkthroughs: `src/notebooks/`.
+Segmentation entry point: `src/scripts/infer_ensemble.py`. KG build: `build_flare23_enriched_kg.py` +
+`kg_grounding.py`. Interactive KG: `app/oakg_query_app.py`. Walkthroughs: `src/notebooks/`.
 
-## Segmentation results (held-out, honest)
+---
 
-**How to read these.** *Dice* = overlap between the predicted and ground-truth mask (0–1; higher is
-better, ≈0.9+ is strong). Each result depends on **how the model is prompted**:
+## 2. Datasets & how each is split
 
-- **Autonomous (concept prompt)** — the model gets *only the image + a word* (e.g. `"liver"`), no
-  annotation. **This is the real deployment number** — what runs on a new, unlabeled scan.
-- **Semi-oracle ceiling (GT box)** — the model is *handed a bounding box drawn from the ground-truth
-  mask* (told *where* the structure is). It's an **upper bound**: needs a label, so it can't run on new
-  data — it only shows how much a label would be worth.
-- The **gap** between the two columns = the cost of working without annotations.
+Five datasets, each with a distinct role. **There is exactly one FLARE**: the **full FLARE23, 1,312
+patients** — the earlier 100-case "FLARE22 demo" has been retired everywhere.
 
-**Autonomous vs. ceiling, per structure:**
+| Dataset | What it labels | Size | How we split train/test | Used for |
+|---|---|---|---|---|
+| **LiTS** (Liver Tumor Seg.) | liver + liver tumor | 131 volumes (pre-sliced, no patient IDs) | **slice-level** (no IDs available) | tumor pool (5,600 tumor slices); LiTS tumor delivery model |
+| **MSD Pancreas** (Decathlon Task07) | pancreas + pancreatic tumor | 281 labeled | **case-level** | tumor pool (2,537); pancreas organ+tumor delivery models |
+| **KiTS23** (Kidney Tumor Seg. 2023) | kidney + kidney tumor | 489 cases | **case-level** | tumor pool (5,267) |
+| **FLARE23** (full) | **13 organs + tumor** | **1,312 patients** (labels-only), 608 with tumor (liver/kidney/pancreas) | **case-level** | **the knowledge graph**; OAKG experiments **A2, B2**; tumor pool (7,269 FLARE tumor slices) |
+| **FLARE-Task2 2024** | 5 organs (no tumor) | 100 volumes (50 train_gt + 50 public-val) | **patient-level 70/10/20** (seed 42) | the **organ segmentation models** (semi-oracle ceilings); pancreas cases for **B1** |
 
-| Structure | Autonomous *(concept, no label)* | Semi-oracle ceiling *(given GT box)* | Gap → what it means |
-|---|:--:|:--:|---|
-| Liver organ *(fine-tuned, organ slices)* | **0.964** | 0.974 | 0.01 — the label barely helps |
-| Pancreas organ *(fine-tuned, organ slices)* | 0.642 | 0.75–0.88 | ~0.10 — weaker; organ model in progress |
-| **Tumor** (generic model) | **0.938** | 0.91 *(per-organ box)* | training *beats* the per-organ box |
-| Tumor, *unseen* type | 0.02 | — | fails until that type is in training |
+*Why FLARE appears twice:* **FLARE23** (1,312 patients, labels-only) is what the **KG and OAKG paper
+experiments** use. **FLARE-Task2 2024** (100 volumes *with images*) is what the **organ segmentation
+models were trained on**, because it ships per-patient CT volumes suitable for training.
 
-*Tumor Dice as training coverage grew:* **0.37 → 0.909 → 0.9145 → 0.938**
-(base concept → LiTS+Pancreas → +FLARE → +KiTS). Pools ≈ 20.7k tumor slices, ≈ 16k organ slices.
+---
 
-**Full-volume autonomous organ sweep (experiment C).** The rows above are best-case (fine-tuned concept,
-organ-containing slices). The conservative deployment number — *base* SAM3 concept prompting over the
-**whole** volume (it must also decide *which* slices contain the organ), on 5 held-out FLARE cases — is:
+## 3. How to read every score
 
-| Organ | Autonomous (full-vol, base concept) | Semi-oracle ceiling | Gap |
+**Metric — Dice.** Overlap between predicted and ground-truth mask, 0–1; higher is better, ≈0.9+ is
+strong. "3D Dice" = computed over the whole volume per patient; "slice Dice" = per 2-D slice.
+
+**Prompt regime — how the model is told *where* to look (this changes the number a lot):**
+- **Autonomous (concept prompt)** — the model gets *only the image + a word* (e.g. `"liver"`), **no
+  annotation**. This is the **real deployment number** — what runs on a new, unlabeled scan.
+- **Semi-oracle (GT box)** — the model is handed a bounding box drawn from the ground-truth mask (told
+  *where* the structure is). An **upper bound / ceiling**: it needs a label, so it *cannot* run on new
+  data; it only shows how much a label would be worth. The gap to autonomous = the cost of no labels.
+
+**Split — how train/test were divided (this decides whether a number is honest):**
+- **case-level / patient-level** = *whole patients* held out → **honest** (predicts performance on a
+  brand-new patient). "patient-level 3D" is the strongest form.
+- **slice-level** = random 2-D slices held out → a patient's near-identical neighbouring slices can land
+  in *both* train and test (**data leakage → inflated**). Used only where a dataset has no patient IDs.
+
+**Validation vs. Test.** *Validation* Dice is measured on the split used to pick the model during
+training (can be slightly optimistic). *Test* Dice is a held-out set never used for model selection — the
+number to trust. Where both exist we report both and say which is which.
+
+**Retrieval / KG metrics** (used in §7): **Precision@k** = fraction of the top-k retrieved that are true
+matches; **spurious-match rate** = fraction of retrieved that share ≤1 organ yet aren't true neighbours
+(the false positive OAKG targets); **AUROC** = separability of two groups (0.5 = chance, 1.0 = perfect);
+**MAPE** = mean absolute % error; **Pearson r** / **Spearman ρ** = linear / rank correlation.
+
+---
+
+## 4. Segmentation results — organs
+
+### 4a. Organ ceiling — FLARE-Task2 models, patient-level test *(the honest organ numbers)*
+**Trained on** ~70 FLARE-Task2 patients · **tested on** 19–20 **held-out patients** (patient-level, seed
+42) · **semi-oracle** (GT-box) · **3-D Dice**. Script: `run_flare_task2_sam3.py`.
+
+| Organ | 3-D Dice (semi-oracle) | # test patients |
+|---|:--:|:--:|
+| Liver | **0.985** | 20 |
+| Spleen | **0.980** | 20 |
+| Right kidney | **0.970** | 20 |
+| Left kidney | **0.970** | 19 |
+| Pancreas | **0.919** | 20 |
+
+*Meaning:* with a label to localise the organ, SAM3 segments abdominal organs very accurately on brand-new
+patients; pancreas is the hardest (small, low-contrast). This is the **ceiling** the autonomous numbers below aim at.
+
+### 4b. Autonomous organ — full-volume, no labels *(experiment C — the deployment number)*
+**No training** (base SAM3 concept prompt, `"liver"` etc., no box) · **tested on** 5 held-out **FLARE23**
+cases that carry organ labels · **full-volume** Dice (the model must also decide *which* slices contain
+the organ). Ceiling column = semi-oracle GT-box on the same FLARE23 cases (`flare23_predict.py`). Script:
+`exp_autonomous_organ_sweep.py`.
+
+| Organ | Autonomous (base concept, full-volume) | Semi-oracle ceiling (same cases) | Gap |
 |---|:--:|:--:|:--:|
 | Liver | **0.82** | 0.973 | 0.15 |
 | Spleen | 0.585 | 0.962 | 0.38 |
 | Left / right kidney | 0.46 / 0.44 | 0.956 | ~0.50 |
 | Pancreas | 0.306 | 0.882 | 0.58 |
 
-*Finding:* base concept prompting holds up full-volume only for the **liver**; small organs collapse and
-need **per-organ fine-tuning** (the same recipe that took liver from 0.82 base → 0.964 fine-tuned, and
-that trains the tumor model). This is the clear next segmentation step. Script:
-`src/scripts/exp_autonomous_organ_sweep.py`.
+*Meaning:* **base** concept prompting holds up full-volume only for the **liver**; small organs collapse
+(it over-segments empty slices and misses the organ elsewhere). **This is the clear next step:** per-organ
+**fine-tuning** — the same recipe that took a single held-out liver from **0.931 base → 0.964 fine-tuned**
+(slice-level bake-off, `exp_sam3_prompt_bakeoff.py`) and that trains the tumor model in §5.
 
-**Semi-oracle backbone ceilings, per dataset** (fine-tuned SAM3 given the GT box). Here *Split* = how
-train/test were divided, which decides whether the number is honest:
+### 4c. Per-dataset organ/tumor delivery models *(handed off to collaborators)*
+Fine-tuned SAM3, semi-oracle (GT-box), **case-level** test. These are the `sam3_pancreas_*` /
+`sam3_lits_*` checkpoints in the Krishna handoff.
 
-- **case-level** = *whole patients* held out → honest (predicts performance on a brand-new patient).
-- **slice-level** = random 2D slices → a patient's near-identical slices can land in *both* train and
-  test (data leakage → inflated). Only used where the dataset has no patient IDs.
+| Dataset | Organ Dice | Tumor Dice | Split |
+|---|:--:|:--:|---|
+| Pancreas (MSD Task07) | 0.866 | 0.894 | case-level |
+| LiTS (liver tumor) | — *(liver from GT)* | 0.840 | case-level |
 
-| Dataset | Split *(how test was held out)* | Organ Dice | Tumor Dice |
-|---|---|:--:|:--:|
-| Pancreas (MSD Task07) | case-level *(whole patients)* | 0.866 | 0.894 |
-| LiTS (liver tumor) | case-level *(whole patients)* | — *(liver copied from GT)* | 0.840 |
-| FLARE (13 organs + tumor) | slice-level *(no patient IDs)* | liver 0.973 · pancreas 0.907 · duodenum 0.913 | 0.883 |
+---
 
-## The knowledge graph — how it's used and how it evolves
+## 5. Segmentation results — the generic tumor model
 
-Each patient is a subgraph: `ImagingCase → Organ / Lesion`, with phenotypes as **direct triples**
+**One** model segments tumors across organs from the text prompt `"tumor"` (no box).
+
+**Training pool** (≈20,673 tumor slices), and the seed-42 split used for train / val / test:
+
+| Source | Tumor slices | Split type |
+|---|:--:|---|
+| LiTS | 5,600 | slice-level *(no patient IDs)* |
+| KiTS23 | 5,267 | case-level |
+| FLARE23 | 7,269 | case-level |
+| MSD Pancreas | 2,537 | case-level |
+| **total** | **20,673** | → train / val / test = **14,589 / 1,615 / 4,469** |
+
+### 5a. Headline: validation vs. honest per-dataset test
+- **Validation Dice (during training) = 0.938.** This is the *slice-level* validation split used to pick
+  the model — **slightly optimistic** (a val slice can share a patient with a train slice).
+- **Held-out TEST Dice (never used for selection)** — the numbers to trust. Autonomous (`"tumor"`, no
+  box), per source dataset (`eval_tumor_per_dataset.py`):
+
+| Dataset | Autonomous **test** Dice | # test slices | Split |
+|---|:--:|:--:|---|
+| LiTS | **0.897** | 1,120 | slice-level |
+| KiTS | **0.864** | 1,122 | case-level |
+| Pancreas | **0.856** | 465 | case-level |
+| FLARE | **0.833** | 1,762 | case-level |
+| **mean** | **≈0.86** | 4,469 | — |
+
+*Meaning:* on genuinely unseen patients the autonomous tumor model scores **≈0.83–0.90** depending on
+dataset (LiTS highest, FLARE lowest). The often-quoted **0.938** is the validation number; **≈0.86 is the
+honest cross-dataset test performance.**
+
+### 5b. Coverage grows the model
+Validation Dice as the pool grew: **0.37** (base, no training) → **0.909** (v1: LiTS+Pancreas) →
+**0.9145** (v2: +FLARE) → **0.938** (v3: +KiTS). **Cross-dataset caveat:** the v1 model (liver+pancreas
+only) scored **0.02** on unseen FLARE kidney tumors — reliable **within trained tumor types**, not
+universally; coverage must be trained in.
+
+---
+
+## 6. The knowledge graph
+
+Built from the **full FLARE23 — 1,312 patients, 13 organs + tumor** (`kg/graph/imaging_kg_flare23.ttl`).
+Each patient is a subgraph `ImagingCase → Organ / Lesion`, phenotypes as **direct triples**
 (`gt_volume_cm3`, `gt_max_diameter_mm`, `gt_centroid_mm`, `tumorBurden`, `lesionMultiplicity`,
 `lesion_count`), every entity grounded to **SNOMED / LOINC / ICD / MeSH** via a live mapper — no
-hard-coded codes. Current graph: FLARE23, **1,312 patients, 13 organs + tumor** (`kg/graph/`).
+hard-coded codes; open-world.
 
 **Used as a knowledge base, not a store:**
 - **Retrieval** — SPARQL ("largest kidney tumors", "tumors per organ") **and observability-aware
   similarity (OAKG)**: patients are compared over *jointly-observed* phenotypes, weighted by shared
   evidence (γ), so an unobserved organ reads as *unknown*, **never 0**.
-- **Semantic interoperability** — ontology grounding lets external hierarchies reason over it
-  (e.g. a kidney tumor *is-a* genitourinary neoplasm).
+- **Semantic interoperability** — grounding lets external hierarchies reason over it (a kidney tumor
+  *is-a* genitourinary neoplasm).
 - **GT-free validation of a new patient** — each autonomously-segmented phenotype is scored against the
-  cohort distribution (percentile / z-score); an implausible value (e.g. a 4,900 cc "liver") is flagged
-  as a segmentation error — no ground truth required.
+  cohort distribution (percentile / z-score / joint covariance); an implausible value (e.g. a 4,900 cc
+  "liver") is flagged as a segmentation error — **no ground truth required**.
 
-**How it evolves with each incoming patient:**
-```
-new CT → autonomous segmentation → phenotypes
-       → GT-free plausibility check against the KG        (admit / flag)
-       → admitted patient joins the global query KG
-       → cohort distributions sharpen → the NEXT patient is validated better
-```
-It is **open-world**: a new patient may carry a phenotype never seen before — the mapper grounds the new
-term and it joins the graph with **no schema migration**. The graph that stores the data is the same one
-that **interprets and validates** new, unlabeled scans, and it improves as it grows.
-Interactive: `app/oakg_query_app.py` · runnable demo: `src/notebooks/KG_as_Knowledge_Base.ipynb`.
+**How it evolves:** `new CT → autonomous segmentation → phenotypes → GT-free plausibility check (admit /
+flag) → admitted patient joins the global query KG → cohort model sharpens → the NEXT patient is validated
+better.` Interactive: `app/oakg_query_app.py` (now over the 1,312-patient FLARE23 + Pancreas + LiTS) ·
+runnable demo: `src/notebooks/KG_as_Knowledge_Base.ipynb`.
 
-## Research direction & contribution
+---
 
-**Thesis.** The novelty is *not* the segmentation — that builds on foundation models (SAM3) and is on
-par with, not ahead of, SOTA (K-Prism, GF-Screen). It is the **downstream reasoning layer**: an
-**observability-aware, self-evolving clinical knowledge graph (OAKG)** built end-to-end from
-*label-free* autonomous segmentation.
+## 7. Research contribution & the OAKG experiments
 
-**The problem we own.** Unifying many imaging datasets into one global KG creates **structural
-partial-observability** — each source annotated different organs (Pancreas→pancreas, LiTS→liver,
-FLARE→5 organs). Standard retrieval either **imputes** the missing values (→ false matches) or does
-**naive masked similarity** (→ a "perfect match" on a single shared feature). As the field unifies ever
-more datasets (PanTS, K-Prism), this problem *grows* — and no one is addressing it.
+**Thesis.** The novelty is **not** the segmentation (it builds on SAM3 and is on par with, not ahead of,
+SOTA such as K-Prism / GF-Screen). It is the **downstream reasoning layer**: an **observability-aware,
+self-evolving clinical knowledge graph (OAKG)** built end-to-end from *label-free* autonomous segmentation.
 
-**Contribution, precisely.**
-1. **OAKG** — *evidence-calibrated* retrieval/reasoning under structural partial-observability:
-   unobserved is never imputed, and matches are weighted by joint observability (**γ**), so answers
-   stay correct as the graph scales. Eliminates the false positives/negatives that imputation and
-   masked-similarity produce on a merged multi-source KG.
-2. **A GT-free, self-evolving pipeline** — autonomous segmentation → ontology-grounded KG that
-   validates each new *unlabeled* patient against the cohort and *improves as it grows*.
-3. **Autonomous CT→KG as infrastructure** (SAM3 concept organs + generic tumor model), positioned on
-   SOTA segmentation rather than competing with it.
+**The problem we own.** Merging many imaging datasets into one KG creates **structural
+partial-observability** — each source annotated different organs. Standard retrieval either **imputes**
+missing values (→ false matches) or does **naive masked similarity** (→ a "perfect match" on a single
+shared feature). As the field unifies ever more datasets, this grows — and no one addresses it. **OAKG**
+never imputes and weights matches by **joint observability (γ)**.
 
-**Experiments & results at a glance** (all real, reproducible from `results/*.json`):
+All four experiments below are **real and reproducible** from `results/*.json`; runnable write-up with
+figures: `src/notebooks/OAKG_Experiments.ipynb`.
 
-| Exp | Question | Result | Status |
-|---|---|---|:--:|
-| **A2** | Does evidence-calibration (γ) beat imputation on a merged multi-source KG? | Precision@10 **0.78** vs **0.08** without γ; spurious matches **0.14** vs **0.84** | ✅ |
-| **B1** | Does a KG built from *autonomous* masks answer like a GT-KG? | volume **r=0.992**, "rank by size" **Spearman 0.986** (at Dice 0.919) | ✅ |
-| **B2** | Does GT-free validation improve as the KG grows? | joint model **0.78** vs marginal 0.66 AUROC; climbs with N, then plateaus | ✅ |
-| **C** | Autonomous full-volume organ Dice vs the semi-oracle ceiling | liver **0.82**; small organs 0.31–0.59 → need per-organ fine-tuning | ✅ |
-| **Seg.** | Generic autonomous tumor model | Dice **0.938** (beats the 0.906 GT-box ceiling) | ✅ |
+### A2 — Structured multi-source retrieval benchmark  *(the core method result)*
+- **Data:** full **FLARE23** corpus (1,312 patients; 600 sampled), 5 core organ volumes.
+  `exp_oakg_structured.py`.
+- **Setup:** patients are assigned to single-site "datasets" with **disjoint observed organs**
+  (Pancreas→pancreas, LiTS→liver, KiTS→kidneys) plus a full-observation FLARE hub — mirroring the real
+  merge. Ground truth = each patient's true neighbours on the *full* organ vector. Vary heterogeneity.
+- **Metric:** Precision@10 and spurious thin-overlap-match rate. **Baselines:** zero/mean-impute, Gower,
+  masked-cosine. **OAKG = masked-cosine × γ**, so masked-cosine *is* the γ-ablation.
 
-Runnable write-up with figures: `src/notebooks/OAKG_Experiments.ipynb`.
+| Method (realistic mixed regime) | Precision@10 | Spurious matches |
+|---|:--:|:--:|
+| **OAKG (evidence-calibrated)** | **0.78** | **0.14** |
+| mean-impute | 0.73 | 0.17 |
+| zero-impute | 0.71 | 0.19 |
+| **masked-cosine (OAKG *without* γ)** | **0.08** | **0.84** |
 
-**Experimental program (detail).**
-- **A. OAKG (method) — first result in.** Structured multi-source benchmark: patients are drawn from
-  single-site "datasets" with **disjoint observed organs** (Pancreas→pancreas, LiTS→liver, KiTS→kidneys)
-  plus a full-observation FLARE hub — mirroring the real merge. In the realistic mixed regime OAKG gives
-  the **best retrieval (Precision@10 0.78 vs 0.73 mean-impute)** and the **fewest spurious matches (0.14
-  vs 0.17)**. The **γ ablation is decisive**: masked-cosine *without* γ collapses to **0.08 / 0.84**
-  (a single shared organ reads as a perfect match); γ recovers it to **0.78 / 0.14**. At extreme
-  disjointness (no shared evidence) no method can retrieve — OAKG returns the honest floor instead of
-  fabricating a signal, unlike imputation. Script: `src/scripts/exp_oakg_structured.py`.
-- **B. Framework — B1 + B2 results in.**
-  - **B1 (predicted-KG vs GT-KG fidelity).** Does the KG built from *autonomous* masks answer like the
-    GT-KG? On 20 paired pancreas cases (mean Dice **0.919**) it matches almost exactly: volume MAPE
-    **4.8%** (r=0.992), diameter MAPE 0.9% (r=0.997), centroid within **1.4 mm**, **95%** size-bin
-    agreement, and the "rank by pancreas size" query has **Spearman 0.986 / top-3 overlap 1.0**. Takeaway:
-    at good segmentation the predicted KG is faithful — **segmentation quality, not KG construction, is
-    the bottleneck**. Script: `src/scripts/exp_kg_fidelity.py`.
-  - **B2 (self-evolving GT-free validation).** Plant realistic segmentation errors (a volume leak that
-    breaks the volume↔diameter relation) and score plausibility with **no ground truth**. The KG's
-    **joint** model (cohort covariance over 5 organs × {log-volume, log-diameter}) separates clean-vs-error
-    at **AUROC 0.78 vs 0.66** for a marginal per-organ range check (**+0.12** — it sees inconsistencies the
-    marginal check can't), and it **improves as the KG grows** (0.74→0.79 over N=15→120) then plateaus once
-    the 10-D covariance is well-estimated; the marginal baseline stays flat. Richer phenotypes (13 organs +
-    tumor) would extend the curve. Script: `src/scripts/exp_oakg_evolve.py`.
-- **C. Segmentation — first sweep in.** Full-volume autonomous per-organ Dice vs the semi-oracle ceiling
-  (above): base concept prompting is strong on liver (0.82) but weak on small organs full-volume →
-  per-organ fine-tuning is the next step. Remaining: cross-dataset generalization and comparison against
-  K-Prism / GF-Screen / PanTS. Script: `src/scripts/exp_autonomous_organ_sweep.py`.
+*Finding:* OAKG beats every imputation baseline, and the **γ ablation is decisive** — removing γ drops
+precision **10×** (0.78→0.08) and raises spurious matches **6×** (0.14→0.84): a single shared organ reads
+as a "perfect match" without γ. At extreme disjointness no method can retrieve; OAKG returns the honest
+floor instead of fabricating a signal.
 
-**Planned next steps.**
-1. **Per-organ fine-tuned concept models** — close the small-organ gap experiment C exposed (same recipe
-   that took liver 0.82 base → 0.964 fine-tuned; the tumor model already reaches 0.938 this way).
-2. **Multi-organ predicted-KG fidelity** — extend B1 beyond pancreas to full multi-organ predicted graphs
-   (needs the autonomous multi-organ prediction masks, now unblocked on the free GPU).
-3. **Cross-dataset segmentation generalization** and a like-for-like comparison against **K-Prism /
-   GF-Screen / PanTS**.
+### B1 — Predicted-KG vs GT-KG answer fidelity
+- **Data:** **20 paired pancreas cases** (CT + GT mask + autonomous prediction, mean Dice **0.919**) from
+  the FLARE-Task2 pancreas delivery. `exp_kg_fidelity.py`.
+- **Setup:** derive the exact phenotypes the KG stores from *both* masks; compare answers.
+
+| Level | Metric | Result |
+|---|---|:--:|
+| node | volume MAPE / Pearson r | **4.8% / 0.992** |
+| node | diameter MAPE / r | 0.9% / 0.997 |
+| node | centroid error | 1.4 mm |
+| categorical | size-bin agreement | 0.95 |
+| query | "rank by size" Spearman ρ / top-3 overlap | **0.986 / 1.0** |
+
+*Finding:* at good segmentation the KG built from **autonomous** masks answers essentially identically to
+the GT-KG — **segmentation quality, not KG construction, is the bottleneck** (fidelity scales with Dice).
+
+### B2 — Self-evolving GT-free validation
+- **Data:** full **FLARE23** corpus; feature = 5 organs × {log-volume, log-max-diameter} (10-D).
+  `exp_oakg_evolve.py`.
+- **Setup:** plant realistic segmentation errors (a volume leak that breaks the volume↔diameter relation),
+  grow the reference cohort N=15→1083, score plausibility with **no ground truth**. Compare a **marginal**
+  per-organ z-score vs the KG's **joint** (covariance / Mahalanobis) model. Metric = clean-vs-error AUROC.
+
+| Model | AUROC | Behaviour as KG grows |
+|---|:--:|---|
+| **Joint (KG covariance)** | **0.78** | rises 0.74→0.79 (N=15→120), then plateaus |
+| Marginal (per-organ z) | 0.66 | flat |
+
+*Finding:* the joint model beats the marginal check by **+0.12 AUROC** (it catches inconsistencies the
+marginal check can't see) **and improves as the KG grows** — the self-evolving property. Accumulating
+patients sharpens the *joint phenotype model*, which is exactly what a growing KG accumulates.
+
+### C — Autonomous per-organ Dice sweep
+Covered in [§4b](#4b-autonomous-organ--full-volume-no-labels-experiment-c--the-deployment-number): base
+concept prompting is strong on liver (0.82) but weak on small organs full-volume → per-organ fine-tuning
+is the next step.
+
+### Results at a glance
+| Exp | Question | Headline result |
+|---|---|---|
+| **A2** | Does γ beat imputation on a merged KG? | P@10 **0.78** vs **0.08** without γ; spurious 0.14 vs 0.84 |
+| **B1** | Does an autonomous KG answer like a GT-KG? | volume **r=0.992**, query **ρ=0.986** (at Dice 0.919) |
+| **B2** | Does GT-free validation improve as the KG grows? | joint **0.78** vs marginal 0.66; climbs then plateaus |
+| **C** | Autonomous full-volume organ Dice vs ceiling | liver **0.82**; small organs 0.31–0.59 → fine-tune |
+| **Tumor** | Generic autonomous tumor model | val **0.938**; honest **test ≈0.86** (LiTS .90 / KiTS .86 / Panc .86 / FLARE .83) |
+
+---
+
+## 8. Planned next steps
+1. **Per-organ fine-tuned concept models** — close the small-organ gap C exposed (liver 0.82→0.964 shows the recipe works).
+2. **Multi-organ predicted-KG fidelity** — extend B1 beyond pancreas to full multi-organ predicted graphs.
+3. **Cross-dataset segmentation generalization** + like-for-like comparison vs **K-Prism / GF-Screen / PanTS**.
 4. **Query-type false-positive breakdown** — extend A2 to per-clinical-query (largest-tumor, burden, …).
 5. **Paper draft** around the OAKG contribution (benchmark and method framings).
 
-**Target venues.** NeurIPS Datasets & Benchmarks (benchmark framing) or ICLR/AAAI (OAKG-as-method);
-MICCAI / health-AI as strong domain fits.
+**Target venues.** NeurIPS Datasets & Benchmarks (benchmark framing) or ICLR/AAAI (OAKG-as-method); MICCAI / health-AI as strong domain fits.
 
-## Repository
-
+## 9. Repository
 ```
-app/            oakg_query_app.py — interactive KG retrieval/validation
-kg/             schema.owl · ontology_mappings.json (grounding cache) · graph/ (gitignored outputs)
+app/            oakg_query_app.py — interactive KG retrieval/validation (over 1,312-patient FLARE23 + Pancreas + LiTS)
+kg/             schema.owl · ontology_mappings.json (grounding cache) · data/ · graph/  (data & graph gitignored)
+results/        oakg_structured · kg_fidelity · oakg_evolve · autonomous_organ_sweep  (JSON + figures)
 src/
-  notebooks/    Segmentation_Results · KG_as_Knowledge_Base · Test_KG_from_CT   (runnable)
-  scripts/      segmentation (train_tumor_generic, build_*_pool, extract_*, infer_ensemble),
-                KG (kg_grounding, build_flare23_enriched_kg, flare23_predict, kg_build_*),
-                AUSAM/SAM3 backbones (run_flare, run_*_sam3, infer_sam3)
+  notebooks/    OAKG_Experiments · Segmentation_Results · KG_as_Knowledge_Base · Test_KG_from_CT · SWOG_KG_Pipeline_Demo
+  scripts/      segmentation  (train_tumor_generic_v3, build_*_pool, extract_*, infer_ensemble, run_flare_task2_sam3)
+                experiments   (exp_oakg_structured, exp_kg_fidelity, exp_oakg_evolve, exp_autonomous_organ_sweep, eval_tumor_per_dataset)
+                KG            (kg_grounding, build_flare23_enriched_kg, flare23_predict, kg_build_*, migrate_corpora_to_flare23)
 ```
 
-## Environment
+## 10. Environment
 ```
 conda env: llmft  ·  Python 3.11, PyTorch 2.5.1+cu121  ·  2× NVIDIA L40S (48 GB)
 torch · transformers (SAM3) · monai · rdflib · scikit-image · scipy · nibabel
