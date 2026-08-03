@@ -20,7 +20,7 @@ POOLS = ["/scratch/ud3d4/acm_data/tumor_pool",          # LiTS + Pancreas
          "/scratch/ud3d4/acm_data/kits_tumor_pool"]      # KiTS (kidney)
 WARM = "/scratch/ud3d4/acm_data/tumor_pool/sam3_tumor_generic_v2.pth"
 CKPT = "/scratch/ud3d4/acm_data/tumor_pool/sam3_tumor_generic_v3.pth"
-CASE_LEVEL = {"pancreas", "flare", "kits"}               # patient-level holdout; lits is slice-pooled
+CASE_LEVEL = {"pancreas", "flare", "kits", "lits"}       # ALL patient-level holdout (lits now has real ids)
 
 
 def load_all():
