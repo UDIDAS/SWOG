@@ -163,9 +163,11 @@ def main():
     if Bv:
         rows.append(["C — self-evolving GT-free validation",
                      f"joint model AUROC {max(Bv['joint'])} vs {Bv['marginal'][0]} baseline; improves as the graph grows"])
-    rows.append(["D — cross-dataset tumor generalization",
-                 "held-out FLARE Dice climbs 0.35 → 0.41 → 0.51 as datasets are added (coverage helps)"])
-    rows.append(["E — KG-guided segmentation (in build)", "cohort atlas repairs masks + guides prompts (loop closed)"])
+    rows.append(["D — cross-dataset tumor generalization (RUNNING)",
+                 "held-out FLARE Dice climbs 0.35 → 0.41 → 0.51 as datasets are added; deployment model finalizing"])
+    rows.append(["E — KG-guided segmentation (IN PROGRESS)",
+                 "repair implemented + wired in (validated on controlled errors: pancreas 0.98→1.00, "
+                 "tumor 0.98→1.00); prompt-guidance + real-mask gain next"])
     table(["Experiment", "Headline result"], rows)
     para("Together: the γ weighting is what makes retrieval correct on a merged graph; a graph built from "
          "autonomous masks answers like one built from ground truth; validation improves as the graph "
@@ -175,16 +177,24 @@ def main():
 
     # ---------------- Status ----------------
     h("7. Current status", 1)
+    para("Completed:", bold=True)
     for s in ["Autonomous segmentation + a generic tumor model, and an ontology-grounded knowledge graph "
-              "over 2,113 patients across four datasets (FLARE23, KiTS23, MSD Pancreas, LiTS) — in place.",
-              "Four experiments establishing the reasoning-layer contribution — complete and reproducible.",
-              "Cross-dataset generalization curve measured: held-out FLARE Dice 0.35 → 0.41 → 0.51 as "
-              "training datasets are added; the all-four-datasets deployment model is finalizing.",
-              "KG anatomical atlas built (per-organ priors pooled across datasets); the KG-guided "
-              "repair/prompt step is being implemented and will be quantified on the new full FLARE cases.",
-              "40 full FLARE cases (CT + organ + tumor) extracted — enabling organ segmentation, a "
-              "predicted knowledge graph, and image reconstruction beyond the current set."]:
+              "over 2,113 patients across four datasets (FLARE23, KiTS23, MSD Pancreas, LiTS).",
+              "The four reasoning-layer experiments (A–C above) — complete and reproducible.",
+              "40 full FLARE cases (CT + 13-organ + tumor) extracted for organ segmentation, a predicted "
+              "KG, and image reconstruction; KG anatomical atlas built (per-organ priors, all datasets)."]:
         bullet(s)
+    para("Experiments running now:", bold=True)
+    bullet("D — Strictly patient-level, incremental cross-dataset tumor training. Four warm-started stages "
+           "(LiTS → +Pancreas → +KiTS, with FLARE held out entirely, then +FLARE), val AND test held out "
+           "by whole patient. Stages 1–3 done — held-out FLARE Dice 0.35 → 0.41 → 0.51 (generalization "
+           "improves with coverage); stage 4 (all-four-datasets deployment model) is ~2/3 through and "
+           "will report the final per-dataset in-distribution numbers on completion.")
+    bullet("E — KG-guided segmentation (closing the loop). The atlas-based repair is implemented and wired "
+           "into the pipeline (drop spurious components, flag implausible volumes, remove floating tumor); "
+           "validated on controlled errors (pancreas 0.98→1.00, tumor 0.98→1.00). Remaining: the "
+           "prompt-guidance half and the Dice gain on real autonomous masks (the 40 full cases), which run "
+           "once stage-4 training frees the GPU.")
 
     # ---------------- Plan ----------------
     h("8. Plan and next steps", 1)
