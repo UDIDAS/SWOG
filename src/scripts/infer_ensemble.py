@@ -115,6 +115,13 @@ def main():
         print(f"  tumor raw_vox={int((tm>0).sum())} kept_in_organ={int(tm_kept.sum())} "
               f"Dice={dice.get('tumor(filtered)')}", flush=True)
 
+    # KG-guided repair: the knowledge graph's anatomical atlas cleans the autonomous mask
+    # (drop spurious components, flag implausible volumes, remove floating tumor) — closing the loop.
+    from kg_guided_segment import repair
+    pred, kg_report = repair(pred, ct_nii.header.get_zooms()[:3])
+    for r in kg_report:
+        print("  KG-repair:", r, flush=True)
+
     nib.save(nib.Nifti1Image(pred, ct_nii.affine, ct_nii.header), args.out)
     # phenotype record
     rec = {"organs": {c: {"organ_volume_cm3": round(int((pred == lab).sum()) * sp, 2)}

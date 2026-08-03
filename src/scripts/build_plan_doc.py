@@ -69,25 +69,31 @@ def main():
 
     # ---------------- End-to-end pipeline ----------------
     h("2. The end-to-end pipeline", 1)
-    para("A new, unlabeled scan flows through five stages:")
+    para("A new, unlabeled scan flows through the pipeline; the knowledge graph both consumes its output "
+         "and feeds anatomical knowledge back — the loop is bidirectional:")
     mono([
         "  New abdominal CT  (no annotations)",
         "     |",
         "  1. SEGMENT    organs via SAM3 concept prompts ('liver'/'kidney'/'pancreas'), no box;",
         "                tumors via one generic 'tumor' model  ->  organ + tumor masks",
-        "     |",
+        "     |            ^",
+        "     |            |  (KG anatomical atlas guides the prompt to where an organ sits,",
+        "     |            |   and REPAIRS masks: drop spurious blobs, enforce tumor-in-organ)",
         "  2. PHENOTYPE  derive per-organ volume, diameter, centroid, tumor burden, lesion count",
         "     |",
         "  3. KNOWLEDGE GRAPH   write direct, ontology-grounded triples (SNOMED / LOINC / ICD / MeSH)",
         "     |",
-        "  4. VALIDATE   score each phenotype against the cohort distribution  ->  flag implausible",
-        "                masks as segmentation errors  (GT-free, no labels needed)",
+        "  4. VALIDATE   score each phenotype against the cohort distribution  ->  flag/repair",
+        "                implausible masks as segmentation errors  (GT-free, no labels needed)",
         "     |",
-        "  5. RETRIEVE & GROW   find similar patients (observability-aware); admit the case so the",
-        "                       cohort model sharpens and the next patient is validated better",
+        "  5. RETRIEVE, GROW & GUIDE   find similar patients; admit the case (KG grows);",
+        "                the sharpened cohort model + atlas then VALIDATE and SEGMENT the next",
+        "                patient better  ->  segmentation feeds the KG, the KG feeds segmentation",
     ])
-    para("Stages 3–5 are what the knowledge graph is for: it is not a passive store but the component "
-         "that interprets, vets, and contextualises each new unlabeled scan, and it improves as it grows.",
+    para("The knowledge graph is not a passive store: it interprets, vets, and contextualises each new "
+         "unlabeled scan, it improves as it grows, and — via the anatomical atlas — it feeds that growing "
+         "knowledge back to improve the segmentation that fills it. Adding a dataset (e.g. KiTS for the "
+         "kidney) sharpens both the validation and the segmentation priors for that organ.",
          italic=True, color=GREY)
 
     # ---------------- Data ----------------
@@ -100,29 +106,39 @@ def main():
     table(["Dataset", "Labels", "Size", "Role"],
           [["LiTS", "liver + liver tumor", "131 patients", "tumor training; liver-tumor model"],
            ["MSD Pancreas", "pancreas + tumor", "281", "tumor training; pancreas models"],
-           ["KiTS23", "kidney + tumor", "489", "tumor training"],
+           ["KiTS23", "kidney + tumor", "489", "tumor training; kidney KG records"],
            ["FLARE23 (full)", "13 organs + tumor", "1,312 (labels-only)", "the knowledge graph + tumor training"],
            ["FLARE-Task2", "organs (no tumor)", "100 volumes", "organ segmentation models"]])
 
     # ---------------- Segmentation ----------------
     h("4. Segmentation models (strictly patient-level results)", 1)
-    para("Generic tumor model — one model, prompt \"tumor\", no box, trained on pooled tumors from all "
-         "four datasets. Held-out patient-level test Dice ≈ 0.85 (LiTS 0.84 / KiTS 0.86 / Pancreas 0.86 / "
-         "FLARE 0.83). A patient-level, cross-dataset re-training is in progress to (a) confirm these and "
-         "(b) measure generalization to a completely held-out dataset.", bold=False)
+    para("Generic tumor model — one model, prompt \"tumor\", no box, trained on pooled tumors from all four "
+         "datasets, strictly patient-level. A controlled incremental re-training (LiTS → +Pancreas → +KiTS, "
+         "with FLARE held out entirely) measures cross-dataset generalization: on a completely unseen "
+         "dataset (FLARE), held-out Dice climbs 0.35 → 0.41 → 0.51 as datasets are added — more coverage "
+         "yields better generalization. The all-four-datasets deployment model is being finalized; "
+         "per-dataset in-distribution numbers finalize with it.", bold=False)
     para("Organ models — SAM3, two regimes:")
     bullet("With a localisation box (upper bound): patient-level 3-D Dice 0.92–0.99 (liver 0.985, "
            "spleen 0.980, kidneys 0.970, pancreas 0.919).")
     bullet("Fully autonomous concept prompt (deployment): strong on the liver (0.82 full-volume); small "
-           "organs need per-organ fine-tuning — the immediate next segmentation step.")
+           "organs are weaker full-volume and are addressed by KG-guided segmentation (§5) plus per-organ "
+           "fine-tuning.")
 
     # ---------------- KG ----------------
-    h("5. The knowledge graph", 1)
-    para("Spans all three training datasets — 1,724 patients (FLARE23 1,312 + Pancreas 281 + LiTS 131). "
-         "Each patient is a subgraph (case → organ → lesion) with phenotypes as direct triples, every "
-         "entity grounded to standard terminologies (SNOMED / LOINC / ICD / MeSH) via a live mapper "
-         "(no hard-coded codes), open-world. It is used for retrieval, semantic interoperability, and — "
-         "critically — GT-free validation of new, unlabeled patients.")
+    h("5. The knowledge graph — evolving AND guiding segmentation", 1)
+    para("Spans all four training datasets — 2,113 patients (FLARE23 1,312 + KiTS 389 + Pancreas 281 + "
+         "LiTS 131). Each patient is a subgraph (case → organ → lesion) with phenotypes as direct triples, "
+         "grounded to standard terminologies (SNOMED / LOINC / ICD / MeSH) via a live mapper, open-world. "
+         "Roles: retrieval, semantic interoperability, GT-free validation of new patients — and, newly, "
+         "GT-free guidance of segmentation.")
+    para("KG-guided segmentation (closing the loop). From the cohort the KG builds an anatomical atlas — "
+         "per-organ plausible size, diameter, and location, pooled across every dataset that observes the "
+         "organ (KiTS sharpens the kidney, LiTS the liver, MSD the pancreas). These priors (a) REPAIR "
+         "autonomous masks — drop spurious components, keep the plausible one, enforce tumor-inside-organ "
+         "and kidney-pair rules — and (b) GUIDE the prompt to where an organ typically sits, targeting the "
+         "small-organ weakness. So the graph does not merely grow: it improves the segmentation that fills "
+         "it, and every admitted patient (or dataset) sharpens both.")
 
     # ---------------- Contribution + experiments ----------------
     h("6. Scientific contribution and evidence", 1)
@@ -147,31 +163,39 @@ def main():
     if Bv:
         rows.append(["C — self-evolving GT-free validation",
                      f"joint model AUROC {max(Bv['joint'])} vs {Bv['marginal'][0]} baseline; improves as the graph grows"])
-    rows.append(["D — autonomous organ segmentation", "liver 0.82 with no labels; small organs → fine-tuning"])
+    rows.append(["D — cross-dataset tumor generalization",
+                 "held-out FLARE Dice climbs 0.35 → 0.41 → 0.51 as datasets are added (coverage helps)"])
+    rows.append(["E — KG-guided segmentation (in build)", "cohort atlas repairs masks + guides prompts (loop closed)"])
     table(["Experiment", "Headline result"], rows)
     para("Together: the γ weighting is what makes retrieval correct on a merged graph; a graph built from "
-         "autonomous masks answers like one built from ground truth; and validation improves as the graph "
-         "grows — the self-evolving property.", italic=True, color=GREY)
+         "autonomous masks answers like one built from ground truth; validation improves as the graph "
+         "grows; cross-dataset generalization improves with coverage; and — closing the loop — the graph's "
+         "accumulated anatomy improves the segmentation that fills it. The self-evolving property is "
+         "therefore bidirectional.", italic=True, color=GREY)
 
     # ---------------- Status ----------------
     h("7. Current status", 1)
-    for s in ["Autonomous segmentation + a generic tumor model (patient-level ≈0.85), and the "
-              "ontology-grounded knowledge graph over 1,724 patients — in place.",
+    for s in ["Autonomous segmentation + a generic tumor model, and an ontology-grounded knowledge graph "
+              "over 2,113 patients across four datasets (FLARE23, KiTS23, MSD Pancreas, LiTS) — in place.",
               "Four experiments establishing the reasoning-layer contribution — complete and reproducible.",
-              "In progress: a strictly patient-level, cross-dataset tumor re-training (coverage-growth "
-              "curve + generalization to a held-out dataset + deployment model).",
-              "In progress: extracting 40 full FLARE cases (CT + organ + tumor) to enable organ "
-              "segmentation, a predicted knowledge graph, and image reconstruction beyond the current set."]:
+              "Cross-dataset generalization curve measured: held-out FLARE Dice 0.35 → 0.41 → 0.51 as "
+              "training datasets are added; the all-four-datasets deployment model is finalizing.",
+              "KG anatomical atlas built (per-organ priors pooled across datasets); the KG-guided "
+              "repair/prompt step is being implemented and will be quantified on the new full FLARE cases.",
+              "40 full FLARE cases (CT + organ + tumor) extracted — enabling organ segmentation, a "
+              "predicted knowledge graph, and image reconstruction beyond the current set."]:
         bullet(s)
 
     # ---------------- Plan ----------------
     h("8. Plan and next steps", 1)
     for i, s in enumerate([
-        "Expand training with harder, more diverse tumor-bearing CTs to raise robustness (the weakest link).",
-        "Per-organ fine-tuned concept models to close the small-organ autonomous gap.",
+        "Finish + quantify KG-guided segmentation: measure the Dice gain from atlas-based repair and "
+        "prompt-guidance on the autonomous masks (especially small organs).",
+        "Per-organ fine-tuned concept models to close the remaining small-organ autonomous gap.",
         "Predicted knowledge graph + image reconstruction on the newly extracted full FLARE cases.",
-        "Cross-dataset generalization result and a like-for-like comparison against recent SOTA systems.",
-        "Manuscript centred on the OAKG contribution (benchmark and method framings), targeting a top venue."], 1):
+        "Expand training with harder, more diverse tumor-bearing CTs to raise robustness.",
+        "Like-for-like comparison against recent SOTA systems; manuscript centred on the OAKG contribution "
+        "(benchmark and method framings), targeting a top venue."], 1):
         bullet(f"{i}. {s}")
 
     out = os.path.join(ROOT, "plan.docx")
