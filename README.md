@@ -11,6 +11,55 @@ that keeps improving as patients arrive.
 
 ---
 
+## 0. The whole system in plain terms
+
+**The goal.** A clinician uploads a **new abdominal CT with no annotations**. The system (1) segments the
+organs and tumors, (2) turns those masks into a structured, queryable **knowledge graph**, (3) checks the
+result is medically plausible *without any ground truth*, and (4) finds similar past patients — and it
+gets a little smarter every time it sees a new case.
+
+**We use data in two distinct ways** — this is the key to the whole design (and the "two FLAREs"):
+
+1. **Image + label pairs → *train the segmentation models*.** To teach a model to draw a mask, you must
+   show it CT images together with the correct masks. Our image+label datasets are **LiTS, MSD Pancreas,
+   KiTS23, and FLARE-Task2 (100 volumes)**.
+2. **Labels alone → *build the knowledge graph*.** The KG doesn't need pixels: from a label mask we
+   compute *numbers* — organ volume, tumor diameter, tumor burden, etc. — and those numbers become the
+   graph's facts. **FLARE23's 1,312 label masks** (no images) power the KG and the retrieval experiments.
+
+So a label is used *either* to train a segmenter (when it comes with an image) *or* to add a patient to
+the KG (when we only have the mask). FLARE23 gives us 1,312 KG patients cheaply (labels only); FLARE-Task2
+gives us 100 fully-paired cases to actually train organ segmentation on.
+
+**What gets trained, on what, and how it's tested:**
+
+| Model | Trained on | How | Tested on |
+|---|---|---|---|
+| **Generic tumor model** (one model, prompt `"tumor"`) | pooled tumor slices: LiTS + Pancreas + KiTS + FLARE (~20.7k) | SAM3 fine-tune, no box | held-out **patients** per dataset → **≈0.86** ([§5](#5-segmentation-results--the-generic-tumor-model)) |
+| **Organ models** — fine-tuned | FLARE-Task2 (100 image+label pairs) | SAM3 + GT box (semi-oracle) | 20 held-out **patients** → 0.92–0.99 ([§4a](#4a-organ-ceiling--flare-task2-models-patient-level-test-the-honest-organ-numbers)) |
+| **Organ models** — autonomous | *no training* (base SAM3 `"liver"` prompt) | concept prompt, no box | 5 held-out FLARE23 CTs → liver 0.82; small organs need fine-tuning ([§4b](#4b-autonomous-organ--full-volume-no-labels-experiment-c--the-deployment-number)) |
+
+**What happens when a NEW CT arrives (the payoff):**
+```
+new CT (no labels)
+  1. Segment      → autonomous organs (SAM3 concept) + tumor (generic model) → masks
+  2. Phenotype    → volumes, diameters, centroids, tumor burden per organ
+  3. Validate     → compare each phenotype to the KG cohort; flag implausible values
+                    (e.g. a 4,900 cc "liver") as a segmentation error — NO ground truth needed
+  4. Retrieve     → find the most similar known patients (observability-aware / OAKG)
+  5. Grow         → admit the patient; the cohort model sharpens → the next case is validated better
+```
+Steps 3–5 are exactly what the knowledge graph is *for*: it's not a store, it's the component that
+*interprets and vets* each new, unlabeled scan and improves as it grows.
+
+**Would more/complex images make the models more robust?** Yes — this is the most direct improvement
+available. The weakest link is segmentation robustness (the FLARE tumor **test** Dice is the lowest at
+0.833, and small-organ autonomous Dice is low). Adding harder, more diverse CTs **with tumors** to the
+training pool would raise robustness the most. It requires image+label pairs (a scoped download —
+storage-aware), and is item 1 in the [roadmap](#8-planned-next-steps).
+
+---
+
 ## 1. How we got here (results-driven)
 
 1. **The blocker.** We first reproduced AUSAM (SAM1 + prompts derived from the GT mask). Strong Dice, but
@@ -283,11 +332,16 @@ is the next step.
 ---
 
 ## 8. Planned next steps
-1. **Per-organ fine-tuned concept models** — close the small-organ gap C exposed (liver 0.82→0.964 shows the recipe works).
-2. **Multi-organ predicted-KG fidelity** — extend B1 beyond pancreas to full multi-organ predicted graphs.
-3. **Cross-dataset segmentation generalization** + like-for-like comparison vs **K-Prism / GF-Screen / PanTS**.
-4. **Query-type false-positive breakdown** — extend A2 to per-clinical-query (largest-tumor, burden, …).
-5. **Paper draft** around the OAKG contribution (benchmark and method framings).
+1. **Expand the training pool with harder, more diverse images (robustness).** The weakest link is
+   segmentation robustness — FLARE tumor **test** Dice is 0.833 and small-organ autonomous Dice is low.
+   Adding more complex CTs **with tumors** (varied pathology, scanners, sizes) is the most direct win.
+   Needs image+label pairs → a scoped, storage-aware download (candidate sources: more FLARE23 cases that
+   ship images, PanTS for pancreas).
+2. **Per-organ fine-tuned concept models** — close the small-organ gap C exposed (liver 0.82→0.964 shows the recipe works).
+3. **Multi-organ predicted-KG fidelity** — extend B1 beyond pancreas to full multi-organ predicted graphs.
+4. **Cross-dataset segmentation generalization** + like-for-like comparison vs **K-Prism / GF-Screen / PanTS**.
+5. **Query-type false-positive breakdown** — extend A2 to per-clinical-query (largest-tumor, burden, …).
+6. **Paper draft** around the OAKG contribution (benchmark and method framings).
 
 **Target venues.** NeurIPS Datasets & Benchmarks (benchmark framing) or ICLR/AAAI (OAKG-as-method); MICCAI / health-AI as strong domain fits.
 
