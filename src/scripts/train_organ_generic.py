@@ -20,10 +20,11 @@ from run_pancreas_sam3 import (train_worker_v3, WORLD_SIZE, find_free_port,
 
 POOL = "/scratch/ud3d4/acm_data/organ_pool_lkp"
 KG = "--kg" in sys.argv                                   # KG-in-training plausibility loss on/off (ablation)
+EVAL_ONLY = "--eval-only" in sys.argv                     # skip training, just eval an existing checkpoint
 TAG = "_kg" if KG else ""
 CKPT = f"{POOL}/sam3_organ_generic{TAG}.pth"
 OUT = f"/home/ud3d4/Desktop/SWOG/results/organ_generic{TAG}.json"
-EPOCHS, PATIENCE = 16, 5
+EPOCHS, PATIENCE = 6, 2                                    # models converge by ~epoch 5 (capped for the ablation)
 
 
 def patient_split(meta):
@@ -95,9 +96,12 @@ def main():
         cfg["kg_priors"] = priors; cfg["kg_weight"] = 0.1; cfg["kg_centroid_w"] = 0.5
         print("KG-in-training ON — priors:", {o: (p["cy"], p["cx"], p["area_lo"], p["area_hi"])
                                               for o, p in priors.items()}, flush=True)
-    port = find_free_port()
-    mp.spawn(train_worker_v3, args=(WORLD_SIZE, port, cfg, X[tr], Y[tr], X[va], Y[va]),
-             nprocs=WORLD_SIZE, join=True)
+    if not EVAL_ONLY:
+        port = find_free_port()
+        mp.spawn(train_worker_v3, args=(WORLD_SIZE, port, cfg, X[tr], Y[tr], X[va], Y[va]),
+                 nprocs=WORLD_SIZE, join=True)
+    else:
+        print(f"--eval-only: scoring existing {CKPT}", flush=True)
 
     per_dataset, per_organ = eval_per_organ(X, Y, M, te)
     print("\n=== organ model — held-out patient-level test Dice ===", flush=True)

@@ -29,14 +29,16 @@ POOLS = {"tumor_pool": "/scratch/ud3d4/acm_data/tumor_pool",           # LiTS + 
          "flare_tumor_pool": "/scratch/ud3d4/acm_data/flare_tumor_pool",
          "kits_tumor_pool": "/scratch/ud3d4/acm_data/kits_tumor_pool"}
 CKPT_DIR = "/scratch/ud3d4/acm_data/tumor_pool"
-OUT = "/home/ud3d4/Desktop/SWOG/results/tumor_incremental.json"
+KG = "--kg" in sys.argv                                  # KG-in-training size-plausibility loss on/off (ablation)
+TAG = "_kg" if KG else ""
+OUT = f"/home/ud3d4/Desktop/SWOG/results/tumor_incremental{TAG}.json"
 # 4 stages: FLARE is HELD OUT (never trained) for s1-s3 -> its test set is the cross-dataset generalization
 # probe; added at s4 for the full deployment model. FLARE's TEST patients stay held out throughout.
 STAGES = [("s1_lits", {"lits"}),
           ("s2_pancreas", {"lits", "pancreas"}),
           ("s3_kits", {"lits", "pancreas", "kits"}),          # <- headline cross-dataset number vs FLARE
           ("s4_flare", {"lits", "pancreas", "kits", "flare"})]  # <- full deployment model
-EPOCHS, PATIENCE = 14, 5
+EPOCHS, PATIENCE = 6, 2                                  # capped: tumor stages converge early (see organ baseline)
 
 
 def load_all():
@@ -104,13 +106,16 @@ def main():
     for name, dss in STAGES:
         tr_s = [i for i in tr if M[i]["dataset"] in dss]
         va_s = [i for i in va if M[i]["dataset"] in dss]
-        ckpt = f"{CKPT_DIR}/sam3_tumor_{name}_patientlevel.pth"
-        print(f"\n===== STAGE {name}: train on {sorted(dss)} | tr/va = {len(tr_s)}/{len(va_s)} =====", flush=True)
+        ckpt = f"{CKPT_DIR}/sam3_tumor_{name}{TAG}_patientlevel.pth"
+        print(f"\n===== STAGE {name}{TAG}: train on {sorted(dss)} | tr/va = {len(tr_s)}/{len(va_s)} =====", flush=True)
         if not os.path.exists(ckpt):
             cfg = {"model_save_path": ckpt, "pretrained_path": warm, "epochs": EPOCHS, "batch_size": 4,
                    "patience": PATIENCE, "strong_augment": True, "text_prompt": "tumor", "use_boxes": False,
                    "freeze_blocks": 20, "encoder_lr": 1e-5, "decoder_lr": 1e-4, "warmup_epochs": 2,
                    "cosine_T0": 40, "dice_weight": 0.7, "focal_weight": 0.3}
+            if KG:                                        # size-plausibility only (tumor location varies)
+                cfg["kg_priors"] = json.load(open(f"{CKPT_DIR}/tumor_train_priors.json"))
+                cfg["kg_weight"] = 0.1; cfg["kg_centroid_w"] = 0.0
             port = find_free_port()
             mp.spawn(train_worker_v3, args=(WORLD_SIZE, port, cfg, X[tr_s], Y[tr_s], X[va_s], Y[va_s]),
                      nprocs=WORLD_SIZE, join=True)
@@ -128,9 +133,9 @@ def main():
         warm = ckpt
     # canonicalize the final (all-4-datasets) stage as the deployment model
     import shutil
-    final_ckpt = f"{CKPT_DIR}/sam3_tumor_{STAGES[-1][0]}_patientlevel.pth"
-    shutil.copy(final_ckpt, f"{CKPT_DIR}/sam3_tumor_generic.pth")
-    print(f"\ncanonicalized {STAGES[-1][0]} (all 4 datasets, patient-level) -> sam3_tumor_generic.pth", flush=True)
+    final_ckpt = f"{CKPT_DIR}/sam3_tumor_{STAGES[-1][0]}{TAG}_patientlevel.pth"
+    shutil.copy(final_ckpt, f"{CKPT_DIR}/sam3_tumor_generic{TAG}.pth")
+    print(f"\ncanonicalized {STAGES[-1][0]}{TAG} (all 4 datasets, patient-level) -> sam3_tumor_generic{TAG}.pth", flush=True)
     print("-> " + OUT, flush=True)
 
 
