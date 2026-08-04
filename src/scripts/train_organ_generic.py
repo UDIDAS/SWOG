@@ -19,8 +19,10 @@ from run_pancreas_sam3 import (train_worker_v3, WORLD_SIZE, find_free_port,
                                _load_sam3_ckpt, SAM3_MODEL_ID, HF_TOKEN, extract_best_mask_soft)
 
 POOL = "/scratch/ud3d4/acm_data/organ_pool_lkp"
-CKPT = f"{POOL}/sam3_organ_generic.pth"
-OUT = "/home/ud3d4/Desktop/SWOG/results/organ_generic.json"
+KG = "--kg" in sys.argv                                   # KG-in-training plausibility loss on/off (ablation)
+TAG = "_kg" if KG else ""
+CKPT = f"{POOL}/sam3_organ_generic{TAG}.pth"
+OUT = f"/home/ud3d4/Desktop/SWOG/results/organ_generic{TAG}.json"
 EPOCHS, PATIENCE = 16, 5
 
 
@@ -88,6 +90,11 @@ def main():
            "freeze_blocks": 20, "encoder_lr": 1e-5, "decoder_lr": 1e-4, "warmup_epochs": 2,
            "cosine_T0": 40, "dice_weight": 0.7, "focal_weight": 0.3,
            "texts_tr": texts_tr, "texts_va": texts_va}                          # per-slice organ prompts
+    if KG:
+        priors = json.load(open(f"{POOL}/organ_train_priors.json"))
+        cfg["kg_priors"] = priors; cfg["kg_weight"] = 0.1; cfg["kg_centroid_w"] = 0.5
+        print("KG-in-training ON — priors:", {o: (p["cy"], p["cx"], p["area_lo"], p["area_hi"])
+                                              for o, p in priors.items()}, flush=True)
     port = find_free_port()
     mp.spawn(train_worker_v3, args=(WORLD_SIZE, port, cfg, X[tr], Y[tr], X[va], Y[va]),
              nprocs=WORLD_SIZE, join=True)

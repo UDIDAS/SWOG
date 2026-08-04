@@ -471,6 +471,34 @@ def evaluate_finetuned(model_path, x_test, y_test, tag="finetuned"):
     return {k: (np.mean(v), np.std(v)) for k, v in results.items()}
 
 
+def kg_consistency_loss(pred_logits, prompts, priors, device, centroid_w=0.5):
+    """KG-in-training plausibility loss (leakage-free, population priors from the train split).
+    For each predicted soft mask, penalize (a) an implausible area fraction — outside the organ's
+    5-95 pct band from the KG atlas — and (b) a soft centroid far from the organ's population location.
+    Differentiable, added to Dice+Focal. `prompts` is the per-slice organ list; unknown prompts (e.g. the
+    tumor model, where location is not stable) contribute nothing. Returns a scalar tensor."""
+    p = pred_logits.sigmoid()                                   # [B,1,h,w] soft mask
+    B, _, h, w = p.shape
+    yy = torch.linspace(0.5 / h, 1 - 0.5 / h, h, device=device).view(1, 1, h, 1)
+    xx = torch.linspace(0.5 / w, 1 - 0.5 / w, w, device=device).view(1, 1, 1, w)
+    area = p.mean(dim=(1, 2, 3))                                 # [B] soft area fraction
+    den = p.sum(dim=(1, 2, 3)).clamp_min(1e-4)
+    cy = (p * yy).sum(dim=(1, 2, 3)) / den                      # [B] soft centroids
+    cx = (p * xx).sum(dim=(1, 2, 3)) / den
+    terms = []
+    for i, name in enumerate(prompts):
+        pr = priors.get(name)
+        if pr is None:
+            continue
+        lo, hi = pr["area_lo"], pr["area_hi"]
+        area_pen = torch.relu(lo - area[i]) + torch.relu(area[i] - hi)     # hinge on plausible size band
+        cen_pen = (cy[i] - pr["cy"]) ** 2 + (cx[i] - pr["cx"]) ** 2        # pull toward atlas location
+        terms.append(area_pen + centroid_w * cen_pen)
+    if not terms:
+        return torch.zeros((), device=device)
+    return torch.stack(terms).mean()
+
+
 def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
     """V3 training: partial encoder freeze + discriminative LR + cosine schedule + dice+focal loss."""
     os.environ["MASTER_ADDR"] = "localhost"
@@ -528,6 +556,12 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
     focal_loss_fn = FocalLoss(to_onehot_y=False, use_softmax=False, gamma=2.0)
     dice_weight = cfg.get("dice_weight", 0.7)
     focal_weight = cfg.get("focal_weight", 0.3)
+    kg_priors = cfg.get("kg_priors")                     # {organ: {cy,cx,area_lo,area_hi}} or None (baseline)
+    kg_weight = cfg.get("kg_weight", 0.1)                # weight of the KG plausibility term
+    kg_centroid_w = cfg.get("kg_centroid_w", 0.5)        # sub-weight of the location vs size term
+    if rank == 0 and kg_priors is not None:
+        print(f"  KG-in-training ON: consistency weight={kg_weight}, centroid_w={kg_centroid_w}, "
+              f"organs={list(kg_priors)}")
 
     optimizer = AdamW([
         {"params": encoder_params, "lr": encoder_lr, "weight_decay": 1e-2},
@@ -591,6 +625,10 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
                 d_loss = dice_loss_fn(pred_mask, gt_resized)
                 f_loss = focal_loss_fn(pred_mask, gt_resized)
                 loss = dice_weight * d_loss + focal_weight * f_loss
+                if kg_priors is not None:                       # KG-in-training plausibility term
+                    prompts = tp if isinstance(tp, (list, tuple)) else [tp] * pred_mask.shape[0]
+                    loss = loss + kg_weight * kg_consistency_loss(
+                        pred_mask, prompts, kg_priors, device, kg_centroid_w)
 
             scaler.scale(loss).backward()
             torch.nn.utils.clip_grad_norm_(
