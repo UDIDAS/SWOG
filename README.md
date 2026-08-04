@@ -151,16 +151,32 @@ giving **four checkpoints** (organ ± KG, tumor ± KG). Comparing each pair isol
 plausibility term uses size **and** location priors; the tumor term is **size-only** (a tumor's location is not
 stable). Priors are computed from the training split only (`build_organ_train_priors.py`, `build_tumor_train_priors.py`).
 
-**Now running** — organ baseline trained (converged); organ **+KG** and tumor **+KG** training (epochs capped —
-the models converge by ~epoch 5), then the auto-comparison. All of this is scored **slice-level** (patient split).
+**Now running** — organ baseline trained (converged); organ **+KG** and tumor **+KG** training at ≤6 epochs
+(fast; the models converge by ~epoch 5), then the auto-comparison. All of this is scored **slice-level**
+(patient split). **Ablation matching:** the **organ** pair is matched at convergence (baseline plateaus by
+epoch 4); the **tumor** KG@6 is compared to the existing **14-epoch** baseline, so its delta is a
+**directional first look, not epoch-matched** — `compare_kg_ablation.py` self-flags this, and a matched tumor
+baseline@6 is a cheap follow-up if the directional result warrants it.
 
-**Established** — generic tumor baseline (patient-split + cross-dataset generalization); OAKG experiments A–D.
-*(Numbers: `results/`.)*
+**Established** — generic tumor baseline (patient-split + cross-dataset generalization); OAKG experiments A–D
+(component-level, on curated / GT-derived inputs). *(Numbers: `results/`.)*
 
-**Deliberate next step (not automatic).** The **patient-level (full-volume, per-case 3-D) evaluation** on the
-trained models — the real deployment number and the up-to-date inference-time **KG-repair** delta. The earlier
-autonomous *0.49 → 0.61* repair figure was a **base-SAM3** (untrained) result and is **superseded** once the
-trained models are scored full-volume; we run this as its own step when the models land.
+**The end-to-end evaluation — the payoff (a deliberate next step, not automatic).** Segmentation Dice is only
+layer 1. Once the trained models exist, a single **full-volume pass over held-out cases** produces the substrate
+for the real system-level test:
+1. **Patient-level (3-D / whole-volume) Dice** — the honest deployment number. It **supersedes** the slice-level
+   figures *and* the base-SAM3 *0.49 → 0.61* repair result, and yields the up-to-date **KG-repair** delta on the
+   trained model. (Note: more epochs is *not* the lever for a weak patient-level number — the slice→volume gap is
+   full-volume false positives from training on organ-*present* slices only; the levers are **negative slices**
+   and **KG-repair**, not epochs.)
+2. **Confusion matrices** — per model, {liver, pancreas, kidney, others} for organs and {tumor, others} for tumor
+   (`confusion_eval.py`).
+3. **OAKG at inference — the contribution — end-to-end on the pipeline's *own predicted* output:**
+   **GT-free validation** (does OAKG flag bad segmentations with no labels? scored by AUROC of flagged vs
+   actually-low-Dice, GT used only to grade the validator), **retrieval on predicted phenotypes** (does
+   γ-weighting survive real pipeline noise?), and **growth** (admitting predicted cases sharpens the cohort).
+   Experiments A–D validated these as components; this is the **system-level** claim — the reasoning layer working
+   on the messy output of the autonomous segmenters.
 
 **Next** — expand the pool with harder tumor-bearing CTs (segmentation robustness is the weakest link);
 multi-organ predicted-KG fidelity; like-for-like comparison vs **K-Prism / GF-Screen / PanTS**; paper draft
