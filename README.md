@@ -37,7 +37,7 @@ gives us 100 fully-paired cases to actually train organ segmentation on.
 |---|---|---|---|
 | **Generic tumor model** (one model, prompt `"tumor"`) | pooled tumor slices: LiTS + Pancreas + KiTS + FLARE (~20.7k) | SAM3 fine-tune, no box | held-out **patients** per dataset → **≈0.70** (strict); cross-dataset curve 0.35→0.51 ([§5](#5-segmentation-results--the-generic-tumor-model)) |
 | **Organ models** — fine-tuned | FLARE-Task2 (100 image+label pairs) | SAM3 + GT box (semi-oracle) | 20 held-out **patients** → 0.92–0.99 ([§4a](#4a-organ-ceiling--flare-task2-models-patient-level-test-the-honest-organ-numbers)) |
-| **Organ models** — autonomous | *no training* (base SAM3 `"liver"` prompt) | concept prompt, no box | 5 held-out FLARE23 CTs → liver 0.82; small organs need fine-tuning (§4b) |
+| **Organ models** — autonomous | *no training* (base SAM3 `"liver"` prompt) | concept prompt, no box | 40 held-out FLARE CTs → raw mean 0.49, **KG-repaired 0.61** (§4b) |
 
 **What happens when a NEW CT arrives (the payoff):**
 ```
@@ -155,23 +155,39 @@ matches; **spurious-match rate** = fraction of retrieved that share ≤1 organ y
 *Meaning:* with a label to localise the organ, SAM3 segments abdominal organs very accurately on brand-new
 patients; pancreas is the hardest (small, low-contrast). This is the **ceiling** the autonomous numbers below aim at.
 
-### 4b. Autonomous organ — full-volume, no labels *(Experiment D — the no-labels number)*
-**No training** (base SAM3 concept prompt, `"liver"` etc., no box) · **tested on** 5 held-out **FLARE23**
-cases that carry organ labels · **full-volume** Dice (the model must also decide *which* slices contain
-the organ). Ceiling column = semi-oracle GT-box on the same FLARE23 cases (`flare23_predict.py`). Script:
-`exp_autonomous_organ_sweep.py`.
+### 4b. Autonomous full-volume segmentation — and the **KG-guided repair ablation** (Experiments D + E)
+**Fully autonomous** (base SAM3 concept-prompt organs + the generic `"tumor"` model, **no boxes, no
+labels**) on **40 held-out full FLARE cases** (whole CT + 13-organ + tumor labels), **full-volume Dice**
+(the model must also find *which* slices contain each structure). The **+ KG-repair** column applies the
+knowledge graph's anatomical atlas (§6) to clean each autonomous mask — keep the plausible connected
+component per organ, drop spurious blobs, remove floating tumor. Scripts: `exp_autonomous_organ_sweep.py`,
+`kg_guided_segment.py`, `kg_guided_eval.py`.
 
-| Organ | Autonomous (base concept, full-volume) | Semi-oracle ceiling (same cases) | Gap |
-|---|:--:|:--:|:--:|
-| Liver | **0.82** | 0.973 | 0.15 |
-| Spleen | 0.585 | 0.962 | 0.38 |
-| Left / right kidney | 0.46 / 0.44 | 0.956 | ~0.50 |
-| Pancreas | 0.306 | 0.882 | 0.58 |
+| Structure | Autonomous **raw** | **+ KG-repair** | Δ (KG effect) | Semi-oracle ceiling |
+|---|:--:|:--:|:--:|:--:|
+| Liver | 0.80 | **0.85** | **+0.04** | 0.985 |
+| Spleen | 0.61 | **0.76** | **+0.16** | 0.980 |
+| Left kidney | 0.49 | **0.77** | **+0.28** | 0.970 |
+| Right kidney | 0.47 | **0.56** | **+0.09** | 0.970 |
+| Pancreas | 0.30 | **0.42** | **+0.12** | 0.919 |
+| Tumor (full-volume) | 0.28 | 0.27 | −0.01 | — |
+| **mean** | **0.49** | **0.61** | **+0.11** | |
 
-*Meaning:* **base** concept prompting holds up full-volume only for the **liver**; small organs collapse
-(it over-segments empty slices and misses the organ elsewhere). **This is the clear next step:** per-organ
-**fine-tuning** — the same recipe that trains the tumor model in §5, which lifts small-organ segmentation
-well above the base numbers above (to be measured per-organ at the patient level).
+*(mean over 40 held-out full FLARE cases, `results/kg_guided_eval.json`; supersedes an earlier 5-case pilot which gave the same picture.)*
+
+**This is the ablation that isolates the KG's contribution to segmentation.** Two findings:
+1. **Base concept prompting is weak full-volume on small organs** — it over-segments spurious blobs and
+   picks wrong slices (raw: kidneys/spleen/pancreas 0.30–0.61; only the large, high-contrast liver holds
+   up at 0.81). The tumor is hardest full-volume (0.29) because it must also *localise* which slices.
+2. **The KG-guided repair recovers a large fraction with no labels — +0.11 mean, up to +0.28 (left
+   kidney).** The gains are concentrated where autonomous segmentation is messiest (kidneys, spleen): the
+   atlas-driven "keep the plausible component, drop spurious blobs" rule directly fixes over-segmentation.
+   It is **~neutral on tumor** (−0.01) — tumor is already organ-filtered in the baseline, so the extra
+   component-adjacency rule has little to gain and occasionally trims a real tumor edge.
+
+So the knowledge graph **measurably improves autonomous segmentation** (organs mean **0.54 → 0.67**),
+closing the loop: segmentation feeds the KG, and the KG's accumulated anatomy repairs segmentation.
+Per-organ **fine-tuning** (the tumor-model recipe, §5) is the complementary next lever for the small organs.
 
 ### 4c. Per-dataset organ/tumor delivery models *(handed off to collaborators)*
 Fine-tuned SAM3, semi-oracle (GT-box), **case-level** test. These are the `sam3_pancreas_*` /
@@ -223,14 +239,32 @@ of the old "0.02 on unseen FLARE" anecdote.*
 | Pancreas | 0.648 |
 | **overall** | **0.704** |
 
-*Honesty note.* This **≈0.70** is the **strictly patient-level** number (val + test held out by patient,
+*Honesty note.* This **0.70** is the **strictly patient-level** number (val + test held out by patient,
 14 epochs/stage). An earlier **≈0.85** was optimistic — it mixed a longer 25-epoch model with a
 slice-level LiTS split. **0.70 is the number to trust**; a longer training budget would likely lift the
-deployment model (the cross-dataset curve is unaffected — it is the headline result).
+deployment model (the cross-dataset curve is unaffected — it is the headline result). The 0.938 sometimes
+quoted is a *validation* number, not a held-out patient test.
 
-*Meaning:* on genuinely unseen **patients** the autonomous tumor model scores **≈0.83–0.86** depending on
-dataset (KiTS highest, Pancreas lowest), **≈0.70 overall** at the strict patient-level. (The 0.938 sometimes quoted is a *validation*
-number, not a held-out patient test — we don't report it as the result.)
+**(iii) Full incremental picture — within-dataset (in-dist) vs held-out cross-dataset, per stage:**
+
+| Stage | Trained on | Within-dataset (in-dist) test | Cross-dataset (held-out) test |
+|---|---|---|---|
+| 1 | LiTS | LiTS 0.67 | Pancreas 0.00 · FLARE 0.35 · KiTS 0.39 |
+| 2 | +Pancreas | LiTS 0.67 · Pancreas 0.62 | FLARE 0.41 · KiTS 0.47 |
+| 3 | +KiTS | LiTS 0.66 · Pancreas 0.62 · KiTS 0.78 | **FLARE 0.51** |
+| 4 | +FLARE *(deployment)* | LiTS 0.67 · Pancreas 0.65 · KiTS 0.79 · FLARE 0.71 | — |
+
+*Reading it:* **within-dataset** Dice per organ is roughly stable once that dataset is trained;
+**cross-dataset** (a dataset never seen) climbs steadily with coverage — FLARE 0.35 → 0.41 → 0.51 — and
+jumps to 0.71 once FLARE is trained. The gap between held-out (0.51) and in-dist (0.71) is exactly the
+value of adding a dataset. Pancreas at 0.00 in stage 1 (only liver tumors known) is the sharpest form of
+the "coverage must be trained in" lesson.
+
+**Training method.** SAM3 fine-tune, text prompt `"tumor"`, no box; partial-freeze (first 20 encoder
+blocks frozen), Dice+Focal loss (0.7/0.3), discriminative LR (enc 1e-5 / dec 1e-4) + cosine, DDP on 2
+GPUs. Each of the 4 stages **warm-starts from the previous** and trains 14 epochs (patience 5). The
+seed-42 split holds out **whole patients** for both val and test (0 patient overlap, verified). FLARE's
+test patients stay held out throughout, so the cross-dataset numbers are leakage-free.
 
 ### 5b. Coverage grows the model
 Validation Dice as the pool grew: **0.37** (base, no training) → **0.909** (v1: LiTS+Pancreas) →
@@ -350,8 +384,9 @@ Covered in §4b: with no training and no labels, base SAM3 segments the **liver*
 | **A** | Does it find the right similar patients on a merged graph? | Yes — 0.78 right / 0.14 junk; **collapses to 0.08 / 0.84 without our γ weighting** |
 | **B** | Is an AI-built graph as good as a doctor-built one? | Yes — volumes within ~5%, identical query rankings |
 | **C** | Does bad-mask detection improve as the graph grows? | Yes — 0.78 vs 0.66 baseline, and it climbs with size |
-| **D** | Can it segment organs with no labels? | Liver yes (0.82); small organs need fine-tuning |
-| **Tumor** | How good is the tumor model on unseen patients? | ≈0.70 strict patient-level (KiTS 0.79 / FLARE 0.71 / LiTS 0.67 / Pancreas 0.65); cross-dataset 0.35→0.51 |
+| **D** | Can it segment organs with no labels (full-volume)? | Raw mean 0.49 — liver ok (0.80), small organs weak |
+| **E** | **Does the KG improve segmentation?** | **Yes — KG-repair lifts autonomous mean 0.49 → 0.61 (+0.11), organs 0.54 → 0.67, up to +0.28 (kidney)** |
+| **Tumor** | How good is the tumor model on unseen patients? | 0.70 strict patient-level (KiTS 0.79 / FLARE 0.71 / LiTS 0.67 / Pancreas 0.65); cross-dataset curve 0.35→0.41→0.51 |
 
 ---
 
