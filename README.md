@@ -4,8 +4,8 @@
 and their tumors**, turn those masks into an **ontology-grounded knowledge graph**, and use that graph to
 validate the result *without ground truth*, retrieve similar patients, and get smarter with every new case.
 
-This README describes the **current approach and status**, with a single headline results table (the baseline
-organ model, [§6](#6-status--roadmap)); the full set of numbers lives in [`results/`](results/) (JSON + figures)
+This README describes the **current approach and status**, with headline results tables (the baseline organ and
+tumor models, [§6](#6-status--roadmap)); the full set of numbers lives in [`results/`](results/) (JSON + figures)
 and the walkthrough notebooks in [`src/notebooks/`](src/notebooks/).
 
 ---
@@ -169,6 +169,29 @@ patient-level 3-D number will be lower, see [§3](#3-datasets--splits))*:
 
 Pancreas is the hard organ (the KG's clearest target); FLARE-Task2 is cleanest across the board. The **+KG**
 deltas fill in when that run completes (`results/organ_generic_kg.json`). Source: `results/organ_generic.json`.
+
+**Baseline generic tumor model** — one model, prompt `"tumor"`, no box, trained incrementally
+(LiTS → +Pancreas → +KiTS → +FLARE), strictly patient-level. Two views:
+
+*(a) Deployment (all 4 datasets) — within-dataset test Dice:*
+
+| LiTS | KiTS | MSD Pancreas | FLARE23 | **mean** |
+|:--:|:--:|:--:|:--:|:--:|
+| 0.671 | 0.788 | 0.648 | 0.708 | **0.704** |
+
+*(b) Cross-dataset generalization — FLARE23 held out until the last stage; its Dice as coverage grows (a
+**cross-dataset** number until the last row, then in-distribution):*
+
+| Trained on | FLARE23 Dice | |
+|---|:--:|---|
+| LiTS | 0.348 | cross-dataset |
+| + Pancreas | 0.405 | cross-dataset |
+| + KiTS | 0.514 | cross-dataset |
+| + FLARE (all 4) | 0.708 | in-distribution |
+
+**Coverage must be trained in:** each dataset added lifts the held-out FLARE23 number (**0.35 → 0.51**), and
+folding FLARE in reaches 0.71 — the evidence that a generic model generalizes only to tumor types it has seen.
+Same slice-level caveat as above. Source: `results/tumor_incremental.json`.
 
 **Established** — generic tumor baseline (patient-split + cross-dataset generalization); OAKG experiments A–D
 (component-level, on curated / GT-derived inputs). *(Numbers: `results/`.)*
