@@ -43,6 +43,11 @@ else:
 # ---- TUMOR model (final all-4-dataset stage) ----
 tb, tk = load("tumor_incremental.json"), load("tumor_incremental_kg.json")
 if tb and tk:
+    eb, ek = tb.get("epochs"), tk.get("epochs")
+    if eb != ek:
+        warn = f"NOT epoch-matched (baseline={eb} ep, KG={ek} ep) -> tumor deltas are DIRECTIONAL only"
+        out["tumor_warning"] = warn
+        print(f"\n  ⚠️  {warn}")
     print("\nTUMOR model — final stage (all 4 datasets), per-dataset test Dice")
     fb = tb["stages"][-1]["per_dataset_test"]; fk = tk["stages"][-1]["per_dataset_test"]
     td = {}
