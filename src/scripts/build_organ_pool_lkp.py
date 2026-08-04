@@ -104,15 +104,22 @@ ft2_labels = (sorted(glob.glob("/scratch/ud3d4/acm_data/FLARE_Task2/train_gt_lab
 for organ, labs in FLARE_LAB.items():
     run_source("flare_task2", ft2_labels, ft2_loader, labs, 2, organ)
 
-# ---- FLARE23 40 full cases (nii, axial=2, l/k/p) ----
-def f23_loader(lp):
-    cid = os.path.basename(lp).replace("_label.nii.gz", "")
-    ct = nib.load(f"/scratch/ud3d4/acm_data/flare_full_cases/{cid}_ct.nii.gz").get_fdata()
-    seg = np.asarray(nib.load(lp).dataobj).astype(np.uint8)
-    return ct, seg, cid
-f23_labels = sorted(glob.glob("/scratch/ud3d4/acm_data/flare_full_cases/*_label.nii.gz"))
-for organ, labs in FLARE_LAB.items():
-    run_source("flare23", f23_labels, f23_loader, labs, 2, organ)
+# ---- FLARE23: reuse the byte-extracted flare_organ_pool (950 cases, l/k/p slices already prepared) ----
+fop = "/scratch/ud3d4/acm_data/flare_organ_pool"
+if os.path.exists(f"{fop}/meta.json"):
+    fi = np.load(f"{fop}/images.npy"); fm = np.load(f"{fop}/masks.npy"); fmeta = json.load(open(f"{fop}/meta.json"))
+    cnt = Counter()
+    for i in range(len(fmeta)):
+        o = fmeta[i]["organ"]
+        if cnt[o] >= CAP:
+            continue
+        imgs.append(fi[i]); masks.append((fm[i] > 0).astype(np.uint8))
+        meta.append({"organ": o, "dataset": "flare23", "case": fmeta[i]["case"]})
+        cnt[o] += 1
+    for o in ("liver", "kidney", "pancreas"):
+        print(f"{'flare23':12s} {o:9s}: {cnt[o]:5d} slices (reused flare_organ_pool)", flush=True)
+else:
+    print("flare23: flare_organ_pool not built yet — skipped (run extract_flare_organ_slices.py first)", flush=True)
 
 # ---- KiTS kidney: reuse the already-extracted kidney pool ----
 kp = "/scratch/ud3d4/acm_data/kits_kidney_pool"

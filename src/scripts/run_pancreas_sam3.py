@@ -97,12 +97,14 @@ def augment_strong(img, label):
 
 # ── Dataset ──
 class Sam3Dataset(Dataset):
-    """Dataset that returns images and GT masks for SAM3."""
-    def __init__(self, images, labels, augment=False, strong_augment=False):
+    """Dataset that returns images and GT masks for SAM3. If `texts` is given (one per sample), it also
+    returns a per-sample text prompt (used by the organ model: "liver"/"kidney"/"pancreas")."""
+    def __init__(self, images, labels, augment=False, strong_augment=False, texts=None):
         self.images = images
         self.labels = labels
         self.augment = augment
         self.strong_augment = strong_augment
+        self.texts = texts
 
     def __len__(self):
         return len(self.images)
@@ -119,6 +121,8 @@ class Sam3Dataset(Dataset):
             if isinstance(img, np.ndarray) and img.dtype == np.uint8:
                 shift = int(np.random.randint(-15, 16))
                 img = np.clip(img.astype(np.int16) + shift, 0, 255).astype(np.uint8)
+        if self.texts is not None:
+            return img, label, self.texts[idx]
         return img, label
 
 
@@ -272,6 +276,9 @@ def evaluate_zero_shot(x_test, y_test, text_prompt, use_boxes=True, tag="zerosho
 
 # ── Fine-tuning ──
 def collate_sam3(batch):
+    if len(batch[0]) == 3:                       # (img, label, text) — per-slice prompts (organ model)
+        images, labels, texts = zip(*batch)
+        return list(images), list(labels), list(texts)
     images, labels = zip(*batch)
     return list(images), list(labels)
 
@@ -332,10 +339,14 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
         sam3.train()
         ep = {"loss": [], "dice": []}
 
-        for images_batch, labels_batch in tl:
+        for batch in tl:
+            if len(batch) == 3:
+                images_batch, labels_batch, tp = batch      # per-slice organ prompts
+            else:
+                images_batch, labels_batch, tp = batch[0], batch[1], text_prompt
             inputs, gt_masks = prepare_sam3_batch(
                 images_batch, labels_batch, processor, device,
-                text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
+                text_prompt=tp, use_boxes=cfg.get("use_boxes", True)
             )
             optimizer.zero_grad()
             with autocast("cuda"):
@@ -363,10 +374,14 @@ def train_worker(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
         ev = {"loss": [], "dice": []}
 
         with torch.no_grad():
-            for images_batch, labels_batch in vl:
+            for batch in vl:
+                if len(batch) == 3:
+                    images_batch, labels_batch, tp = batch
+                else:
+                    images_batch, labels_batch, tp = batch[0], batch[1], text_prompt
                 inputs, gt_masks = prepare_sam3_batch(
                     images_batch, labels_batch, processor, device,
-                    text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
+                    text_prompt=tp, use_boxes=cfg.get("use_boxes", True)
                 )
                 with autocast("cuda"):
                     outputs = sam3(**inputs)
@@ -526,8 +541,8 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
 
     strong_augment = cfg.get("strong_augment", True)
     text_prompt = cfg.get("text_prompt", "visual")
-    train_ds = Sam3Dataset(x_tr, y_tr, augment=False, strong_augment=strong_augment)
-    val_ds = Sam3Dataset(x_va, y_va, augment=False)
+    train_ds = Sam3Dataset(x_tr, y_tr, augment=False, strong_augment=strong_augment, texts=cfg.get("texts_tr"))
+    val_ds = Sam3Dataset(x_va, y_va, augment=False, texts=cfg.get("texts_va"))
 
     best, no_imp = float("inf"), 0
     bs = cfg.get("batch_size", 2)
@@ -557,10 +572,14 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
         sam3.train()
         ep = {"loss": [], "dice": []}
 
-        for images_batch, labels_batch in tl:
+        for batch in tl:
+            if len(batch) == 3:
+                images_batch, labels_batch, tp = batch      # per-slice organ prompts
+            else:
+                images_batch, labels_batch, tp = batch[0], batch[1], text_prompt
             inputs, gt_masks = prepare_sam3_batch(
                 images_batch, labels_batch, processor, device,
-                text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
+                text_prompt=tp, use_boxes=cfg.get("use_boxes", True)
             )
             optimizer.zero_grad()
             with autocast("cuda"):
@@ -592,10 +611,14 @@ def train_worker_v3(rank, world_size, port, cfg, x_tr, y_tr, x_va, y_va):
         ev = {"loss": [], "dice": []}
 
         with torch.no_grad():
-            for images_batch, labels_batch in vl:
+            for batch in vl:
+                if len(batch) == 3:
+                    images_batch, labels_batch, tp = batch
+                else:
+                    images_batch, labels_batch, tp = batch[0], batch[1], text_prompt
                 inputs, gt_masks = prepare_sam3_batch(
                     images_batch, labels_batch, processor, device,
-                    text_prompt=text_prompt, use_boxes=cfg.get("use_boxes", True)
+                    text_prompt=tp, use_boxes=cfg.get("use_boxes", True)
                 )
                 with autocast("cuda"):
                     outputs = sam3(**inputs)
