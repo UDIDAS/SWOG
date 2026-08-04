@@ -155,6 +155,110 @@ manual localization; small organs (pancreas) and tumors need medical fine-tuning
 must be grown deliberately (LiTS→Pancreas→FLARE→KiTS: 0.909→0.938). Combined, autonomous organs + the
 trained tumor model produce organ masks, tumor masks, and the imaging KG for new unlabeled CT.""")
 
+# 8 -----------------------------------------------------------------
+md("""## 8. The KG-in-training ablation — baseline vs KG *(live demo)*
+
+**What this section shows.** Each model is trained **twice** — a plain **baseline** and a **`--kg`** version
+that adds the KG anatomical-plausibility loss — so we can measure what the knowledge graph contributes *to
+learning*. The cells below **load the current results files**, so they fill in automatically as the runs
+finish (re-run a cell if a file was still training when you opened this).
+
+**How to read it (important for expectations):**
+- These are **slice-level, patient-split** Dice — *optimistic* by construction (the model is only scored on
+  slices that contain the organ). The honest deployment number is the **patient-level / full-volume** pass,
+  which is a separate step and will be **lower**, most of all for pancreas and tumor.
+- The **organ** ablation is epoch-matched at convergence — trustworthy. The **tumor** ablation is a
+  **directional first look** (KG@6 vs a 14-epoch baseline, not epoch-matched); a small negative may be the
+  epoch gap, not the KG. The cell prints a ⚠️ when that's the case.
+- Expect the KG's effect to show up in **pancreas** and, later, in the **full-volume / false-positive** regime
+  — not in the blended slice-level average.""")
+
+co("""import os, json, glob
+import numpy as np
+import matplotlib.pyplot as plt
+
+R = next((p for p in ["../../results", os.path.expanduser("~/Desktop/SWOG/results"),
+                      "/home/ud3d4/Desktop/SWOG/results"] if os.path.isdir(p)), "results")
+def load(name):
+    p = os.path.join(R, name)
+    return json.load(open(p)) if os.path.exists(p) else None
+print("results dir:", R)""")
+
+co("""# --- ORGAN: baseline vs KG (slice-level, held-out patient test) ---
+ob, ok = load("organ_generic.json"), load("organ_generic_kg.json")
+if ob is None:
+    print("organ baseline not found yet.")
+else:
+    organs = list(ob["per_organ"]); base = [ob["per_organ"][o] for o in organs]
+    if ok:
+        kg = [ok["per_organ"].get(o, np.nan) for o in organs]
+        x = np.arange(len(organs)); w = 0.38
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.bar(x - w/2, base, w, label="baseline", color="#7aa8d6")
+        ax.bar(x + w/2, kg, w, label="+ KG-in-training", color="#2f5c8f")
+        for i, (b, k) in enumerate(zip(base, kg)):
+            ax.text(i, max(b, k) + 0.012, f"{k-b:+.3f}", ha="center", fontsize=9)
+        ax.set_xticks(x); ax.set_xticklabels(organs); ax.set_ylim(0, 1)
+        ax.set_ylabel("slice-level Dice"); ax.set_title("Organ model — baseline vs KG (Δ = KG effect)")
+        ax.legend(); plt.show()
+        print("per-organ Δ (KG - baseline):", {o: round(k-b, 4) for o, b, k in zip(organs, base, kg)})
+    else:
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.bar(organs, base, color="#7aa8d6"); ax.set_ylim(0, 1); ax.set_ylabel("slice-level Dice")
+        ax.set_title("Organ model — baseline (KG variant still training)"); plt.show()
+        print("baseline per-organ:", ob["per_organ"])
+        print("KG variant: TRAINING — re-run this cell once organ_generic_kg.json exists.")""")
+
+co("""# --- TUMOR: baseline vs KG (final all-4-dataset stage; directional if epochs differ) ---
+tb, tk = load("tumor_incremental.json"), load("tumor_incremental_kg.json")
+if tb is None:
+    print("tumor baseline not found.")
+else:
+    fb = tb["stages"][-1]["per_dataset_test"]
+    if tk:
+        fk = tk["stages"][-1]["per_dataset_test"]
+        if tb.get("epochs") != tk.get("epochs"):
+            print(f"WARNING  DIRECTIONAL: baseline={tb.get('epochs')} ep vs KG={tk.get('epochs')} ep - not epoch-matched.")
+        dsets = sorted(set(fb) & set(fk)); base = [fb[d] for d in dsets]; kg = [fk[d] for d in dsets]
+        x = np.arange(len(dsets)); w = 0.38
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.bar(x - w/2, base, w, label="baseline", color="#e0a97a")
+        ax.bar(x + w/2, kg, w, label="+ KG", color="#a9541c")
+        for i, (b, k) in enumerate(zip(base, kg)):
+            ax.text(i, max(b, k) + 0.012, f"{k-b:+.3f}", ha="center", fontsize=9)
+        ax.set_xticks(x); ax.set_xticklabels(dsets); ax.set_ylim(0, 1)
+        ax.set_ylabel("slice-level tumor Dice"); ax.set_title("Tumor model — baseline vs KG (final, all 4 datasets)")
+        ax.legend(); plt.show()
+    else:
+        stages = [s["name"] for s in tb["stages"]]
+        held = [np.mean(list(s["cross_dataset_heldout"].values())) if s["cross_dataset_heldout"] else np.nan
+                for s in tb["stages"]]
+        fig, ax = plt.subplots(figsize=(7, 4))
+        ax.plot(range(len(stages)), held, "o-", color="#a9541c")
+        ax.set_xticks(range(len(stages))); ax.set_xticklabels(stages, rotation=20)
+        ax.set_ylabel("held-out cross-dataset mean Dice")
+        ax.set_title("Tumor — coverage grows generalization (baseline; KG variant pending)"); plt.show()
+        print("tumor final per-dataset (baseline):", fb)
+        print("KG variant: pending step 4 — re-run once tumor_incremental_kg.json exists.")""")
+
+co("""# --- ablation summary + confusion matrices (produced by the patient-level pass) ---
+summ = load("kg_ablation_summary.json")
+if summ:
+    print("kg_ablation_summary.json:\\n", json.dumps(summ, indent=1))
+from IPython.display import Image, display
+imgs = sorted(glob.glob(os.path.join(R, "confusion_*_*.png")))
+if imgs:
+    for p in imgs:
+        print(os.path.basename(p)); display(Image(p))
+else:
+    print("Confusion matrices: pending the patient-level / full-volume pass (confusion_eval.py).")""")
+
+md("""### What to expect next
+This section is **layer 1** (does the KG help the segmenter *learn*). The real payoff is the **end-to-end**
+run — the **patient-level 3-D Dice**, the **confusion matrices** above, and the **system-level OAKG test**
+(GT-free validation, retrieval on *predicted* phenotypes, cohort growth) on the pipeline's own output. Those
+land after the full-volume pass; this notebook will render them here as they arrive.""")
+
 nb = new_notebook(); nb["cells"] = c
 nb.metadata["kernelspec"] = {"name": "python3", "display_name": "Python 3"}
 out = "/home/ud3d4/Desktop/SWOG/src/notebooks/Segmentation_Results.ipynb"
