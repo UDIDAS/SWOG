@@ -38,7 +38,8 @@ STAGES = [("s1_lits", {"lits"}),
           ("s2_pancreas", {"lits", "pancreas"}),
           ("s3_kits", {"lits", "pancreas", "kits"}),          # <- headline cross-dataset number vs FLARE
           ("s4_flare", {"lits", "pancreas", "kits", "flare"})]  # <- full deployment model
-EPOCHS, PATIENCE = 6, 2                                  # capped: tumor stages converge early (see organ baseline)
+EPOCHS, PATIENCE = 14, 5                                 # MATCH the existing baseline (results/tumor_incremental.json)
+#   so baseline vs --kg is a clean ablation (identical recipe + epoch budget; only the KG loss differs).
 
 
 def load_all():
