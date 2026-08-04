@@ -4,9 +4,9 @@
 and their tumors**, turn those masks into an **ontology-grounded knowledge graph**, and use that graph to
 validate the result *without ground truth*, retrieve similar patients, and get smarter with every new case.
 
-This README describes the **current approach and status**. It intentionally carries **no result tables** —
-every number lives in [`results/`](results/) (JSON + figures) and the walkthrough notebooks in
-[`src/notebooks/`](src/notebooks/).
+This README describes the **current approach and status**, with a single headline results table (the baseline
+organ model, [§6](#6-status--roadmap)); the full set of numbers lives in [`results/`](results/) (JSON + figures)
+and the walkthrough notebooks in [`src/notebooks/`](src/notebooks/).
 
 ---
 
@@ -157,6 +157,18 @@ stable). Priors are computed from the training split only (`build_organ_train_pr
 epoch 4); the **tumor** KG@6 is compared to the existing **14-epoch** baseline, so its delta is a
 **directional first look, not epoch-matched** — `compare_kg_ablation.py` self-flags this, and a matched tumor
 baseline@6 is a cheap follow-up if the directional result warrants it.
+
+**Baseline generic organ model — held-out per-dataset test Dice** *(slice-level, patient-split; the
+patient-level 3-D number will be lower, see [§3](#3-datasets--splits))*:
+
+| Organ | FLARE23 | FLARE-Task2 | LiTS | KiTS | MSD | **mean** |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| **Liver** | 0.898 | 0.962 | 0.949 | — | — | **0.941** |
+| **Kidney** | 0.885 | 0.938 | — | 0.889 | — | **0.909** |
+| **Pancreas** | 0.756 | 0.836 | — | — | 0.771 | **0.787** |
+
+Pancreas is the hard organ (the KG's clearest target); FLARE-Task2 is cleanest across the board. The **+KG**
+deltas fill in when that run completes (`results/organ_generic_kg.json`). Source: `results/organ_generic.json`.
 
 **Established** — generic tumor baseline (patient-split + cross-dataset generalization); OAKG experiments A–D
 (component-level, on curated / GT-derived inputs). *(Numbers: `results/`.)*
