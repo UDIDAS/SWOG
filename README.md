@@ -64,6 +64,16 @@ from the shared SAM3 recipe (partial-freeze, Dice+Focal, discriminative LR, cosi
 it could never touch a *new, unlabeled* scan. SAM3 concept prompting removes that dependency; the two models
 above are the autonomous, deployable form.
 
+**Why fine-tune a pretrained model at all?** SAM3 is pretrained on *natural* images — an excellent
+"segment-what-I-point-at" engine, but with **no notion of medical structures on CT**. Fine-tuning
+(partial-freeze: keep the backbone, train only the last ~20 blocks + mask decoder) teaches it three things
+pretraining can't: (1) the **concepts** — what liver/kidney/pancreas/tumor look like on CT; (2) to **answer the
+text prompt on CT** (outline the liver from the word alone); (3) the **CT domain** — HU-windowed grayscale
+cross-sections, nothing like natural photos. The lift is largest where SAM3 knows least: base concept prompting
+scores ~0.93 on the big, obvious **liver** but only **0.27–0.37 on tumors (essentially fails)** — fine-tuning
+takes tumors to 0.70–0.94. So the training is what makes tumor segmentation *exist at all*; the KG loss then
+layers anatomical plausibility on top.
+
 ---
 
 ## 3. Datasets & splits
@@ -102,6 +112,27 @@ curve is a fair comparison):
 | KiTS23 | 126 / 3,901 | 18 / 436 | 36 / 930 |
 | FLARE23 | 189 / 5,208 | 27 / 453 | 54 / 1,608 |
 | **Total** | **588 / 14,624** | **83 / 1,897** | **167 / 4,152** |
+
+**Coverage — available vs. used (patients).** We do not use every case; the reasons differ by dataset:
+
+| Dataset | Available | Organ used | Tumor used | Why not all |
+|---|:--:|:--:|:--:|---|
+| LiTS | 131 | 34 | 107 | organ: 5k-slice cap · tumor: 107 have a tumor |
+| MSD Pancreas | 281 | 165 | 281 | organ: 5k cap · tumor: **all** (every case has a tumor) |
+| KiTS23 | ~489 | 100 | 180 | **extraction subset** (we pulled 100–180, not all) |
+| FLARE-Task2 | 100 | 100 | — | organ: **all** · tumor: no tumor labels in this set |
+| FLARE23 | 1,312 labeled (~950 imaged) | 449 | 270 | organ: **extraction stopped at 449/950** · tumor: 270 tumor-bearing imaged |
+
+Four reasons cases drop out: **(1)** a **5,000-slice balance cap** per (organ, dataset) so no source dominates
+a class; **(2)** the tumor pool is **tumor-bearing only**; **(3)** FLARE-Task2 has **no tumor labels**; **(4)**
+**extraction cutoffs** (FLARE23 organ 449/950 — cluster restart; KiTS a subset of ~489). Only (4) is
+unintended — resumable, usable data left on the table (the clearest lever for the hard classes, pancreas/tumor).
+
+**FLARE23 label note.** The local label store holds ~2,200 FLARE23 files, but **888 are empty** (the unlabeled
+portion of the challenge) — only **1,312 carry real annotations**, which is the number we use everywhere.
+
+**Label scope.** For FLARE, segmentation trains on **liver / kidney / pancreas (+ tumor) only** — spleen and the
+other eight organs are dropped from *training*; the **KG still records all 13** (free anatomy, richer retrieval).
 
 **Split vs. score — read this carefully.** The *split* is patient-level, but the automated test metric is a
 **slice-level 2-D Dice** (averaged over the held-out patients' organ-present slices). That is patient-**split**,
