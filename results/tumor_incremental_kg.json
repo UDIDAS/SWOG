@@ -1,0 +1,48 @@
+{
+  "stages": [
+    {
+      "name": "s1_lits",
+      "trained_on": [
+        "lits"
+      ],
+      "per_dataset_test": {
+        "pancreas": 0.0709,
+        "lits": 0.7038,
+        "flare": 0.3987,
+        "kits": 0.4232
+      },
+      "in_distribution": {
+        "lits": 0.7038
+      },
+      "cross_dataset_heldout": {
+        "pancreas": 0.0709,
+        "flare": 0.3987,
+        "kits": 0.4232
+      },
+      "overall_indist": 0.7038
+    },
+    {
+      "name": "s2_pancreas",
+      "trained_on": [
+        "lits",
+        "pancreas"
+      ],
+      "per_dataset_test": {
+        "pancreas": 0.6117,
+        "lits": 0.6865,
+        "flare": 0.3599,
+        "kits": 0.4392
+      },
+      "in_distribution": {
+        "pancreas": 0.6117,
+        "lits": 0.6865
+      },
+      "cross_dataset_heldout": {
+        "flare": 0.3599,
+        "kits": 0.4392
+      },
+      "overall_indist": 0.6491
+    }
+  ],
+  "epochs": 6
+}

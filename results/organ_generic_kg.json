@@ -1,0 +1,18 @@
+{
+  "per_organ": {
+    "liver": 0.9419,
+    "pancreas": 0.7855,
+    "kidney": 0.9052
+  },
+  "per_organ_dataset": {
+    "kidney/flare23": 0.8742,
+    "kidney/flare_task2": 0.9375,
+    "kidney/kits": 0.888,
+    "liver/flare23": 0.8994,
+    "liver/flare_task2": 0.9636,
+    "liver/lits": 0.9489,
+    "pancreas/flare23": 0.7487,
+    "pancreas/flare_task2": 0.8384,
+    "pancreas/msd": 0.7705
+  }
+}
