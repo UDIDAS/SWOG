@@ -18,19 +18,19 @@ import trimesh
 from scipy import ndimage
 from skimage.measure import marching_cubes
 
-# canonical label -> (organ name, RGBA color). Left+right kidney merge into one "kidney".
+# canonical label -> (organ name, RGBA color). Kidneys kept SEPARATE (KG + metrics.json score them apart).
 CANON = {
-    1:  ("liver",    (170,  95,  70, 255)),
-    2:  ("kidney",   (125,  95, 180, 255)),
-    13: ("kidney",   (125,  95, 180, 255)),
-    4:  ("pancreas", ( 90, 180, 115, 255)),
-    14: ("tumor",    (235,  55,  55, 255)),
-    3:  ("spleen",   (180, 125,  95, 255)),
+    1:  ("liver",        (170,  95,  70, 255)),
+    2:  ("right_kidney", (125,  95, 180, 255)),
+    13: ("left_kidney",  (110,  80, 165, 255)),
+    3:  ("spleen",       (180, 125,  95, 255)),
+    4:  ("pancreas",     ( 90, 180, 115, 255)),
+    14: ("tumor",        (235,  55,  55, 255)),
 }
-DEFAULT_ORGANS = ["liver", "kidney", "pancreas", "tumor"]
+DEFAULT_ORGANS = ["liver", "right_kidney", "left_kidney", "spleen", "pancreas", "tumor"]
 MIN_VOXELS = 60          # skip specks
 SMOOTH_SIGMA = 0.7       # binary pre-smoothing -> nicer surface
-LAPLACIAN_ITERS = 8      # surface smoothing after marching cubes
+TAUBIN_ITERS = 10        # volume-PRESERVING smoothing (Laplacian shrank small structures up to ~48%)
 
 
 def _organ_labels(organ):
@@ -51,12 +51,18 @@ def mesh_one(binary, spacing, color, step=2):
     m = trimesh.Trimesh(vertices=verts, faces=faces, process=True)
     if len(m.faces) == 0:
         return None
-    trimesh.smoothing.filter_laplacian(m, iterations=LAPLACIAN_ITERS)
+    pre = m.vertices.copy()
+    try:
+        trimesh.smoothing.filter_taubin(m, iterations=TAUBIN_ITERS)   # volume-preserving (unlike Laplacian)
+    except Exception:
+        m.vertices = pre
+    if not np.isfinite(m.vertices).all():        # guard: smoothing can diverge to NaN on odd components
+        m.vertices = pre
     m.visual.face_colors = np.array(color, dtype=np.uint8)
     return m
 
 
-def meshify(label_path, out_dir, tag="seg", organs=None):
+def meshify(label_path, out_dir, tag="seg", organs=None, glb=True):
     organs = organs or DEFAULT_ORGANS
     os.makedirs(out_dir, exist_ok=True)
     nii = nib.load(label_path)
@@ -75,14 +81,18 @@ def meshify(label_path, out_dir, tag="seg", organs=None):
             continue
         m.export(os.path.join(out_dir, f"{organ}.stl"))
         scene.add_geometry(m, geom_name=organ)
+        try:
+            mvol = round(abs(float(m.volume)) / 1000.0, 2)      # mesh-enclosed volume (mm^3 -> cm^3)
+        except Exception:
+            mvol = None
         made[organ] = {"voxels": int(binary.sum()),
                        "volume_cm3": round(int(binary.sum()) * float(np.prod(spacing)) / 1000.0, 1),
-                       "faces": int(len(m.faces))}
-    glb = None
-    if made:
-        glb = os.path.join(out_dir, f"{tag}_organs.glb")
-        scene.export(glb)
-    return {"glb": glb, "spacing_mm": spacing, "organs": made}
+                       "mesh_volume_cm3": mvol, "faces": int(len(m.faces))}
+    glb_path = None
+    if made and glb:
+        glb_path = os.path.join(out_dir, f"{tag}_organs.glb")
+        scene.export(glb_path)
+    return {"glb": glb_path, "spacing_mm": spacing, "organs": made}
 
 
 if __name__ == "__main__":
