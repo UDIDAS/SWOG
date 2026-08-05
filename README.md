@@ -76,9 +76,32 @@ above are the autonomous, deployable form.
 | **FLARE-Task2** (100 vols) | ✅ | train organ (l/k/p) **+ KG records** | 13 organs |
 | **FLARE23** (1,312 labels; ~950 imaged) | ✅ ~950 | **train** organ (449 cases) + tumor (270 cases) from image slices; **KG** from all 1,312 labels | 13 organs + tumor |
 
-**Splitting.** Every training pool is split **by whole patient** (seed 42): validation and test are held-out
-*patients*, never other slices from a training patient — no leakage. Cross-dataset evaluation trains on some
-datasets and tests on an entirely unseen one.
+**Splitting.** Every training pool is split **by whole patient** (seed 42), roughly **70 / 10 / 20**
+train / val / test: validation and test are held-out *patients*, never other slices from a training patient —
+no leakage. Cross-dataset evaluation trains on some datasets and tests on an entirely unseen one. Exact counts
+(**patients / slices**):
+
+**Organ model** (`organ_pool_lkp` — one pooled model):
+
+| Dataset | Train (pat / slices) | Val | Test |
+|---|:--:|:--:|:--:|
+| LiTS | 25 / 3,883 | 3 / 409 | 6 / 708 |
+| KiTS23 | 70 / 2,822 | 10 / 447 | 20 / 552 |
+| MSD Pancreas | 116 / 3,521 | 16 / 469 | 33 / 1,010 |
+| FLARE-Task2 | 70 / 9,505 | 10 / 1,503 | 20 / 2,921 |
+| FLARE23 | 316 / 7,567 | 44 / 1,056 | 89 / 2,136 |
+| **Total** | **597 / 27,298** | **83 / 3,884** | **168 / 7,327** |
+
+**Tumor model** (incremental LODO — per-dataset *test* patients are fixed across all stages, so the coverage
+curve is a fair comparison):
+
+| Dataset | Train (pat / slices) | Val | Test |
+|---|:--:|:--:|:--:|
+| LiTS | 76 / 3,704 | 10 / 747 | 21 / 1,149 |
+| MSD Pancreas | 197 / 1,811 | 28 / 261 | 56 / 465 |
+| KiTS23 | 126 / 3,901 | 18 / 436 | 36 / 930 |
+| FLARE23 | 189 / 5,208 | 27 / 453 | 54 / 1,608 |
+| **Total** | **588 / 14,624** | **83 / 1,897** | **167 / 4,152** |
 
 **Split vs. score — read this carefully.** The *split* is patient-level, but the automated test metric is a
 **slice-level 2-D Dice** (averaged over the held-out patients' organ-present slices). That is patient-**split**,
