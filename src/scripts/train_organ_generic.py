@@ -6,6 +6,7 @@ each organ on its held-out patients, per source dataset. Data: organ_pool_lkp (l
 MSD + FLARE-Task2 + FLARE23).
 """
 import json
+import os
 import sys
 from collections import defaultdict, Counter
 
@@ -21,10 +22,11 @@ from run_pancreas_sam3 import (train_worker_v3, WORLD_SIZE, find_free_port,
 POOL = "/scratch/ud3d4/acm_data/organ_pool_lkp"
 KG = "--kg" in sys.argv                                   # KG-in-training plausibility loss on/off (ablation)
 EVAL_ONLY = "--eval-only" in sys.argv                     # skip training, just eval an existing checkpoint
-TAG = "_kg" if KG else ""
+AUSAM = "--ausam" in sys.argv                             # GT-box (semi-oracle): the BEST supervised segmenter
+TAG = "_ausam" if AUSAM else ("_kg" if KG else "")
 CKPT = f"{POOL}/sam3_organ_generic{TAG}.pth"
 OUT = f"/home/ud3d4/Desktop/SWOG/results/organ_generic{TAG}.json"
-EPOCHS, PATIENCE = 6, 2                                    # models converge by ~epoch 5 (capped for the ablation)
+EPOCHS, PATIENCE = (12, 4) if AUSAM else (6, 2)            # AUSAM: train longer -> best result (not a matched ablation)
 
 
 def patient_split(meta):
@@ -47,15 +49,22 @@ def patient_split(meta):
 
 def eval_per_organ(X, Y, meta, test_idx):
     from transformers import Sam3Processor
+    from run_pancreas_sam3 import bbox_from_mask
     dev = "cuda:0"
     proc = Sam3Processor.from_pretrained(SAM3_MODEL_ID, token=HF_TOKEN)
     model = _load_sam3_ckpt(CKPT, dev)
     dd = defaultdict(list)
     for i in test_idx:
-        organ = meta[i]["organ"]
-        inp = proc(images=[X[i]], text=[organ], return_tensors="pt")
+        organ = meta[i]["organ"]; gm = Y[i] > 0
+        pk = {"images": [X[i]], "text": [organ], "return_tensors": "pt"}
+        if AUSAM:                                          # semi-oracle: feed the GT-derived box
+            box = bbox_from_mask(gm.astype(np.uint8), pad=3)
+            H, W = gm.shape
+            pk["input_boxes"] = [[box if box is not None else [0, 0, W - 1, H - 1]]]
+            pk["input_boxes_labels"] = [[1]]
+        inp = proc(**pk)
         kw = {"pixel_values": inp["pixel_values"].to(dev)}
-        for k in ("input_ids", "attention_mask"):
+        for k in ("input_ids", "attention_mask", "input_boxes", "input_boxes_labels"):
             if inp.get(k) is not None:
                 kw[k] = inp[k].to(dev)
         with torch.no_grad(), autocast("cuda"):
@@ -63,7 +72,6 @@ def eval_per_organ(X, Y, meta, test_idx):
             pm = extract_best_mask_soft(out.pred_masks, out.pred_logits)
             pm = torch.nn.functional.interpolate(pm.float(), size=(256, 256), mode="bilinear", align_corners=False)
         pred = pm.sigmoid().squeeze().cpu().numpy() > 0.5
-        gm = Y[i] > 0
         s = int(pred.sum()) + int(gm.sum())
         dd[(organ, meta[i]["dataset"])].append(2 * int((pred & gm).sum()) / s if s else 1.0)
     res = {f"{o}/{d}": round(float(np.mean(v)), 4) for (o, d), v in sorted(dd.items())}
@@ -86,12 +94,18 @@ def main():
 
     texts_tr = [M[i]["organ"] for i in tr]
     texts_va = [M[i]["organ"] for i in va]
-    cfg = {"model_save_path": CKPT, "pretrained_path": None, "epochs": EPOCHS, "batch_size": 4,
-           "patience": PATIENCE, "strong_augment": True, "use_boxes": False,   # concept prompt, no box
+    cfg = {"model_save_path": CKPT,
+           "pretrained_path": CKPT if (AUSAM and os.path.exists(CKPT)) else None,  # AUSAM: resume best-so-far (preempt-safe)
+           "epochs": EPOCHS, "batch_size": 4,
+           "patience": PATIENCE, "strong_augment": True,
+           "use_boxes": AUSAM,                                              # AUSAM -> GT box (semi-oracle); else concept only
            "freeze_blocks": 20, "encoder_lr": 1e-5, "decoder_lr": 1e-4, "warmup_epochs": 2,
            "cosine_T0": 40, "dice_weight": 0.7, "focal_weight": 0.3,
            "texts_tr": texts_tr, "texts_va": texts_va}                          # per-slice organ prompts
-    if KG:
+    if AUSAM:
+        print(f"AUSAM (GT-box, supervised) organ training — use_boxes=True, epochs={EPOCHS}"
+              f"{', resuming from ' + CKPT if cfg['pretrained_path'] else ''}", flush=True)
+    if KG and not AUSAM:
         priors = json.load(open(f"{POOL}/organ_train_priors.json"))
         cfg["kg_priors"] = priors; cfg["kg_weight"] = 0.1; cfg["kg_centroid_w"] = 0.5
         print("KG-in-training ON — priors:", {o: (p["cy"], p["cx"], p["area_lo"], p["area_hi"])
