@@ -36,9 +36,12 @@ Two ideas carry the whole design:
 
 **Two ways we use data — the key to the design.**
 - **Image + label pairs → train the segmenters.** A model can only learn to draw a mask from images paired
-  with correct masks. Training sources: **LiTS, MSD Pancreas, KiTS23, FLARE-Task2**.
+  with correct masks. Training sources: **LiTS, MSD Pancreas, KiTS23, FLARE-Task2, and the imaged FLARE23
+  cases** — ~950 of FLARE23's 1,312 have retrievable CT, and we extract organ/tumor slices from them (organ:
+  449 cases → 10,759 slices; tumor: 270 cases → 7,269 slices).
 - **Labels alone → build the graph.** The KG needs only *numbers* derived from a mask (volume, diameter,
-  burden), not pixels. **FLARE23's 1,312 label masks** (no images) populate the KG cheaply.
+  burden), not pixels — so **all 1,312 FLARE23 labels** populate the KG (including the ~360 with no image, which
+  can't train a segmenter but still add a KG patient for free).
 
 Segmentation entry point: [`src/scripts/infer_ensemble.py`](src/scripts/infer_ensemble.py). KG build:
 `build_flare23_enriched_kg.py` + `kg_grounding.py`. Interactive KG: [`app/oakg_query_app.py`](app/oakg_query_app.py).
@@ -71,7 +74,7 @@ above are the autonomous, deployable form.
 | **MSD Pancreas** (Task07) | ✅ | train tumor + organ (pancreas) | pancreas, pancreas tumor |
 | **KiTS23** | ✅ | train tumor + organ (kidney) | kidney, kidney tumor |
 | **FLARE-Task2** (100 vols) | ✅ | train organ (l/k/p) **+ KG records** | 13 organs |
-| **FLARE23** (1,312 masks) | labels only | build the KG; organ/tumor slices for training | 13 organs + tumor |
+| **FLARE23** (1,312 labels; ~950 imaged) | ✅ ~950 | **train** organ (449 cases) + tumor (270 cases) from image slices; **KG** from all 1,312 labels | 13 organs + tumor |
 
 **Splitting.** Every training pool is split **by whole patient** (seed 42): validation and test are held-out
 *patients*, never other slices from a training patient — no leakage. Cross-dataset evaluation trains on some
