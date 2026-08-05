@@ -30,8 +30,10 @@ respectively). FLARE-Task2 carries no tumor labels.
 **text** (organ name / `"tumor"`) **plus a ground-truth-derived bounding box** (the box of the target mask). It is
 a **semi-oracle, prompt-guided** segmenter — faithful to the original AUSAM's mask-derived prompting.
 
-- **One model per dataset.** A separate checkpoint per source (LiTS→liver, KiTS23→kidney, MSD→pancreas,
-  FLARE-Task2 & FLARE23→liver/kidney/pancreas), each evaluated in-distribution.
+- **One model per dataset — 5 checkpoints total.** Each dataset gets its own SAM3 checkpoint. LiTS, KiTS23 and
+  MSD are single-organ (liver / kidney / pancreas), so their model segments that one organ; FLARE-Task2 and
+  FLARE23 are multi-organ, so a **single model segments all three** (liver / kidney / pancreas), selected at
+  inference by the text prompt. Each is evaluated in-distribution.
 - **Backbone & fine-tuning.** SAM3 with **partial freeze** (backbone frozen; last ~20 encoder blocks + mask
   decoder trained), **Dice + Focal** loss (0.7 / 0.3), discriminative learning rates, cosine schedule, DDP on
   2 GPUs, ≤12 epochs with early stopping.
@@ -43,6 +45,31 @@ a **semi-oracle, prompt-guided** segmenter — faithful to the original AUSAM's 
 
 *What these numbers are and aren't.* Because the box is derived from ground truth, they are the **interactive
 upper bound** (semi-oracle); and being slice-level, they read optimistically relative to a 3-D whole-volume score.
+
+### Train / val / test split per dataset (by patient)
+
+<!-- SPLITS:START -->
+**Organ models** (`organ_pool_lkp`):
+
+| Dataset | Total patients | Train (pt / slices) | Val (pt / slices) | Test (pt / slices) |
+|---|:--:|:--:|:--:|:--:|
+| **LiTS** | 34 | 25 / 3,883 | 3 / 409 | 6 / 708 |
+| **KiTS23** | 100 | 70 / 2,789 | 10 / 377 | 20 / 655 |
+| **MSD Pancreas** | 165 | 116 / 3,530 | 16 / 462 | 33 / 1,008 |
+| **FLARE-Task2** | 100 | 70 / 10,417 | 10 / 1,166 | 20 / 2,346 |
+| **FLARE23** | 449 | 316 / 7,568 | 44 / 1,055 | 89 / 2,136 |
+
+**Tumor models** (`tumor_pool` + `flare_tumor_pool` + `kits_tumor_pool`):
+
+| Dataset | Total patients | Train (pt / slices) | Val (pt / slices) | Test (pt / slices) |
+|---|:--:|:--:|:--:|:--:|
+| **LiTS** | 107 | 76 / 3,825 | 10 / 539 | 21 / 1,236 |
+| **MSD Pancreas** | 281 | 197 / 1,811 | 28 / 261 | 56 / 465 |
+| **KiTS23** | 180 | 126 / 3,589 | 18 / 492 | 36 / 1,186 |
+| **FLARE23** | 270 | 189 / 5,041 | 27 / 615 | 54 / 1,613 |
+
+Split **by whole patient** (seed 42), 20% test / 10% val; val and test are held-out patients (no slice-level leakage).
+<!-- SPLITS:END -->
 
 ---
 
@@ -64,9 +91,9 @@ Held-out **patient-level** test Dice, per dataset (auto-generated from
 
 | LiTS | MSD Pancreas | KiTS | FLARE23 | **mean** |
 |:--:|:--:|:--:|:--:|:--:|
-| … | … | … | … | … |
+| 0.819 | … | … | … | **0.819** |
 
-_9 organ (dataset,organ) cells from 5/5 datasets · 0/4 tumor datasets. '…' = still training, '—' = organ not in that dataset._
+_9 organ (dataset,organ) cells from 5/5 datasets · 1/4 tumor datasets. '…' = still training, '—' = organ not in that dataset._
 <!-- AUSAM_BASELINE:END -->
 
 ---
@@ -92,4 +119,5 @@ env:           conda llmft · Python 3.11 · PyTorch 2.5.1+cu121 · 2× NVIDIA L
 organ AUSAM:   python src/scripts/train_organ_generic.py --ausam --dataset <lits|kits|msd|flare_task2|flare23>
 tumor AUSAM:   python src/scripts/train_tumor_ausam.py --dataset <lits|pancreas|kits|flare>
 results table: python src/scripts/build_readme_ausam_tables.py     # regenerate §3 from results/*.json
+split tables:  python src/scripts/build_readme_splits.py          # regenerate §2 splits from pool metas
 ```
