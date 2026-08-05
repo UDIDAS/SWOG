@@ -1,0 +1,8 @@
+{
+  "per_organ": {
+    "pancreas": 0.8713
+  },
+  "per_organ_dataset": {
+    "pancreas/msd": 0.8713
+  }
+}

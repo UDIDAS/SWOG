@@ -1,0 +1,8 @@
+{
+  "per_organ": {
+    "liver": 0.9567
+  },
+  "per_organ_dataset": {
+    "liver/lits": 0.9567
+  }
+}

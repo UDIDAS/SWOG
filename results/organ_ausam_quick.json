@@ -1,0 +1,20 @@
+{
+  "tag": "quick",
+  "ckpt": "base",
+  "per_organ": {
+    "liver": 0.9151,
+    "pancreas": 0.7877,
+    "kidney": 0.8457
+  },
+  "per_organ_dataset": {
+    "kidney/flare23": 0.8171,
+    "kidney/flare_task2": 0.8999,
+    "kidney/kits": 0.787,
+    "liver/flare23": 0.874,
+    "liver/flare_task2": 0.9365,
+    "liver/lits": 0.9214,
+    "pancreas/flare23": 0.7623,
+    "pancreas/flare_task2": 0.8285,
+    "pancreas/msd": 0.7742
+  }
+}

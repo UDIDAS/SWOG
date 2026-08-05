@@ -1,0 +1,12 @@
+{
+  "per_organ": {
+    "liver": 0.9381,
+    "kidney": 0.9137,
+    "pancreas": 0.8561
+  },
+  "per_organ_dataset": {
+    "kidney/flare23": 0.9137,
+    "liver/flare23": 0.9381,
+    "pancreas/flare23": 0.8561
+  }
+}

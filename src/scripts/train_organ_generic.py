@@ -22,11 +22,12 @@ from run_pancreas_sam3 import (train_worker_v3, WORLD_SIZE, find_free_port,
 POOL = "/scratch/ud3d4/acm_data/organ_pool_lkp"
 KG = "--kg" in sys.argv                                   # KG-in-training plausibility loss on/off (ablation)
 EVAL_ONLY = "--eval-only" in sys.argv                     # skip training, just eval an existing checkpoint
-AUSAM = "--ausam" in sys.argv                             # GT-box (semi-oracle): the BEST supervised segmenter
-TAG = "_ausam" if AUSAM else ("_kg" if KG else "")
+AUSAM = "--ausam" in sys.argv                             # GT-box (semi-oracle): the supervised segmenter
+DATASET = sys.argv[sys.argv.index("--dataset") + 1] if "--dataset" in sys.argv else None  # per-dataset AUSAM
+TAG = ("_ausam" if AUSAM else ("_kg" if KG else "")) + (f"_{DATASET}" if DATASET else "")
 CKPT = f"{POOL}/sam3_organ_generic{TAG}.pth"
 OUT = f"/home/ud3d4/Desktop/SWOG/results/organ_generic{TAG}.json"
-EPOCHS, PATIENCE = (12, 4) if AUSAM else (6, 2)            # AUSAM: train longer -> best result (not a matched ablation)
+EPOCHS, PATIENCE = (12, 4) if AUSAM else (6, 2)            # AUSAM: train to convergence for the best (semi-oracle) result
 
 
 def patient_split(meta):
@@ -85,7 +86,13 @@ def eval_per_organ(X, Y, meta, test_idx):
 
 
 def main():
-    X = np.load(f"{POOL}/images.npy"); Y = np.load(f"{POOL}/masks.npy"); M = json.load(open(f"{POOL}/meta.json"))
+    X = np.load(f"{POOL}/images.npy", mmap_mode="r"); Y = np.load(f"{POOL}/masks.npy", mmap_mode="r")
+    M = json.load(open(f"{POOL}/meta.json"))
+    if DATASET:                                            # per-dataset AUSAM: keep only this source's slices
+        keep = [i for i, m in enumerate(M) if m["dataset"] == DATASET]
+        assert keep, f"no slices for --dataset {DATASET}; have {sorted(set(m['dataset'] for m in M))}"
+        X = np.ascontiguousarray(X[keep]); Y = np.ascontiguousarray(Y[keep]); M = [M[i] for i in keep]
+        print(f"--dataset {DATASET}: {len(M)} slices, organs {dict(Counter(m['organ'] for m in M))}", flush=True)
     print("pool:", dict(Counter(m["organ"] for m in M)),
           "| datasets:", dict(Counter(m["dataset"] for m in M)), flush=True)
     tr, va, te = patient_split(M)

@@ -38,6 +38,10 @@ recs = json.load(open("/home/ud3d4/Desktop/SWOG/kg/data/corpus_perpatient.json")
 tb = [r["case_id"] for r in recs if r["dataset"] == "flare"
       and any(o.get("has_tumor") for o in r["organs"].values())]
 CASES = [c for c in tb if c in IIDX and c in LIDX][:N]
+# resume: skip cases already uploaded to Drive (so a restart continues where it stopped)
+_done = subprocess.run(["rclone", "lsf", DRIVE, "--dirs-only"], capture_output=True, text=True).stdout.split()
+DONE = set(c.rstrip("/") for c in _done)
+CASES = [c for c in CASES if c not in DONE]
 
 
 def inflate(buf):

@@ -1,0 +1,8 @@
+{
+  "per_organ": {
+    "kidney": 0.9266
+  },
+  "per_organ_dataset": {
+    "kidney/kits": 0.9266
+  }
+}

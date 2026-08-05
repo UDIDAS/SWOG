@@ -1,0 +1,19 @@
+{
+  "note": "reused FLARE-Task2 box-fine-tuned per-organ models + GT box on the pooled test",
+  "per_organ": {
+    "liver": 0.9514,
+    "pancreas": 0.8591,
+    "kidney": 0.8416
+  },
+  "per_organ_dataset": {
+    "kidney/flare23": 0.8346,
+    "kidney/flare_task2": 0.8779,
+    "kidney/kits": 0.7866,
+    "liver/flare23": 0.9293,
+    "liver/flare_task2": 0.9719,
+    "liver/lits": 0.94,
+    "pancreas/flare23": 0.8515,
+    "pancreas/flare_task2": 0.9072,
+    "pancreas/msd": 0.8274
+  }
+}
