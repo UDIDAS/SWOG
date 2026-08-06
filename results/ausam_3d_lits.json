@@ -1,0 +1,91 @@
+{
+  "dataset": "lits",
+  "n_patients": 6,
+  "hu_window": [
+    -125,
+    225
+  ],
+  "mean_3d_dice": {
+    "liver": 0.9555
+  },
+  "cases": [
+    {
+      "case": "volume-16",
+      "spacing": null,
+      "organs": {
+        "liver": {
+          "dice3d": 0.9536,
+          "vol_pred_cm3": null,
+          "vol_gt_cm3": null,
+          "vox_pred": 785414,
+          "vox_gt": 796219
+        }
+      }
+    },
+    {
+      "case": "volume-22",
+      "spacing": null,
+      "organs": {
+        "liver": {
+          "dice3d": 0.9634,
+          "vol_pred_cm3": null,
+          "vol_gt_cm3": null,
+          "vox_pred": 103551,
+          "vox_gt": 106600
+        }
+      }
+    },
+    {
+      "case": "volume-26",
+      "spacing": null,
+      "organs": {
+        "liver": {
+          "dice3d": 0.9709,
+          "vol_pred_cm3": null,
+          "vol_gt_cm3": null,
+          "vox_pred": 582988,
+          "vox_gt": 577588
+        }
+      }
+    },
+    {
+      "case": "volume-30",
+      "spacing": null,
+      "organs": {
+        "liver": {
+          "dice3d": 0.9659,
+          "vol_pred_cm3": null,
+          "vol_gt_cm3": null,
+          "vox_pred": 578194,
+          "vox_gt": 594705
+        }
+      }
+    },
+    {
+      "case": "volume-32",
+      "spacing": null,
+      "organs": {
+        "liver": {
+          "dice3d": 0.9724,
+          "vol_pred_cm3": null,
+          "vol_gt_cm3": null,
+          "vox_pred": 516201,
+          "vox_gt": 535704
+        }
+      }
+    },
+    {
+      "case": "volume-33",
+      "spacing": null,
+      "organs": {
+        "liver": {
+          "dice3d": 0.9066,
+          "vol_pred_cm3": null,
+          "vol_gt_cm3": null,
+          "vox_pred": 384759,
+          "vox_gt": 349515
+        }
+      }
+    }
+  ]
+}

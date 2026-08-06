@@ -1,0 +1,107 @@
+{
+  "datasets": {
+    "flare_task2": {
+      "n_patients": 20,
+      "mean_3d_dice": {
+        "liver": 0.9807,
+        "kidney": 0.9638,
+        "pancreas": 0.9163
+      }
+    },
+    "lits": {
+      "n_patients": 6,
+      "mean_3d_dice": {
+        "liver": 0.9555
+      }
+    },
+    "msd": {
+      "n_patients": 33,
+      "mean_3d_dice": {
+        "pancreas": 0.8809
+      }
+    }
+  },
+  "node_fidelity": {
+    "kidney/flare_task2": {
+      "n": 20,
+      "unit": "cm3",
+      "volume_corr": 0.9992,
+      "volume_MAE": 6.8,
+      "volume_MAPE_pct": 1.7
+    },
+    "liver/flare_task2": {
+      "n": 20,
+      "unit": "cm3",
+      "volume_corr": 0.997,
+      "volume_MAE": 15.0,
+      "volume_MAPE_pct": 0.9
+    },
+    "pancreas/flare_task2": {
+      "n": 20,
+      "unit": "cm3",
+      "volume_corr": 0.9943,
+      "volume_MAE": 3.22,
+      "volume_MAPE_pct": 4.4
+    },
+    "liver/lits": {
+      "n": 6,
+      "unit": "voxels",
+      "volume_corr": 0.9967,
+      "volume_MAE": 15085.33,
+      "volume_MAPE_pct": 3.6
+    },
+    "pancreas/msd": {
+      "n": 33,
+      "unit": "cm3",
+      "volume_corr": 0.981,
+      "volume_MAE": 9.21,
+      "volume_MAPE_pct": 10.5
+    }
+  },
+  "gt_free_validation": {
+    "kidney/flare_task2": {
+      "n": 20,
+      "band_cm3": [
+        230.8,
+        666.2
+      ],
+      "n_flagged": 1,
+      "n_poor_dice(<0.85)": 0,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": null
+    },
+    "liver/flare_task2": {
+      "n": 20,
+      "band_cm3": [
+        394.2,
+        2723.6
+      ],
+      "n_flagged": 0,
+      "n_poor_dice(<0.85)": 0,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": null
+    },
+    "pancreas/flare_task2": {
+      "n": 20,
+      "band_cm3": [
+        23.3,
+        149.9
+      ],
+      "n_flagged": 1,
+      "n_poor_dice(<0.85)": 0,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": null
+    },
+    "pancreas/msd": {
+      "n": 33,
+      "band_cm3": [
+        23.3,
+        149.9
+      ],
+      "n_flagged": 3,
+      "n_poor_dice(<0.85)": 4,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": 0.448
+    }
+  }
+}

@@ -1,0 +1,635 @@
+{
+  "dataset": "flare_task2",
+  "n_patients": 20,
+  "hu_window": [
+    -125,
+    225
+  ],
+  "mean_3d_dice": {
+    "liver": 0.9807,
+    "kidney": 0.9638,
+    "pancreas": 0.9163
+  },
+  "cases": [
+    {
+      "case": "FLARE22_Tr_0001",
+      "spacing": [
+        0.6445310115814209,
+        0.6445310115814209,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9835,
+          "vol_pred_cm3": 1464.99,
+          "vol_gt_cm3": 1478.63,
+          "vox_pred": 1410612,
+          "vox_gt": 1423741
+        },
+        "kidney": {
+          "dice3d": 0.9587,
+          "vol_pred_cm3": 354.06,
+          "vol_gt_cm3": 348.04,
+          "vox_pred": 340916,
+          "vox_gt": 335123
+        },
+        "pancreas": {
+          "dice3d": 0.9229,
+          "vol_pred_cm3": 71.93,
+          "vol_gt_cm3": 66.6,
+          "vox_pred": 69264,
+          "vox_gt": 64127
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0005",
+      "spacing": [
+        0.7734379768371582,
+        0.7734379768371582,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9824,
+          "vol_pred_cm3": 1413.89,
+          "vol_gt_cm3": 1413.21,
+          "vox_pred": 945420,
+          "vox_gt": 944962
+        },
+        "kidney": {
+          "dice3d": 0.9662,
+          "vol_pred_cm3": 390.28,
+          "vol_gt_cm3": 389.18,
+          "vox_pred": 260964,
+          "vox_gt": 260231
+        },
+        "pancreas": {
+          "dice3d": 0.9098,
+          "vol_pred_cm3": 90.88,
+          "vol_gt_cm3": 89.91,
+          "vox_pred": 60768,
+          "vox_gt": 60117
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0011",
+      "spacing": [
+        0.765625,
+        0.765625,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.985,
+          "vol_pred_cm3": 1561.44,
+          "vol_gt_cm3": 1553.49,
+          "vox_pred": 1065496,
+          "vox_gt": 1060072
+        },
+        "kidney": {
+          "dice3d": 0.9449,
+          "vol_pred_cm3": 348.85,
+          "vol_gt_cm3": 329.52,
+          "vox_pred": 238048,
+          "vox_gt": 224861
+        },
+        "pancreas": {
+          "dice3d": 0.909,
+          "vol_pred_cm3": 54.02,
+          "vol_gt_cm3": 54.92,
+          "vox_pred": 36860,
+          "vox_gt": 37478
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0013",
+      "spacing": [
+        0.7773439884185791,
+        0.7773439884185791,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9829,
+          "vol_pred_cm3": 1386.86,
+          "vol_gt_cm3": 1386.77,
+          "vox_pred": 918052,
+          "vox_gt": 917989
+        },
+        "kidney": {
+          "dice3d": 0.9702,
+          "vol_pred_cm3": 388.34,
+          "vol_gt_cm3": 386.49,
+          "vox_pred": 257068,
+          "vox_gt": 255841
+        },
+        "pancreas": {
+          "dice3d": 0.9188,
+          "vol_pred_cm3": 84.29,
+          "vol_gt_cm3": 86.49,
+          "vox_pred": 55796,
+          "vox_gt": 57255
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0019",
+      "spacing": [
+        0.7539060115814209,
+        0.7539060115814209,
+        5.0
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9847,
+          "vol_pred_cm3": 2592.18,
+          "vol_gt_cm3": 2570.67,
+          "vox_pred": 912140,
+          "vox_gt": 904569
+        },
+        "kidney": {
+          "dice3d": 0.9748,
+          "vol_pred_cm3": 599.95,
+          "vol_gt_cm3": 590.24,
+          "vox_pred": 211112,
+          "vox_gt": 207694
+        },
+        "pancreas": {
+          "dice3d": 0.9342,
+          "vol_pred_cm3": 140.62,
+          "vol_gt_cm3": 131.99,
+          "vox_pred": 49480,
+          "vox_gt": 46443
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0023",
+      "spacing": [
+        0.78125,
+        0.78125,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9797,
+          "vol_pred_cm3": 1410.39,
+          "vol_gt_cm3": 1423.4,
+          "vox_pred": 924312,
+          "vox_gt": 932838
+        },
+        "kidney": {
+          "dice3d": 0.9528,
+          "vol_pred_cm3": 274.32,
+          "vol_gt_cm3": 266.91,
+          "vox_pred": 179776,
+          "vox_gt": 174921
+        },
+        "pancreas": {
+          "dice3d": 0.9034,
+          "vol_pred_cm3": 91.85,
+          "vol_gt_cm3": 92.17,
+          "vox_pred": 60196,
+          "vox_gt": 60403
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0031",
+      "spacing": [
+        0.8710939884185791,
+        0.8710939884185791,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9851,
+          "vol_pred_cm3": 1567.09,
+          "vol_gt_cm3": 1563.42,
+          "vox_pred": 826084,
+          "vox_gt": 824151
+        },
+        "kidney": {
+          "dice3d": 0.9689,
+          "vol_pred_cm3": 460.82,
+          "vol_gt_cm3": 467.46,
+          "vox_pred": 242920,
+          "vox_gt": 246418
+        },
+        "pancreas": {
+          "dice3d": 0.8902,
+          "vol_pred_cm3": 75.46,
+          "vol_gt_cm3": 69.15,
+          "vox_pred": 39776,
+          "vox_gt": 36452
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0032",
+      "spacing": [
+        0.9082030057907104,
+        0.9082030057907104,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9864,
+          "vol_pred_cm3": 1372.94,
+          "vol_gt_cm3": 1365.99,
+          "vox_pred": 665804,
+          "vox_gt": 662431
+        },
+        "kidney": {
+          "dice3d": 0.9514,
+          "vol_pred_cm3": 460.46,
+          "vol_gt_cm3": 468.56,
+          "vox_pred": 223300,
+          "vox_gt": 227227
+        },
+        "pancreas": {
+          "dice3d": 0.9036,
+          "vol_pred_cm3": 51.19,
+          "vol_gt_cm3": 47.4,
+          "vox_pred": 24824,
+          "vox_gt": 22985
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0034",
+      "spacing": [
+        0.7695310115814209,
+        0.7695310115814209,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9857,
+          "vol_pred_cm3": 1270.01,
+          "vol_gt_cm3": 1267.6,
+          "vox_pred": 857856,
+          "vox_gt": 856229
+        },
+        "kidney": {
+          "dice3d": 0.9501,
+          "vol_pred_cm3": 346.23,
+          "vol_gt_cm3": 355.12,
+          "vox_pred": 233868,
+          "vox_gt": 239871
+        },
+        "pancreas": {
+          "dice3d": 0.8747,
+          "vol_pred_cm3": 44.78,
+          "vol_gt_cm3": 41.52,
+          "vox_pred": 30248,
+          "vox_gt": 28047
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0040",
+      "spacing": [
+        0.7675780057907104,
+        0.7675780057907104,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9707,
+          "vol_pred_cm3": 1458.98,
+          "vol_gt_cm3": 1525.48,
+          "vox_pred": 990520,
+          "vox_gt": 1035668
+        },
+        "kidney": {
+          "dice3d": 0.9641,
+          "vol_pred_cm3": 298.22,
+          "vol_gt_cm3": 297.67,
+          "vox_pred": 202468,
+          "vox_gt": 202090
+        },
+        "pancreas": {
+          "dice3d": 0.9404,
+          "vol_pred_cm3": 103.75,
+          "vol_gt_cm3": 103.59,
+          "vox_pred": 70440,
+          "vox_gt": 70329
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0045",
+      "spacing": [
+        0.9765620231628418,
+        0.9765620231628418,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9821,
+          "vol_pred_cm3": 1989.31,
+          "vol_gt_cm3": 1987.54,
+          "vox_pred": 834380,
+          "vox_gt": 833635
+        },
+        "kidney": {
+          "dice3d": 0.9571,
+          "vol_pred_cm3": 643.63,
+          "vol_gt_cm3": 626.5,
+          "vox_pred": 269960,
+          "vox_gt": 262775
+        },
+        "pancreas": {
+          "dice3d": 0.9056,
+          "vol_pred_cm3": 79.67,
+          "vol_gt_cm3": 72.64,
+          "vox_pred": 33416,
+          "vox_gt": 30466
+        }
+      }
+    },
+    {
+      "case": "FLARE22_Tr_0046",
+      "spacing": [
+        0.7226560115814209,
+        0.7226560115814209,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9851,
+          "vol_pred_cm3": 1158.14,
+          "vol_gt_cm3": 1150.27,
+          "vox_pred": 887068,
+          "vox_gt": 881041
+        },
+        "kidney": {
+          "dice3d": 0.9622,
+          "vol_pred_cm3": 263.66,
+          "vol_gt_cm3": 278.06,
+          "vox_pred": 201952,
+          "vox_gt": 212979
+        },
+        "pancreas": {
+          "dice3d": 0.9186,
+          "vol_pred_cm3": 50.63,
+          "vol_gt_cm3": 48.4,
+          "vox_pred": 38776,
+          "vox_gt": 37070
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0004",
+      "spacing": [
+        0.8730469942092896,
+        0.8730469942092896,
+        2.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9818,
+          "vol_pred_cm3": 1765.24,
+          "vol_gt_cm3": 1745.43,
+          "vox_pred": 926376,
+          "vox_gt": 915981
+        },
+        "kidney": {
+          "dice3d": 0.9718,
+          "vol_pred_cm3": 404.11,
+          "vol_gt_cm3": 404.46,
+          "vox_pred": 212072,
+          "vox_gt": 212254
+        },
+        "pancreas": {
+          "dice3d": 0.9416,
+          "vol_pred_cm3": 103.1,
+          "vol_gt_cm3": 102.55,
+          "vox_pred": 54108,
+          "vox_gt": 53817
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0021",
+      "spacing": [
+        0.8203125,
+        0.8203125,
+        3.0
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9827,
+          "vol_pred_cm3": 1379.01,
+          "vol_gt_cm3": 1374.85,
+          "vox_pred": 683104,
+          "vox_gt": 681043
+        },
+        "kidney": {
+          "dice3d": 0.9633,
+          "vol_pred_cm3": 356.86,
+          "vol_gt_cm3": 345.79,
+          "vox_pred": 176776,
+          "vox_gt": 171288
+        },
+        "pancreas": {
+          "dice3d": 0.9506,
+          "vol_pred_cm3": 132.4,
+          "vol_gt_cm3": 128.99,
+          "vox_pred": 65588,
+          "vox_gt": 63895
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0024",
+      "spacing": [
+        0.7421875,
+        0.7421875,
+        3.0
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9624,
+          "vol_pred_cm3": 2168.85,
+          "vol_gt_cm3": 2070.51,
+          "vox_pred": 1312444,
+          "vox_gt": 1252935
+        },
+        "kidney": {
+          "dice3d": 0.978,
+          "vol_pred_cm3": 414.99,
+          "vol_gt_cm3": 412.56,
+          "vox_pred": 251124,
+          "vox_gt": 249652
+        },
+        "pancreas": {
+          "dice3d": 0.954,
+          "vol_pred_cm3": 173.52,
+          "vol_gt_cm3": 172.29,
+          "vox_pred": 105000,
+          "vox_gt": 104261
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0027",
+      "spacing": [
+        1.025390625,
+        1.025390625,
+        2.0
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9682,
+          "vol_pred_cm3": 1419.39,
+          "vol_gt_cm3": 1396.49,
+          "vox_pred": 674984,
+          "vox_gt": 664092
+        },
+        "kidney": {
+          "dice3d": 0.9566,
+          "vol_pred_cm3": 342.83,
+          "vol_gt_cm3": 342.76,
+          "vox_pred": 163032,
+          "vox_gt": 162998
+        },
+        "pancreas": {
+          "dice3d": 0.9097,
+          "vol_pred_cm3": 58.24,
+          "vol_gt_cm3": 59.11,
+          "vox_pred": 27696,
+          "vox_gt": 28109
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0028",
+      "spacing": [
+        1.1328125,
+        1.1328125,
+        3.0
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.977,
+          "vol_pred_cm3": 1335.94,
+          "vol_gt_cm3": 1331.6,
+          "vox_pred": 347016,
+          "vox_gt": 345890
+        },
+        "kidney": {
+          "dice3d": 0.9673,
+          "vol_pred_cm3": 282.37,
+          "vol_gt_cm3": 281.23,
+          "vox_pred": 73348,
+          "vox_gt": 73050
+        },
+        "pancreas": {
+          "dice3d": 0.9007,
+          "vol_pred_cm3": 40.58,
+          "vol_gt_cm3": 43.67,
+          "vox_pred": 10540,
+          "vox_gt": 11344
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0031",
+      "spacing": [
+        0.810546875,
+        0.810546875,
+        5.0
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9852,
+          "vol_pred_cm3": 1589.99,
+          "vol_gt_cm3": 1591.3,
+          "vox_pred": 484024,
+          "vox_gt": 484425
+        },
+        "kidney": {
+          "dice3d": 0.9788,
+          "vol_pred_cm3": 436.48,
+          "vol_gt_cm3": 435.43,
+          "vox_pred": 132872,
+          "vox_gt": 132553
+        },
+        "pancreas": {
+          "dice3d": 0.9082,
+          "vol_pred_cm3": 112.92,
+          "vol_gt_cm3": 104.19,
+          "vox_pred": 34376,
+          "vox_gt": 31717
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0034",
+      "spacing": [
+        0.78125,
+        0.78125,
+        1.5
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9853,
+          "vol_pred_cm3": 1466.65,
+          "vol_gt_cm3": 1463.97,
+          "vox_pred": 1601976,
+          "vox_gt": 1599041
+        },
+        "kidney": {
+          "dice3d": 0.9787,
+          "vol_pred_cm3": 384.21,
+          "vol_gt_cm3": 387.31,
+          "vox_pred": 419660,
+          "vox_gt": 423051
+        },
+        "pancreas": {
+          "dice3d": 0.9264,
+          "vol_pred_cm3": 64.54,
+          "vol_gt_cm3": 68.39,
+          "vox_pred": 70496,
+          "vox_gt": 74701
+        }
+      }
+    },
+    {
+      "case": "FLARETs_0041",
+      "spacing": [
+        0.7226560115814209,
+        0.7226560115814209,
+        1.25
+      ],
+      "organs": {
+        "liver": {
+          "dice3d": 0.9782,
+          "vol_pred_cm3": 1626.91,
+          "vol_gt_cm3": 1626.54,
+          "vox_pred": 2492244,
+          "vox_gt": 2491673
+        },
+        "kidney": {
+          "dice3d": 0.9608,
+          "vol_pred_cm3": 1255.99,
+          "vol_gt_cm3": 1271.75,
+          "vox_pred": 1924028,
+          "vox_gt": 1948170
+        },
+        "pancreas": {
+          "dice3d": 0.9038,
+          "vol_pred_cm3": 97.68,
+          "vol_gt_cm3": 99.27,
+          "vox_pred": 149632,
+          "vox_gt": 152067
+        }
+      }
+    }
+  ]
+}
