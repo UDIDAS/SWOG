@@ -1,27 +1,70 @@
 {
   "datasets": {
+    "flare23": {
+      "n_patients": 10,
+      "mean_3d_dice": {
+        "liver": 0.9712,
+        "kidney": 0.9541,
+        "pancreas": 0.8842
+      },
+      "mean_nsd_2mm": {
+        "liver": 0.9255,
+        "kidney": 0.9084,
+        "pancreas": 0.8687
+      }
+    },
     "flare_task2": {
       "n_patients": 20,
       "mean_3d_dice": {
         "liver": 0.9807,
         "kidney": 0.9638,
         "pancreas": 0.9163
+      },
+      "mean_nsd_2mm": {
+        "liver": 0.9467,
+        "kidney": 0.9463,
+        "pancreas": 0.9194
       }
     },
     "lits": {
       "n_patients": 6,
       "mean_3d_dice": {
         "liver": 0.9555
-      }
+      },
+      "mean_nsd_2mm": {}
     },
     "msd": {
       "n_patients": 33,
       "mean_3d_dice": {
         "pancreas": 0.8809
+      },
+      "mean_nsd_2mm": {
+        "pancreas": 0.8482
       }
     }
   },
   "node_fidelity": {
+    "kidney/flare23": {
+      "n": 10,
+      "unit": "cm3",
+      "volume_corr": 0.9938,
+      "volume_MAE": 14.77,
+      "volume_MAPE_pct": 4.1
+    },
+    "liver/flare23": {
+      "n": 10,
+      "unit": "cm3",
+      "volume_corr": 0.99,
+      "volume_MAE": 36.28,
+      "volume_MAPE_pct": 2.1
+    },
+    "pancreas/flare23": {
+      "n": 10,
+      "unit": "cm3",
+      "volume_corr": 0.9671,
+      "volume_MAE": 6.21,
+      "volume_MAPE_pct": 6.6
+    },
     "kidney/flare_task2": {
       "n": 20,
       "unit": "cm3",
@@ -59,6 +102,39 @@
     }
   },
   "gt_free_validation": {
+    "kidney/flare23": {
+      "n": 10,
+      "band_cm3": [
+        230.8,
+        666.2
+      ],
+      "n_flagged": 1,
+      "n_poor_dice(<0.85)": 0,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": null
+    },
+    "liver/flare23": {
+      "n": 10,
+      "band_cm3": [
+        394.2,
+        2723.6
+      ],
+      "n_flagged": 0,
+      "n_poor_dice(<0.85)": 0,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": null
+    },
+    "pancreas/flare23": {
+      "n": 10,
+      "band_cm3": [
+        23.3,
+        149.9
+      ],
+      "n_flagged": 0,
+      "n_poor_dice(<0.85)": 0,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": null
+    },
     "kidney/flare_task2": {
       "n": 20,
       "band_cm3": [

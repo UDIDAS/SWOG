@@ -95,6 +95,30 @@ def _slice(vol, ax, z):
     return vol[z] if ax == 0 else vol[:, :, z]
 
 
+from scipy.ndimage import distance_transform_edt, binary_erosion
+NSD_TAUS = (1.0, 2.0)                    # surface-distance tolerances (mm)
+
+
+def _surf_dt(mask, spacing):
+    surf = mask & ~binary_erosion(mask)                      # 1-voxel-thick boundary
+    return surf, distance_transform_edt(~surf, sampling=spacing)  # mm distance to nearest surface voxel
+
+
+def nsd(pred, gt, spacing, taus=NSD_TAUS):
+    """Normalized Surface Distance (surface Dice): fraction of both surfaces within tolerance tau (mm)."""
+    ps, pdt = _surf_dt(pred, spacing); gs, gdt = _surf_dt(gt, spacing)
+    tot = int(ps.sum()) + int(gs.sum())
+    if tot == 0:
+        return {f"{t}mm": 1.0 for t in taus}
+    if ps.sum() == 0 or gs.sum() == 0:
+        return {f"{t}mm": 0.0 for t in taus}
+    out = {}
+    for t in taus:
+        within = int((pdt[gs] <= t).sum()) + int((gdt[ps] <= t).sum())
+        out[f"{t}mm"] = round(within / tot, 4)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="msd"); ap.add_argument("--limit", type=int, default=0)
@@ -128,7 +152,7 @@ def main():
             pm = torch.nn.functional.interpolate(pm.float(), size=(256, 256), mode="bilinear", align_corners=False)
         return pm.sigmoid().squeeze().cpu().numpy() > 0.5
 
-    per_organ = defaultdict(list); cases_out = []
+    per_organ = defaultdict(list); per_organ_nsd = defaultdict(list); cases_out = []
     for ci, case in enumerate(test_cases):
         ct, lbl, sp = cfg["load"](case)
         vox_cm3 = (sp[0] * sp[1] * sp[2] / 1000.0) if sp else None
@@ -157,6 +181,10 @@ def main():
                                     "vol_pred_cm3": round(int(pred3d.sum()) * vox_cm3, 2) if vox_cm3 else None,
                                     "vol_gt_cm3": round(int(gt3d.sum()) * vox_cm3, 2) if vox_cm3 else None,
                                     "vox_pred": int(pred3d.sum()), "vox_gt": int(gt3d.sum())}
+            if sp is not None:                       # NSD needs mm spacing (skip .npy/LiTS)
+                nv = nsd(pred3d.astype(bool), gt3d.astype(bool), sp)
+                rec["organs"][organ]["nsd3d"] = nv
+                per_organ_nsd[organ].append(nv["2.0mm"])
         cases_out.append(rec)
         if (ci + 1) % 5 == 0 or ci == 0:
             print(f"  [{ci+1}/{len(test_cases)}] {case}: " +
@@ -164,11 +192,12 @@ def main():
                             for o, v in rec["organs"].items()), flush=True)
 
     summary = {o: round(float(np.mean(v)), 4) for o, v in per_organ.items()}
-    out = {"dataset": a.dataset, "n_patients": len(test_cases), "hu_window": WIN,
-           "mean_3d_dice": summary, "cases": cases_out}
+    nsd_summary = {o: round(float(np.mean(v)), 4) for o, v in per_organ_nsd.items() if v}
+    out = {"dataset": a.dataset, "n_patients": len(test_cases), "hu_window": WIN, "nsd_taus_mm": list(NSD_TAUS),
+           "mean_3d_dice": summary, "mean_nsd_2mm": nsd_summary, "cases": cases_out}
     fp = f"/home/ud3d4/Desktop/SWOG/results/ausam_3d_{a.dataset}.json"
     json.dump(out, open(fp, "w"), indent=2)
-    print(f"\n=== {a.dataset} patient-level 3-D Dice: {summary} (n={len(test_cases)}) ===", flush=True)
+    print(f"\n=== {a.dataset} patient-level 3-D  DSC {summary}  |  NSD@2mm {nsd_summary}  (n={len(test_cases)}) ===", flush=True)
     print(f"-> {fp}", flush=True)
 
 

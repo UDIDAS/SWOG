@@ -31,7 +31,8 @@ def main():
     pairs = {}          # (ds,organ) -> list of (dice, vol_pred_cm3|None, vox_pred, vox_gt)
     for f in files:
         d = json.load(open(f)); ds = d["dataset"]
-        out["datasets"][ds] = {"n_patients": d["n_patients"], "mean_3d_dice": d["mean_3d_dice"]}
+        out["datasets"][ds] = {"n_patients": d["n_patients"], "mean_3d_dice": d["mean_3d_dice"],
+                               "mean_nsd_2mm": d.get("mean_nsd_2mm", {})}
         for c in d["cases"]:
             for organ, o in c["organs"].items():
                 pairs.setdefault((ds, organ), []).append(
