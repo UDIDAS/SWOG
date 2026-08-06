@@ -61,6 +61,15 @@ def load_lits(c):                        # c = "volume-N"; .npy volumes carry NO
     return ct, seg, None
 
 
+FFC = "/scratch/ud3d4/acm_data/flare_full_cases"   # FLARE23 full volumes (local subset)
+
+
+def load_flare23(c):
+    img = nib.load(f"{FFC}/{c}_ct.nii.gz")
+    seg = np.asarray(nib.load(f"{FFC}/{c}_label.nii.gz").dataobj).astype(int)
+    return img.get_fdata(), seg, [float(z) for z in img.header.get_zooms()[:3]]
+
+
 # per-dataset config: organ -> GT label(s); volume loader; slice axis
 CFG = {
     "msd":         {"ckpt": f"{POOL}/sam3_organ_generic_ausam_msd.pth", "axial": 2,
@@ -69,6 +78,10 @@ CFG = {
                     "organs": {"liver": [1], "kidney": [2, 13], "pancreas": [4]}, "load": load_flare_task2},
     "lits":        {"ckpt": f"{POOL}/sam3_organ_generic_ausam_lits.pth", "axial": 0,
                     "organs": {"liver": [1]}, "load": load_lits},
+    "flare23":     {"ckpt": f"{POOL}/sam3_organ_generic_ausam_flare23.pth", "axial": 2,
+                    "organs": {"liver": [1], "kidney": [2, 13], "pancreas": [4]}, "load": load_flare23,
+                    "avail": lambda: set(os.path.basename(f).replace("_ct.nii.gz", "")
+                                         for f in glob.glob(f"{FFC}/*_ct.nii.gz"))},
 }
 
 
@@ -95,6 +108,10 @@ def main():
     Mf = [m for m in M if m["dataset"] == a.dataset]
     _, _, te = patient_split(Mf)
     test_cases = sorted({Mf[i]["case"] for i in te})
+    if "avail" in cfg:                       # partial local volumes (e.g. FLARE23): keep those we have
+        av = cfg["avail"](); n0 = len(test_cases)
+        test_cases = [c for c in test_cases if c in av]
+        print(f"  (local volumes cover {len(test_cases)}/{n0} test patients)", flush=True)
     if a.limit:
         test_cases = test_cases[:a.limit]
     print(f"3-D AUSAM [{a.dataset}] {len(test_cases)} held-out test patients; organs {list(cfg['organs'])}", flush=True)
