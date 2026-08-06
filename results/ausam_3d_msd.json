@@ -1,0 +1,508 @@
+{
+  "dataset": "msd",
+  "n_patients": 33,
+  "hu_window": [
+    -125,
+    225
+  ],
+  "mean_3d_dice": {
+    "pancreas": 0.8809
+  },
+  "cases": [
+    {
+      "case": "pancreas_019",
+      "spacing": [
+        0.879,
+        0.879,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9074,
+          "vol_pred_cm3": 90.94,
+          "vol_gt_cm3": 92.3
+        }
+      }
+    },
+    {
+      "case": "pancreas_025",
+      "spacing": [
+        0.701,
+        0.701,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8962,
+          "vol_pred_cm3": 107.44,
+          "vol_gt_cm3": 105.0
+        }
+      }
+    },
+    {
+      "case": "pancreas_032",
+      "spacing": [
+        0.924,
+        0.924,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8931,
+          "vol_pred_cm3": 91.66,
+          "vol_gt_cm3": 93.87
+        }
+      }
+    },
+    {
+      "case": "pancreas_035",
+      "spacing": [
+        0.613,
+        0.613,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8639,
+          "vol_pred_cm3": 45.72,
+          "vol_gt_cm3": 44.34
+        }
+      }
+    },
+    {
+      "case": "pancreas_040",
+      "spacing": [
+        0.824,
+        0.824,
+        5.0
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9098,
+          "vol_pred_cm3": 178.19,
+          "vol_gt_cm3": 164.37
+        }
+      }
+    },
+    {
+      "case": "pancreas_041",
+      "spacing": [
+        0.799,
+        0.799,
+        1.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8823,
+          "vol_pred_cm3": 135.02,
+          "vol_gt_cm3": 135.63
+        }
+      }
+    },
+    {
+      "case": "pancreas_048",
+      "spacing": [
+        0.971,
+        0.971,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8909,
+          "vol_pred_cm3": 100.77,
+          "vol_gt_cm3": 90.93
+        }
+      }
+    },
+    {
+      "case": "pancreas_055",
+      "spacing": [
+        0.82,
+        0.82,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9137,
+          "vol_pred_cm3": 97.49,
+          "vol_gt_cm3": 92.41
+        }
+      }
+    },
+    {
+      "case": "pancreas_056",
+      "spacing": [
+        0.766,
+        0.766,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8984,
+          "vol_pred_cm3": 57.11,
+          "vol_gt_cm3": 51.69
+        }
+      }
+    },
+    {
+      "case": "pancreas_058",
+      "spacing": [
+        0.951,
+        0.951,
+        5.0
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8487,
+          "vol_pred_cm3": 120.93,
+          "vol_gt_cm3": 110.16
+        }
+      }
+    },
+    {
+      "case": "pancreas_091",
+      "spacing": [
+        0.816,
+        0.816,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8648,
+          "vol_pred_cm3": 124.87,
+          "vol_gt_cm3": 106.33
+        }
+      }
+    },
+    {
+      "case": "pancreas_095",
+      "spacing": [
+        0.752,
+        0.752,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9202,
+          "vol_pred_cm3": 133.64,
+          "vol_gt_cm3": 126.0
+        }
+      }
+    },
+    {
+      "case": "pancreas_096",
+      "spacing": [
+        0.926,
+        0.926,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8728,
+          "vol_pred_cm3": 177.42,
+          "vol_gt_cm3": 150.24
+        }
+      }
+    },
+    {
+      "case": "pancreas_101",
+      "spacing": [
+        0.754,
+        0.754,
+        5.0
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9197,
+          "vol_pred_cm3": 144.63,
+          "vol_gt_cm3": 135.28
+        }
+      }
+    },
+    {
+      "case": "pancreas_107",
+      "spacing": [
+        0.781,
+        0.781,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9076,
+          "vol_pred_cm3": 74.87,
+          "vol_gt_cm3": 74.42
+        }
+      }
+    },
+    {
+      "case": "pancreas_122",
+      "spacing": [
+        0.791,
+        0.791,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8786,
+          "vol_pred_cm3": 60.24,
+          "vol_gt_cm3": 57.69
+        }
+      }
+    },
+    {
+      "case": "pancreas_126",
+      "spacing": [
+        0.734,
+        0.734,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8963,
+          "vol_pred_cm3": 149.53,
+          "vol_gt_cm3": 134.42
+        }
+      }
+    },
+    {
+      "case": "pancreas_138",
+      "spacing": [
+        0.938,
+        0.938,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8683,
+          "vol_pred_cm3": 137.05,
+          "vol_gt_cm3": 117.02
+        }
+      }
+    },
+    {
+      "case": "pancreas_160",
+      "spacing": [
+        0.82,
+        0.82,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8455,
+          "vol_pred_cm3": 62.08,
+          "vol_gt_cm3": 58.11
+        }
+      }
+    },
+    {
+      "case": "pancreas_167",
+      "spacing": [
+        0.76,
+        0.76,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8823,
+          "vol_pred_cm3": 100.1,
+          "vol_gt_cm3": 104.17
+        }
+      }
+    },
+    {
+      "case": "pancreas_172",
+      "spacing": [
+        0.74,
+        0.74,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8657,
+          "vol_pred_cm3": 149.57,
+          "vol_gt_cm3": 121.84
+        }
+      }
+    },
+    {
+      "case": "pancreas_179",
+      "spacing": [
+        0.785,
+        0.785,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9066,
+          "vol_pred_cm3": 55.46,
+          "vol_gt_cm3": 51.03
+        }
+      }
+    },
+    {
+      "case": "pancreas_196",
+      "spacing": [
+        0.645,
+        0.645,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8753,
+          "vol_pred_cm3": 59.8,
+          "vol_gt_cm3": 50.07
+        }
+      }
+    },
+    {
+      "case": "pancreas_217",
+      "spacing": [
+        0.83,
+        0.83,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.9102,
+          "vol_pred_cm3": 151.83,
+          "vol_gt_cm3": 146.19
+        }
+      }
+    },
+    {
+      "case": "pancreas_218",
+      "spacing": [
+        0.754,
+        0.754,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8619,
+          "vol_pred_cm3": 62.5,
+          "vol_gt_cm3": 59.04
+        }
+      }
+    },
+    {
+      "case": "pancreas_222",
+      "spacing": [
+        0.605,
+        0.605,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8893,
+          "vol_pred_cm3": 42.26,
+          "vol_gt_cm3": 36.84
+        }
+      }
+    },
+    {
+      "case": "pancreas_224",
+      "spacing": [
+        0.863,
+        0.863,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8712,
+          "vol_pred_cm3": 64.38,
+          "vol_gt_cm3": 56.95
+        }
+      }
+    },
+    {
+      "case": "pancreas_228",
+      "spacing": [
+        0.898,
+        0.898,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8919,
+          "vol_pred_cm3": 56.29,
+          "vol_gt_cm3": 51.86
+        }
+      }
+    },
+    {
+      "case": "pancreas_236",
+      "spacing": [
+        0.859,
+        0.859,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8348,
+          "vol_pred_cm3": 38.93,
+          "vol_gt_cm3": 32.65
+        }
+      }
+    },
+    {
+      "case": "pancreas_249",
+      "spacing": [
+        0.977,
+        0.977,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.7933,
+          "vol_pred_cm3": 108.39,
+          "vol_gt_cm3": 82.12
+        }
+      }
+    },
+    {
+      "case": "pancreas_255",
+      "spacing": [
+        0.82,
+        0.82,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8855,
+          "vol_pred_cm3": 102.1,
+          "vol_gt_cm3": 92.48
+        }
+      }
+    },
+    {
+      "case": "pancreas_258",
+      "spacing": [
+        0.73,
+        0.73,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8675,
+          "vol_pred_cm3": 128.73,
+          "vol_gt_cm3": 104.86
+        }
+      }
+    },
+    {
+      "case": "pancreas_262",
+      "spacing": [
+        0.752,
+        0.752,
+        2.5
+      ],
+      "organs": {
+        "pancreas": {
+          "dice3d": 0.8566,
+          "vol_pred_cm3": 52.92,
+          "vol_gt_cm3": 45.07
+        }
+      }
+    }
+  ]
+}
