@@ -1,0 +1,88 @@
+{
+  "orig_ckpt": "sam3_tumor_s1_lits_patientlevel.pth",
+  "ours_ckpt": "sam3_tumor_generic.pth",
+  "per_dataset_mean_dice": {
+    "flare": {
+      "orig": 0.4355,
+      "ours": 0.7528,
+      "n_slices": 1431,
+      "n_patients": 53
+    },
+    "kits": {
+      "orig": 0.4592,
+      "ours": 0.8255,
+      "n_slices": 867,
+      "n_patients": 35
+    },
+    "lits": {
+      "orig": 0.6798,
+      "ours": 0.6712,
+      "n_slices": 1149,
+      "n_patients": 21
+    },
+    "pancreas": {
+      "orig": 0.0067,
+      "ours": 0.6936,
+      "n_slices": 415,
+      "n_patients": 54
+    }
+  },
+  "examples": [
+    {
+      "dataset": "lits",
+      "dataset_name": "LiTS liver tumor",
+      "case": "volume-76",
+      "seen_by_original": true,
+      "dice_orig": 0.969,
+      "dice_ours": 0.977
+    },
+    {
+      "dataset": "pancreas",
+      "dataset_name": "MSD07 pancreatic tumor",
+      "case": "pancreas_084",
+      "seen_by_original": false,
+      "dice_orig": 0.0,
+      "dice_ours": 0.978
+    },
+    {
+      "dataset": "pancreas",
+      "dataset_name": "MSD07 pancreatic tumor",
+      "case": "pancreas_119",
+      "seen_by_original": false,
+      "dice_orig": 0.0,
+      "dice_ours": 0.956
+    },
+    {
+      "dataset": "kits",
+      "dataset_name": "KiTS23 kidney tumor",
+      "case": "case_00042",
+      "seen_by_original": false,
+      "dice_orig": 0.0,
+      "dice_ours": 0.978
+    },
+    {
+      "dataset": "kits",
+      "dataset_name": "KiTS23 kidney tumor",
+      "case": "case_00024",
+      "seen_by_original": false,
+      "dice_orig": 0.0,
+      "dice_ours": 0.977
+    },
+    {
+      "dataset": "flare",
+      "dataset_name": "FLARE23 pan-cancer tumor",
+      "case": "FLARE23_1466",
+      "seen_by_original": false,
+      "dice_orig": 0.0,
+      "dice_ours": 0.978
+    },
+    {
+      "dataset": "flare",
+      "dataset_name": "FLARE23 pan-cancer tumor",
+      "case": "FLARE23_1618",
+      "seen_by_original": false,
+      "dice_orig": 0.0,
+      "dice_ours": 0.977
+    }
+  ]
+}
