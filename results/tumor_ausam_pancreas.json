@@ -1,0 +1,5 @@
+{
+  "dataset": "pancreas",
+  "tumor_ausam_dice": 0.8818,
+  "n_test_slices": 465
+}

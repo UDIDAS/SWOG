@@ -1,0 +1,5 @@
+{
+  "dataset": "kits",
+  "tumor_ausam_dice": 0.9255,
+  "n_test_slices": 1186
+}

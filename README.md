@@ -91,9 +91,9 @@ Held-out **patient-level** test Dice, per dataset (auto-generated from
 
 | LiTS | MSD Pancreas | KiTS | FLARE23 | **mean** |
 |:--:|:--:|:--:|:--:|:--:|
-| 0.819 | … | … | … | **0.819** |
+| 0.819 | 0.882 | 0.925 | … | **0.875** |
 
-_9 organ (dataset,organ) cells from 5/5 datasets · 1/4 tumor datasets. '…' = still training, '—' = organ not in that dataset._
+_9 organ (dataset,organ) cells from 5/5 datasets · 3/4 tumor datasets. '…' = still training, '—' = organ not in that dataset._
 <!-- AUSAM_BASELINE:END -->
 
 ---
