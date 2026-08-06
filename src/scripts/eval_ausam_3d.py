@@ -70,6 +70,28 @@ def load_flare23(c):
     return img.get_fdata(), seg, [float(z) for z in img.header.get_zooms()[:3]]
 
 
+import urllib.request
+KITS_IMG = "https://huggingface.co/datasets/neheller/KiTS-Challenge-Imaging/resolve/main/images/{c}.nii.gz"
+KITS_SEG = "https://raw.githubusercontent.com/neheller/kits23/main/dataset/{c}/segmentation.nii.gz"
+
+
+def load_kits(c):                        # stream per case (seg small, img larger); temp in /dev/shm, then delete
+    sp_f, im_f = f"/dev/shm/_k_{c}_seg.nii.gz", f"/dev/shm/_k_{c}_img.nii.gz"
+    try:
+        urllib.request.urlretrieve(KITS_SEG.format(c=c), sp_f)
+        urllib.request.urlretrieve(KITS_IMG.format(c=c), im_f)
+        img = nib.load(im_f); ct = img.get_fdata()
+        seg = np.asarray(nib.load(sp_f).dataobj).astype(int)   # KiTS: 1=kidney, 2=tumor, 3=cyst
+        sp = [float(z) for z in img.header.get_zooms()[:3]]
+        if ct.shape != seg.shape:
+            raise ValueError(f"shape mismatch {ct.shape} vs {seg.shape}")
+        return ct, seg, sp
+    finally:
+        for p in (sp_f, im_f):
+            if os.path.exists(p):
+                os.remove(p)
+
+
 # per-dataset config: organ -> GT label(s); volume loader; slice axis
 CFG = {
     "msd":         {"ckpt": f"{POOL}/sam3_organ_generic_ausam_msd.pth", "axial": 2,
@@ -82,6 +104,8 @@ CFG = {
                     "organs": {"liver": [1], "kidney": [2, 13], "pancreas": [4]}, "load": load_flare23,
                     "avail": lambda: set(os.path.basename(f).replace("_ct.nii.gz", "")
                                          for f in glob.glob(f"{FFC}/*_ct.nii.gz"))},
+    "kits":        {"ckpt": f"{POOL}/sam3_organ_generic_ausam_kits.pth", "axial": 0,
+                    "organs": {"kidney": [1]}, "load": load_kits},   # streams volumes
 }
 
 
@@ -154,7 +178,11 @@ def main():
 
     per_organ = defaultdict(list); per_organ_nsd = defaultdict(list); cases_out = []
     for ci, case in enumerate(test_cases):
-        ct, lbl, sp = cfg["load"](case)
+        try:
+            ct, lbl, sp = cfg["load"](case)          # may stream (KiTS) — skip on download/shape failure
+        except Exception as e:
+            print(f"  [{ci+1}/{len(test_cases)}] {case} SKIP ({type(e).__name__}: {str(e)[:60]})", flush=True)
+            continue
         vox_cm3 = (sp[0] * sp[1] * sp[2] / 1000.0) if sp else None
         ax = cfg["axial"]; Z = ct.shape[ax]
         rec = {"case": case, "spacing": sp, "organs": {}}

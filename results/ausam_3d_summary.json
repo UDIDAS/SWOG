@@ -26,6 +26,15 @@
         "pancreas": 0.9194
       }
     },
+    "kits": {
+      "n_patients": 20,
+      "mean_3d_dice": {
+        "kidney": 0.9381
+      },
+      "mean_nsd_2mm": {
+        "kidney": 0.9075
+      }
+    },
     "lits": {
       "n_patients": 6,
       "mean_3d_dice": {
@@ -85,6 +94,13 @@
       "volume_corr": 0.9943,
       "volume_MAE": 3.22,
       "volume_MAPE_pct": 4.4
+    },
+    "kidney/kits": {
+      "n": 20,
+      "unit": "cm3",
+      "volume_corr": 0.9965,
+      "volume_MAE": 6.79,
+      "volume_MAPE_pct": 1.9
     },
     "liver/lits": {
       "n": 6,
@@ -167,6 +183,17 @@
       "n_poor_dice(<0.85)": 0,
       "flagged_and_poor": 0,
       "auroc_flag_vs_poor": null
+    },
+    "kidney/kits": {
+      "n": 20,
+      "band_cm3": [
+        230.8,
+        666.2
+      ],
+      "n_flagged": 2,
+      "n_poor_dice(<0.85)": 1,
+      "flagged_and_poor": 0,
+      "auroc_flag_vs_poor": 0.447
     },
     "pancreas/msd": {
       "n": 33,
