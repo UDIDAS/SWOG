@@ -29,8 +29,11 @@ TYPE_COLOR = {
     "Lesion": "#ff7f0e", "Observation": "#9467bd", "AnatomicSite": "#17becf",
     "Concept": "#7f7f7f", "Dataset": "#8c564b",
 }
-ORGAN_MAP = {"pancreas": "Organ::Pancreas", "liver": "Organ::Liver"}
-TUMOR_MAP = {"pancreas": "Lesion::Pancreatic tumor", "liver": "Lesion::Liver tumor"}
+ORGAN_MAP = {"pancreas": "Organ::Pancreas", "liver": "Organ::Liver", "spleen": "Organ::Spleen",
+             "kidney": "Organ::Kidney", "right_kidney": "Organ::Kidney", "left_kidney": "Organ::Kidney"}
+TUMOR_MAP = {"pancreas": "Lesion::Pancreatic tumor", "liver": "Lesion::Liver tumor",
+             "kidney": "Lesion::Kidney tumor", "right_kidney": "Lesion::Kidney tumor",
+             "left_kidney": "Lesion::Kidney tumor"}
 SITE_MAP = {"head": "AnatomicSite::Head of pancreas", "body": "AnatomicSite::Body of pancreas",
             "tail": "AnatomicSite::Tail of pancreas"}
 # categorical phenotypes as DIRECT predicate triples: (lesion) --tumorBurden--> "high"

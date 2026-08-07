@@ -98,6 +98,37 @@
         "code": "409771002",
         "display": "Tumour invasion by direct extension from organ of origin to adjacent organ"
       }
+    },
+    "Organ::Kidney": {
+      "SNOMED CT": {
+        "system": "SNOMED CT",
+        "code": "64033007",
+        "display": "Kidney structure"
+      },
+      "NCIt": {
+        "system": "NCIt",
+        "code": "C12415",
+        "display": "Kidney"
+      }
+    },
+    "Organ::Spleen": {
+      "SNOMED CT": {
+        "system": "SNOMED CT",
+        "code": "78961009",
+        "display": "Splenic structure"
+      },
+      "NCIt": {
+        "system": "NCIt",
+        "code": "C12432",
+        "display": "Spleen"
+      }
+    },
+    "Lesion::Kidney tumor": {
+      "SNOMED CT": {
+        "system": "SNOMED CT",
+        "code": "126880001",
+        "display": "Neoplasm of kidney"
+      }
     }
   },
   "stats": {
