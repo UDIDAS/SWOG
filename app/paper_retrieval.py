@@ -138,21 +138,46 @@ def oakg_scores(query_case, candidate_ids, X, M, corpus, policy="product", gamma
 
 
 # ----------------------------------------------------------------- build corpus from our KG
-# (feature name, type, kind, organ) — observability follows organ imaging + tumor annotation
+# (feature name, type, kind, organ) — observability follows organ imaging + tumor annotation.
+# KiTS labels the organ "kidney"; FLARE labels "right_kidney"/"left_kidney". We collapse L/R into a
+# single "kidney" so kidney patients are comparable ACROSS datasets (else KiTS shares no organ token
+# with anything and is structurally unrankable). KiTS also carries a kidney-tumor annotation.
 FEATURES = [
     ("liver_volume", "numeric", "organ", "liver"),
     ("pancreas_volume", "numeric", "organ", "pancreas"),
     ("spleen_volume", "numeric", "organ", "spleen"),
-    ("right_kidney_volume", "numeric", "organ", "right_kidney"),
-    ("left_kidney_volume", "numeric", "organ", "left_kidney"),
+    ("kidney_volume", "numeric", "organ", "kidney"),
     ("pancreas_tumor_volume", "numeric", "tumor", "pancreas"),
     ("liver_tumor_volume", "numeric", "tumor", "liver"),
+    ("kidney_tumor_volume", "numeric", "tumor", "kidney"),
 ]
-_TUMOR_ANNOTATED = {("pancreas", "pancreas"), ("liver", "lits")}
+_TUMOR_ANNOTATED = {("pancreas", "pancreas"), ("liver", "lits"), ("kidney", "kits")}
+_KIDNEY_PARTS = ("right_kidney", "left_kidney")
+
+
+def _norm_obs(observed):
+    """Collapse L/R kidney into a single 'kidney' token (unify KiTS ↔ FLARE kidney vocabulary)."""
+    s = set(observed)
+    if "kidney" in s or s & set(_KIDNEY_PARTS):
+        s -= set(_KIDNEY_PARTS); s.add("kidney")
+    return frozenset(s)
+
+
+def _organ_record(rec, organ):
+    """Organ phenotype dict, merging L/R kidney (summed volumes) when a record splits it."""
+    organs = rec.get("organs", {})
+    if organ == "kidney" and "kidney" not in organs:
+        parts = [organs[k] for k in _KIDNEY_PARTS if k in organs]
+        if not parts:
+            return None
+        return {"organ_volume_cm3": sum(p.get("organ_volume_cm3") or 0 for p in parts),
+                "tumor_volume_cm3": sum(p.get("tumor_volume_cm3") or 0 for p in parts),
+                "has_tumor": any(p.get("has_tumor") for p in parts)}
+    return organs.get(organ)
 
 
 def _observed(rec, kind, organ):
-    if organ not in rec["observed_organs"]:
+    if organ not in _norm_obs(rec["observed_organs"]):
         return False
     return True if kind == "organ" else (organ, rec["dataset"]) in _TUMOR_ANNOTATED
 
@@ -163,10 +188,10 @@ def build_corpus(records):
     obs_sets, case_to_row = {}, {}
     for i, rec in enumerate(records):
         case_to_row[rec["case_id"]] = i
-        obs_sets[rec["case_id"]] = frozenset(rec["observed_organs"])
+        obs_sets[rec["case_id"]] = _norm_obs(rec["observed_organs"])
         for j, (_, _, kind, organ) in enumerate(FEATURES):
             if _observed(rec, kind, organ):
-                od = rec["organs"].get(organ, {})
+                od = _organ_record(rec, organ) or {}
                 v = od.get("organ_volume_cm3") if kind == "organ" else od.get("tumor_volume_cm3")
                 if v is not None:
                     X[i, j], M[i, j] = v, True
