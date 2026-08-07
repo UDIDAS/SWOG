@@ -128,19 +128,23 @@ def _surf_dt(mask, spacing):
     return surf, distance_transform_edt(~surf, sampling=spacing)  # mm distance to nearest surface voxel
 
 
-def nsd(pred, gt, spacing, taus=NSD_TAUS):
-    """Normalized Surface Distance (surface Dice): fraction of both surfaces within tolerance tau (mm)."""
+def surface_metrics(pred, gt, spacing, taus=NSD_TAUS):
+    """Boundary metrics from surface distances (mm): NSD (surface Dice) at each tau, and HD95."""
     ps, pdt = _surf_dt(pred, spacing); gs, gdt = _surf_dt(gt, spacing)
     tot = int(ps.sum()) + int(gs.sum())
     if tot == 0:
-        return {f"{t}mm": 1.0 for t in taus}
+        return {"nsd": {f"{t}mm": 1.0 for t in taus}, "hd95_mm": 0.0}
     if ps.sum() == 0 or gs.sum() == 0:
-        return {f"{t}mm": 0.0 for t in taus}
-    out = {}
-    for t in taus:
-        within = int((pdt[gs] <= t).sum()) + int((gdt[ps] <= t).sum())
-        out[f"{t}mm"] = round(within / tot, 4)
-    return out
+        return {"nsd": {f"{t}mm": 0.0 for t in taus}, "hd95_mm": None}
+    d_g2p = pdt[gs]                          # gt surface -> nearest pred surface (mm)
+    d_p2g = gdt[ps]                          # pred surface -> nearest gt surface (mm)
+    nsd = {f"{t}mm": round((int((d_g2p <= t).sum()) + int((d_p2g <= t).sum())) / tot, 4) for t in taus}
+    hd95 = round(float(max(np.percentile(d_p2g, 95), np.percentile(d_g2p, 95))), 2)   # symmetric HD95
+    return {"nsd": nsd, "hd95_mm": hd95}
+
+
+def nsd(pred, gt, spacing, taus=NSD_TAUS):   # back-compat wrapper (notebook imports this)
+    return surface_metrics(pred, gt, spacing, taus)["nsd"]
 
 
 def main():
@@ -176,7 +180,7 @@ def main():
             pm = torch.nn.functional.interpolate(pm.float(), size=(256, 256), mode="bilinear", align_corners=False)
         return pm.sigmoid().squeeze().cpu().numpy() > 0.5
 
-    per_organ = defaultdict(list); per_organ_nsd = defaultdict(list); cases_out = []
+    per_organ = defaultdict(list); per_organ_nsd = defaultdict(list); per_organ_hd95 = defaultdict(list); cases_out = []
     for ci, case in enumerate(test_cases):
         try:
             ct, lbl, sp = cfg["load"](case)          # may stream (KiTS) — skip on download/shape failure
@@ -209,10 +213,12 @@ def main():
                                     "vol_pred_cm3": round(int(pred3d.sum()) * vox_cm3, 2) if vox_cm3 else None,
                                     "vol_gt_cm3": round(int(gt3d.sum()) * vox_cm3, 2) if vox_cm3 else None,
                                     "vox_pred": int(pred3d.sum()), "vox_gt": int(gt3d.sum())}
-            if sp is not None:                       # NSD needs mm spacing (skip .npy/LiTS)
-                nv = nsd(pred3d.astype(bool), gt3d.astype(bool), sp)
-                rec["organs"][organ]["nsd3d"] = nv
-                per_organ_nsd[organ].append(nv["2.0mm"])
+            if sp is not None:                       # surface metrics need mm spacing (skip .npy/LiTS)
+                sm = surface_metrics(pred3d.astype(bool), gt3d.astype(bool), sp)
+                rec["organs"][organ]["nsd3d"] = sm["nsd"]; rec["organs"][organ]["hd95_mm"] = sm["hd95_mm"]
+                per_organ_nsd[organ].append(sm["nsd"]["2.0mm"])
+                if sm["hd95_mm"] is not None:
+                    per_organ_hd95[organ].append(sm["hd95_mm"])
         cases_out.append(rec)
         if (ci + 1) % 5 == 0 or ci == 0:
             print(f"  [{ci+1}/{len(test_cases)}] {case}: " +
@@ -221,11 +227,12 @@ def main():
 
     summary = {o: round(float(np.mean(v)), 4) for o, v in per_organ.items()}
     nsd_summary = {o: round(float(np.mean(v)), 4) for o, v in per_organ_nsd.items() if v}
+    hd95_summary = {o: round(float(np.mean(v)), 2) for o, v in per_organ_hd95.items() if v}
     out = {"dataset": a.dataset, "n_patients": len(test_cases), "hu_window": WIN, "nsd_taus_mm": list(NSD_TAUS),
-           "mean_3d_dice": summary, "mean_nsd_2mm": nsd_summary, "cases": cases_out}
+           "mean_3d_dice": summary, "mean_nsd_2mm": nsd_summary, "mean_hd95_mm": hd95_summary, "cases": cases_out}
     fp = f"/home/ud3d4/Desktop/SWOG/results/ausam_3d_{a.dataset}.json"
     json.dump(out, open(fp, "w"), indent=2)
-    print(f"\n=== {a.dataset} patient-level 3-D  DSC {summary}  |  NSD@2mm {nsd_summary}  (n={len(test_cases)}) ===", flush=True)
+    print(f"\n=== {a.dataset} 3-D  DSC {summary} | NSD@2mm {nsd_summary} | HD95mm {hd95_summary}  (n={len(test_cases)}) ===", flush=True)
     print(f"-> {fp}", flush=True)
 
 
