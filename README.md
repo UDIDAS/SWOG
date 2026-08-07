@@ -54,16 +54,21 @@ stage runs on AUSAM's predicted outputs (§6): **node fidelity done** (a KG from
 Five public abdominal-CT datasets provide the **image + label pairs** used to train the segmenters. Each
 contributes the organs (and, where annotated, the tumors) it labels:
 
-| Dataset | Images | Structures | Organ slices | Tumor slices |
-|---|:--:|---|--:|--:|
-| **LiTS** | ✅ | liver (+ liver tumor) | 5,000 | 5,600 |
-| **MSD Pancreas** (Task07) | ✅ | pancreas (+ pancreas tumor) | 5,000 | 2,537 |
-| **KiTS23** | ✅ | kidney (+ kidney tumor) | 3,821 | 5,267 |
-| **FLARE-Task2** | ✅ | liver / kidney / pancreas | 13,929 | — |
-| **FLARE23** | ✅ | liver / kidney / pancreas (+ tumor) | 10,759 | 7,269 |
+| Dataset | Patients | Tumor patients | Structures | Organ slices | Tumor slices |
+|---|:--:|:--:|---|--:|--:|
+| **LiTS** | 131 | 107 | liver (+ liver tumor) | 5,000 | 5,600 |
+| **MSD Pancreas** (Task07) | 281 | 281 | pancreas (+ pancreas tumor) | 5,000 | 2,537 |
+| **KiTS23** | 180 | 180 | kidney (+ kidney tumor) | 3,821 | 5,267 |
+| **FLARE-Task2** | 100 | — | liver / kidney / pancreas | 13,929 | — |
+| **FLARE23** | 449 | 270 | liver / kidney / pancreas (+ tumor) | 10,759 | 7,269 |
 
-Slice counts are the extracted, class-balanced training slices per dataset (organ pool and tumor pool
-respectively). FLARE-Task2 carries no tumor labels.
+**Patients** = distinct patients available to the pipeline locally; **Tumor patients** = those carrying a tumor
+label (organ and tumor slices are extracted independently, so a dataset can list more tumor than organ patients —
+e.g. KiTS23, whose kidney-organ and kidney-tumor pools were built separately). LiTS, MSD Pancreas and FLARE-Task2
+are the complete public sets; KiTS23 (489-case challenge) and FLARE23 (~4k labeled) are the local subsets shown.
+Slice counts are the currently-extracted, class-balanced training slices — the **organ pool is capped at 5,000
+slices/dataset for balance**, which is why 34 LiTS scans (~147 liver slices each) and 165 MSD scans (~30 pancreas
+slices each) both yield 5,000; that cap is being lifted to the full patient set for the single-organ models (§3).
 
 ---
 
