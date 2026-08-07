@@ -46,6 +46,14 @@ def load_demo():
 
 
 KB, ATLAS, DEMO = load_kb(), load_atlas(), load_demo()
+def kb_case_id(d):                                          # normalize our ids to the KB naming (LiTS differs)
+    if d["dataset"] == "lits":
+        return f"LiTs-{int(d['case'].replace('volume-', '')):03d}"
+    return d["case"]
+DEMO_IDS = {kb_case_id(d) for d in DEMO}
+BASE_KB = [r for r in KB if r["case_id"] not in DEMO_IDS]   # train cohort = KB minus the held-out demo patients
+if "admitted" not in st.session_state:
+    st.session_state.admitted = {}                          # anchor_id -> record; accumulates across the session
 
 # ---- complex named queries (from the OAKG paper), as record filters ----
 def _org(r, o):
@@ -121,9 +129,13 @@ else:
 st.header("4 · Grow the knowledge graph")
 anchor_id = f"{D['case']}·new"
 patient = json.loads(json.dumps(pred)); patient["case_id"] = anchor_id     # add as a NEW node
-KB_grown = [r for r in KB if r["case_id"] != D["case"]] + [patient]
-st.markdown(f"Knowledge base: **{len(KB):,} → {len(KB_grown):,}** patients — this patient is now a node "
-            f"grounded to its organ/tumor concepts and is queryable across every dataset.")
+if st.button(f"➕ Admit {D['case']} to the knowledge graph" + ("" if ok else "  (override — flagged)")):
+    st.session_state.admitted[anchor_id] = patient
+admitted = dict(st.session_state.admitted); admitted[anchor_id] = patient  # current anchor always present
+KB_grown = BASE_KB + list(admitted.values())
+st.markdown(f"Train cohort **{len(BASE_KB):,}** → **{len(BASE_KB)+len(admitted):,}** patients "
+            f"(**{len(admitted)}** admitted this session). The patient is now a node grounded to its organ/tumor "
+            f"concepts and queryable across every dataset. Process more patients and watch the graph grow.")
 
 # ============================ 5 · Retrieve similar patients ============================
 st.header("5 · Retrieve similar patients across the whole knowledge base")
