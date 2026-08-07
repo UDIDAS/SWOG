@@ -1,0 +1,56 @@
+{
+  "note": "per-dataset AUSAM model x test-dataset, slice-level Dice, GT box; diagonal=in-dist",
+  "matrix": {
+    "liver": {
+      "lits": {
+        "lits": 0.9567,
+        "flare_task2": 0.9552,
+        "flare23": 0.925
+      },
+      "flare_task2": {
+        "lits": 0.9386,
+        "flare_task2": 0.9702,
+        "flare23": 0.9349
+      },
+      "flare23": {
+        "lits": 0.9407,
+        "flare_task2": 0.9637,
+        "flare23": 0.9393
+      }
+    },
+    "kidney": {
+      "kits": {
+        "kits": 0.9114,
+        "flare_task2": 0.8992,
+        "flare23": 0.8582
+      },
+      "flare_task2": {
+        "kits": 0.8018,
+        "flare_task2": 0.9549,
+        "flare23": 0.8936
+      },
+      "flare23": {
+        "kits": 0.8488,
+        "flare_task2": 0.9477,
+        "flare23": 0.9216
+      }
+    },
+    "pancreas": {
+      "msd": {
+        "msd": 0.8766,
+        "flare_task2": 0.8786,
+        "flare23": 0.8541
+      },
+      "flare_task2": {
+        "msd": 0.8408,
+        "flare_task2": 0.9127,
+        "flare23": 0.8523
+      },
+      "flare23": {
+        "msd": 0.8348,
+        "flare_task2": 0.8897,
+        "flare23": 0.8696
+      }
+    }
+  }
+}
