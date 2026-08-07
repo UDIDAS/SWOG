@@ -242,16 +242,48 @@ implausible phenotypes, so there is nothing to flag (a finding: the validator's 
 
 ---
 
-## 7. The tumor model
+## 7. The tumor model — why per-dataset, and how well it feeds the KG
 
-The tumor model follows the **same AUSAM paradigm** as the organ models: one SAM3 checkpoint **per dataset**,
-fine-tuned on that dataset's tumor slices, prompted at inference with `"tumor"` + a GT-derived box, same
-patient-level split and per-slice Dice metric. Four models — **LiTS** (liver tumor), **MSD Pancreas**,
-**KiTS23** (kidney tumor), **FLARE23** (pan-cancer) — on the tumor slice counts in [§2](#2-training-datasets).
+The tumor model follows the same AUSAM paradigm as the organs — one SAM3 checkpoint **per dataset**, fine-tuned on
+that dataset's tumor slices, prompted with `"tumor"` + a GT-derived box (per-dataset test Dice in
+[§4](#4-results--ausam-per-dataset-test-dice)). Tumors are the harder, **KG-critical** target — burden,
+multiplicity and containment all derive from the tumor mask — so two tumor-specific questions matter: **must the
+tumor model be per-dataset?** and **are its predicted phenotypes trustworthy enough to populate the graph?**
 
-Tumors are smaller, sparser, and more variable than organs, so they are the harder target; they are trained
-**separately per dataset** for the same reason the organs are. Their numbers fill into the table in
-[§4](#4-results--ausam-per-dataset-test-dice) as each run completes (`results/tumor_ausam_<ds>.json`).
+### 7.1 Why per-dataset — cross-dataset tumor transfer collapses
+
+<!-- TUMOR_INCR:START -->
+**Incremental cross-dataset tumor Dice** — one SAM3 tumor model trained on a *growing* set of datasets, tested on all four. Rows = cumulative training set; **bold** = the newly-added dataset (in-distribution); off-diagonal = held-out cross-dataset transfer.
+
+| trained on | MSD | LiTS | KiTS23 | FLARE23 |
+|---|:--:|:--:|:--:|:--:|
+| LiTS | 0.004 | **0.667** | 0.389 | 0.348 |
+| + MSD | **0.625** | 0.674 | 0.469 | 0.405 |
+| + KiTS23 | 0.617 | 0.659 | **0.785** | 0.514 |
+| + FLARE23 | 0.648 | 0.671 | 0.788 | **0.708** |
+<!-- TUMOR_INCR:END -->
+
+Unlike organs (§5.1), which already transfer zero-shot at ~0.89, a single-dataset tumor model is **catastrophic**
+elsewhere — a LiTS model scores **0.004** on pancreatic tumor (liver and pancreas tumors share almost no
+appearance). Pooling all four into one model recovers transfer (0.65–0.79) but still trails the dedicated
+per-dataset models (mean **0.857** vs **0.704**). So we keep one tumor model per dataset and integrate them at the
+**KG** level — tumors are exactly where the multi-source design earns its keep.
+
+### 7.2 Tumor phenotype fidelity — predicted vs GT
+
+<!-- TUMOR_FID:START -->
+**Tumor phenotype fidelity** — predicted vs GT over the tumor-test patients (the tumor half of node fidelity — the categorical phenotypes here are what the KG retrieves on):
+
+| dataset / organ | n | tumor-vol corr | has-tumor acc | burden acc | multiplicity acc |
+|---|:--:|:--:|:--:|:--:|:--:|
+| MSD / pancreas | 56 | 0.998 | 0.95 | 0.89 | 0.95 |
+| LiTS / liver | 21 | 0.909 | 1.00 | 0.90 | 0.90 |
+| KiTS23 / kidney | 36 | 1.000 | 0.97 | 0.97 | 0.81 |
+<!-- TUMOR_FID:END -->
+
+Predicted tumor volume tracks GT almost perfectly (corr ≥ 0.91) and the categorical phenotypes the KG relies on
+agree with GT 81–97% of the time — which is why a graph built on **predicted** masks retrieves as well as one
+built on GT ([§6](#6-knowledge-graph-stage-the-contribution)).
 
 ---
 

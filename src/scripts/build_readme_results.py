@@ -94,10 +94,63 @@ def crossdataset():
     return "\n".join(L)
 
 
+TUMOR_NAME = {"pancreas": "MSD", "lits": "LiTS", "kits": "KiTS23", "flare": "FLARE23"}
+
+
+def tumor_incremental():
+    f = f"{RES}/tumor_incremental.json"
+    if not os.path.exists(f):
+        return "_Incremental tumor experiment pending._"
+    stages = json.load(open(f))["stages"]
+    cols = ["pancreas", "lits", "kits", "flare"]
+    L = ["**Incremental cross-dataset tumor Dice** — one SAM3 tumor model trained on a *growing* set of datasets, "
+         "tested on all four. Rows = cumulative training set; **bold** = the newly-added dataset (in-distribution); "
+         "off-diagonal = held-out cross-dataset transfer.", "",
+         "| trained on | " + " | ".join(TUMOR_NAME[c] for c in cols) + " |",
+         "|---|" + "|".join([":--:"] * len(cols)) + "|"]
+    prev = set()
+    for s in stages:
+        added = next(iter(set(s["trained_on"]) - prev), None)
+        prev = set(s["trained_on"])
+        label = f"+ {TUMOR_NAME.get(added, added)}" if len(s["trained_on"]) > 1 else TUMOR_NAME.get(added, added)
+        cells = []
+        for c in cols:
+            v = s["per_dataset_test"].get(c)
+            cells.append("—" if v is None else (f"**{v:.3f}**" if c == added else f"{v:.3f}"))
+        L.append(f"| {label} | " + " | ".join(cells) + " |")
+    return "\n".join(L)
+
+
+def tumor_fidelity():
+    import numpy as np
+    L = ["**Tumor phenotype fidelity** — predicted vs GT over the tumor-test patients (the tumor half of node "
+         "fidelity — the categorical phenotypes here are what the KG retrieves on):", "",
+         "| dataset / organ | n | tumor-vol corr | has-tumor acc | burden acc | multiplicity acc |",
+         "|---|:--:|:--:|:--:|:--:|:--:|"]
+    for ds, organ in [("msd", "pancreas"), ("lits", "liver"), ("kits", "kidney")]:
+        pf, gf = f"{RES}/corpus_predicted_{ds}.json", f"{RES}/corpus_gt_{ds}.json"
+        if not (os.path.exists(pf) and os.path.exists(gf)):
+            continue
+        P = {r["case_id"]: r for r in json.load(open(pf))["records"]}
+        G = {r["case_id"]: r for r in json.load(open(gf))["records"]}
+        ids = [i for i in P if i in G]
+        po, go = (lambda i: P[i]["organs"][organ]), (lambda i: G[i]["organs"][organ])
+        pv = [po(i).get("tumor_volume_cm3") or 0 for i in ids]
+        gv = [go(i).get("tumor_volume_cm3") or 0 for i in ids]
+        corr = float(np.corrcoef(pv, gv)[0, 1])
+        acc = lambda key: float(np.mean([po(i).get(key) == go(i).get(key) for i in ids]))
+        ht = float(np.mean([bool(po(i).get("has_tumor")) == bool(go(i).get("has_tumor")) for i in ids]))
+        L.append(f"| {DS_NAME.get(ds, ds)} / {organ} | {len(ids)} | {corr:.3f} | {ht:.2f} | "
+                 f"{acc('burden_cat'):.2f} | {acc('multiplicity'):.2f} |")
+    return "\n".join(L)
+
+
 def main():
     txt = open(README).read()
     txt = replace(txt, "<!-- RESULTS3D:START -->", "<!-- RESULTS3D:END -->", results3d())
     txt = replace(txt, "<!-- CROSSDATASET:START -->", "<!-- CROSSDATASET:END -->", crossdataset())
+    txt = replace(txt, "<!-- TUMOR_INCR:START -->", "<!-- TUMOR_INCR:END -->", tumor_incremental())
+    txt = replace(txt, "<!-- TUMOR_FID:START -->", "<!-- TUMOR_FID:END -->", tumor_fidelity())
     txt = replace(txt, "<!-- KG:START -->", "<!-- KG:END -->", kg())
     open(README, "w").write(txt)
     print("README 3-D + KG results updated.")
