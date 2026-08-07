@@ -13,6 +13,7 @@
     "liver": 0.9555
   },
   "mean_nsd_2mm": {},
+  "mean_hd95_mm": {},
   "cases": [
     {
       "case": "volume-16",

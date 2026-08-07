@@ -2,8 +2,10 @@
 
 A **Multi-Modal Knowledge Graph (MMKG)** built on autonomous abdominal-CT segmentation: segment liver / kidney /
 pancreas and their tumors, turn the masks into **ontology-grounded phenotypes**, and use the graph to **validate**
-results without labels and **retrieve** similar patients. This README describes the **whole pipeline** and reports
-the current results — **AUSAM segmentation is complete; the knowledge-graph stage is next.**
+results without labels and **retrieve** similar patients. **The contribution is the *pipeline*** — multi-source
+segmentation → phenotypes → a KG that integrates datasets labeling *different* structures → observability-aware
+retrieval. Segmentation is a competent **component**, not a segmentation-SOTA claim. All evaluation is on held-out
+test sets under a consistent **semi-oracle (GT-box)** setting, so every comparison here is like-for-like.
 
 ---
 
@@ -13,22 +15,20 @@ Four stages take a CT to a queryable, ontology-grounded graph entry:
 
 ```
 CT (test patient)
-  1. Segment    AUSAM: per-dataset SAM3 + text prompt + GT box → organ & tumor masks   [DONE — §4]
-  2. Phenotype  per-patient 3-D mask → volume, max diameter, centroid, tumor burden,   [next stage]
-                lesion count                              (kg_extract_phenotypes.py)
-  3. Represent  phenotypes → ontology-grounded KG node   (SNOMED / NCIt, kg_grounding) [machinery exists]
+  1. Segment    AUSAM: per-dataset SAM3 + text prompt + GT box → organ & tumor masks   [DONE — §4, §5]
+  2. Phenotype  per-patient 3-D mask → volume, tumor burden, multiplicity, location    [DONE — §6]
+                                                          (kg_extract_phenotypes.py)
+  3. Represent  phenotypes → ontology-grounded KG node   (SNOMED / NCIt, kg_grounding) [DONE — §6]
   4. Reason     the KG at inference:
-                 · Validate — flag implausible phenotypes vs the cohort, no labels
-                 · Retrieve — find the most similar known patients   (OAKG, γ-weighted)
+                 · Validate — flag implausible phenotypes vs the cohort, no labels      [DONE — null on AUSAM]
+                 · Retrieve — find the most similar known patients   (OAKG, γ-weighted) [completing — §6]
 ```
 
 **How we test (this stage — the sidetrack).** Everything is scored on **held-out test patients**, in-distribution
 per dataset (a test patient's dataset is known, so its per-dataset model is used). Segmentation is scored two ways:
-per-slice **2-D Dice** (§4) and, next, **3-D whole-volume Dice** — run the 2-D model over *every* slice of a test
-volume, stack the outputs into a 3-D mask, and score the assembled shape (this also catches false positives on
-organ-*absent* slices, which the 2-D score can't). The KG stage is then tested on AUSAM's **predicted** phenotypes:
-**fidelity** (predicted-KG vs GT-KG), **GT-free validation** (AUROC of flagged vs actually-low-Dice), and
-**retrieval** quality.
+per-slice **2-D Dice** (§4) and **3-D whole-volume** DSC / NSD / HD95 (§5) — the 2-D model run over *every* slice
+of a test volume, stacked into a 3-D mask. The KG stage is tested on AUSAM's **predicted** phenotypes (§6):
+**fidelity** (predicted-KG vs GT-KG), **GT-free validation**, and **retrieval** quality.
 
 **How the KG is used at inference.** The graph is not a passive store. At inference it (a) **validates** a new
 patient's phenotype against the cohort with *no ground truth* — a 4,900 cc "liver" is flagged as a likely
@@ -42,9 +42,10 @@ similarity by their **joint observability** (γ), so a liver-only LiTS patient a
 called "similar" merely because both are missing everything else. This is what lets the per-dataset graphs coexist
 as **one merged knowledge graph** and be queried together.
 
-**Status.** Stage 1 (AUSAM segmentation) is complete (§2–§5). Stages 2–4 reuse existing OAKG machinery
-(`kg_extract_phenotypes`, `kg_grounding`, `kg_retrieval_v2`, the validator/atlas, the GT knowledge graph) and are
-the **next stage**, run on AUSAM's test-set outputs.
+**Status.** Segmentation is complete — 2-D per-dataset (§4) **and** patient-level 3-D / DSC·NSD·HD95 (§5). The KG
+stage runs on AUSAM's predicted outputs (§6): **node fidelity done** (a KG from predicted masks ≈ one from GT),
+**GT-free validation done** (a null on AUSAM — it is too accurate to flag, which is itself the finding), and
+**observability-aware retrieval on predicted phenotypes** — the headline experiment — completing.
 
 ---
 
@@ -140,7 +141,68 @@ _9 organ (dataset,organ) cells from 5/5 datasets · 4/4 tumor datasets. '…' = 
 
 ---
 
-## 5. The tumor model
+## 5. Patient-level 3-D (whole-volume)
+
+The §4 scores are per-slice on organ-present slices. The **patient-level** number runs the same 2-D model over
+*every* slice of a test volume and scores the assembled 3-D mask — reported three ways (challenge-standard):
+**DSC** (volume overlap), **NSD@2 mm** (surface agreement), **HD95** (95th-percentile boundary distance, mm).
+Same semi-oracle setting, so these are the whole-volume *interactive ceiling* — not an autonomous number.
+
+<!-- RESULTS3D:START -->
+**Patient-level 3-D (whole-volume, semi-oracle setting)** — DSC = volume overlap, NSD@2mm = surface agreement, HD95 = 95th-percentile boundary distance (mm):
+
+| Dataset | Organ | DSC | NSD@2mm | HD95 (mm) | n |
+|---|---|:--:|:--:|:--:|:--:|
+| FLARE-Task2 | liver | 0.981 | 0.947 | 3.82 | 20 |
+| FLARE-Task2 | kidney | 0.964 | 0.946 | 2.97 | 20 |
+| FLARE-Task2 | pancreas | 0.916 | 0.919 | 3.08 | 20 |
+| FLARE23 | liver | 0.971 | 0.925 | 4.52 | 10 |
+| FLARE23 | kidney | 0.954 | 0.908 | 5.22 | 10 |
+| FLARE23 | pancreas | 0.884 | 0.869 | 4.74 | 10 |
+| KiTS23 | kidney | 0.938 | 0.907 | 5.61 | 20 |
+| MSD | pancreas | 0.881 | 0.848 | 4.49 | 33 |
+| LiTS | liver | 0.956 | — | — | 6 |
+
+_LiTS is DSC-only — its `.npy` volumes did not retain mm spacing, which NSD/HD95 require._
+<!-- RESULTS3D:END -->
+
+---
+
+## 6. Knowledge-graph stage (the contribution)
+
+The KG stage runs on AUSAM's **predicted** phenotypes (organ + tumor volumes → burden / multiplicity / containment
+/ location, derived exactly as the GT corpus derives them). Two questions:
+
+- **Node fidelity** — is a KG built from *predicted* masks as trustworthy as one from GT? Measured as
+  predicted-vs-GT organ-volume agreement.
+- **OAKG retrieval on predicted phenotypes** — rank patients by *predicted*-phenotype similarity, score relevance
+  against *GT* tumor features. The **γ (observability) ablation** shows that weighting by shared observed organs
+  suppresses spurious cross-dataset matches — the multi-source-integration claim, now on the pipeline's own output.
+
+GT-free validation is wired but returns a **null on AUSAM** — the semi-oracle segmenter is too accurate to produce
+implausible phenotypes, so there is nothing to flag (a finding: the validator's real test is a noisier autonomous arm).
+
+<!-- KG:START -->
+**Node fidelity** — is a KG built from *predicted* masks as trustworthy as one from GT? Predicted-vs-GT organ-volume agreement:
+
+| organ / dataset | volume corr | MAPE |
+|---|:--:|:--:|
+| kidney/flare23 | 0.9938 | 4.1% |
+| kidney/flare_task2 | 0.9992 | 1.7% |
+| kidney/kits | 0.9965 | 1.9% |
+| liver/flare23 | 0.99 | 2.1% |
+| liver/flare_task2 | 0.997 | 0.9% |
+| liver/lits | 0.9967 | 3.6% |
+| pancreas/flare23 | 0.9671 | 6.6% |
+| pancreas/flare_task2 | 0.9943 | 4.4% |
+| pancreas/msd | 0.981 | 10.5% |
+
+_OAKG retrieval on predicted phenotypes — computing (pipeline chain running); table lands on completion._
+<!-- KG:END -->
+
+---
+
+## 7. The tumor model
 
 The tumor model follows the **same AUSAM paradigm** as the organ models: one SAM3 checkpoint **per dataset**,
 fine-tuned on that dataset's tumor slices, prompted at inference with `"tumor"` + a GT-derived box, same
@@ -153,12 +215,18 @@ Tumors are smaller, sparser, and more variable than organs, so they are the hard
 
 ---
 
-## 6. Reproduce
+## 8. Reproduce
 
 ```
-env:           conda llmft · Python 3.11 · PyTorch 2.5.1+cu121 · 2× NVIDIA L40S · transformers (SAM3)
-organ AUSAM:   python src/scripts/train_organ_generic.py --ausam --dataset <lits|kits|msd|flare_task2|flare23>
-tumor AUSAM:   python src/scripts/train_tumor_ausam.py --dataset <lits|pancreas|kits|flare>
-results table: python src/scripts/build_readme_ausam_tables.py     # regenerate §4 from results/*.json
-split tables:  python src/scripts/build_readme_splits.py           # regenerate §3 splits from pool metas
+env:              conda llmft · Python 3.11 · PyTorch 2.5.1+cu121 · 2× NVIDIA L40S · transformers (SAM3)
+organ AUSAM:      python src/scripts/train_organ_generic.py --ausam --dataset <lits|kits|msd|flare_task2|flare23>
+tumor AUSAM:      python src/scripts/train_tumor_ausam.py --dataset <lits|pancreas|kits|flare>
+3-D DSC/NSD/HD95: python src/scripts/eval_ausam_3d.py --dataset <ds>
+predicted corpus: python src/scripts/build_predicted_corpus.py --dataset <msd|lits|kits> [--gt]
+OAKG retrieval:   python src/scripts/retrieval_on_predicted.py
+README tables:    python src/scripts/build_readme_{ausam_tables,splits,results}.py   # §4 / §3 / §5–6
 ```
+
+### Walkthrough notebooks
+`src/notebooks/Patient_Level_3D_Eval.ipynb` (how the 3-D DSC/NSD are obtained) ·
+`src/notebooks/Two_Model_Paradigm.ipynb` (why tumors are pooled — single-dataset vs pooled on real cases).
