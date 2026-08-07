@@ -145,10 +145,39 @@ def tumor_fidelity():
     return "\n".join(L)
 
 
+def tumor3d():
+    d2map = {"msd": "pancreas", "lits": "lits", "kits": "kits", "flare23": "flare"}
+    organ = {"msd": "pancreas", "lits": "liver", "kits": "kidney", "flare23": "pan-cancer"}
+    fmt = lambda v, p: (f"{v:.{p}f}" if isinstance(v, (int, float)) else "—")
+    L = ["**Patient-level 3-D tumor (whole-volume, semi-oracle setting)** — the 3-D counterpart to the §4 2-D "
+         "tumor Dice, in the same GT-box / target-present-slice setting as the organ 3-D. DSC / NSD@2mm / HD95, "
+         "with the 2-D Dice alongside for reference:", "",
+         "| Dataset | Tumor | DSC 3-D | NSD@2mm | HD95 (mm) | 2-D Dice | n |",
+         "|---|---|:--:|:--:|:--:|:--:|:--:|"]
+    for ds in ["msd", "lits", "kits", "flare23"]:
+        f = f"{RES}/tumor_3d_{ds}.json"
+        if not os.path.exists(f):
+            continue
+        t = json.load(open(f))
+        d2f = f"{RES}/tumor_ausam_{d2map[ds]}.json"
+        two = json.load(open(d2f)).get("tumor_ausam_dice") if os.path.exists(d2f) else None
+        n = t["n_patients"]; nstr = f"{n}\\*" if ds == "flare23" else str(n)
+        L.append(f"| {DS_NAME.get(ds, ds)} | {organ[ds]} | {fmt(t['mean_3d_dice'], 3)} | "
+                 f"{fmt(t['mean_nsd_2mm'], 3)} | {fmt(t['mean_hd95_mm'], 2)} | {fmt(two, 3)} | {nstr} |")
+    L += ["", "_LiTS is DSC-only (no mm spacing). **\\*FLARE23 3-D is on only the 8 tumor-test patients with local "
+          "volumes** (of 54), so it reads high on an easy subset — its full-set **2-D 0.803** stays the "
+          "representative FLARE23 tumor number. Moving tumor from 2-D-target-present to 3-D-whole-volume trims DSC "
+          "by ~1.5–6.4 points (MSD −6.4, LiTS −3.4, KiTS −1.5) — modest because, like the organ 3-D, the "
+          "semi-oracle setting scores only tumor-present slices with a GT box; the larger drop expected under "
+          "autonomous localization (auto-box) is the next experiment._"]
+    return "\n".join(L)
+
+
 def main():
     txt = open(README).read()
     txt = replace(txt, "<!-- RESULTS3D:START -->", "<!-- RESULTS3D:END -->", results3d())
     txt = replace(txt, "<!-- CROSSDATASET:START -->", "<!-- CROSSDATASET:END -->", crossdataset())
+    txt = replace(txt, "<!-- TUMOR3D:START -->", "<!-- TUMOR3D:END -->", tumor3d())
     txt = replace(txt, "<!-- TUMOR_INCR:START -->", "<!-- TUMOR_INCR:END -->", tumor_incremental())
     txt = replace(txt, "<!-- TUMOR_FID:START -->", "<!-- TUMOR_FID:END -->", tumor_fidelity())
     txt = replace(txt, "<!-- KG:START -->", "<!-- KG:END -->", kg())

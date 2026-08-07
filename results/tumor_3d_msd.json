@@ -1,0 +1,631 @@
+{
+  "dataset": "msd",
+  "target": "tumor",
+  "n_patients": 56,
+  "n_skipped_no_gt_tumor": 0,
+  "nsd_taus_mm": [
+    1.0,
+    2.0
+  ],
+  "mean_3d_dice": 0.8179,
+  "mean_nsd_2mm": 0.8327,
+  "mean_hd95_mm": 3.03,
+  "cases": [
+    {
+      "case": "pancreas_015",
+      "dice3d": 0.8839,
+      "vox_pred": 6300,
+      "vox_gt": 6115,
+      "nsd3d": {
+        "1.0mm": 0.8146,
+        "2.0mm": 0.9146
+      },
+      "hd95_mm": 2.64
+    },
+    {
+      "case": "pancreas_019",
+      "dice3d": 0.9195,
+      "vox_pred": 3208,
+      "vox_gt": 3287,
+      "nsd3d": {
+        "1.0mm": 0.9279,
+        "2.0mm": 0.9912
+      },
+      "hd95_mm": 1.76
+    },
+    {
+      "case": "pancreas_041",
+      "dice3d": 0.852,
+      "vox_pred": 1956,
+      "vox_gt": 2112,
+      "nsd3d": {
+        "1.0mm": 0.8027,
+        "2.0mm": 0.976
+      },
+      "hd95_mm": 1.79
+    },
+    {
+      "case": "pancreas_045",
+      "dice3d": 0.8671,
+      "vox_pred": 2684,
+      "vox_gt": 2923,
+      "nsd3d": {
+        "1.0mm": 0.7649,
+        "2.0mm": 0.861
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_048",
+      "dice3d": 0.9244,
+      "vox_pred": 5892,
+      "vox_gt": 5995,
+      "nsd3d": {
+        "1.0mm": 0.9081,
+        "2.0mm": 0.9822
+      },
+      "hd95_mm": 1.94
+    },
+    {
+      "case": "pancreas_049",
+      "dice3d": 0.9304,
+      "vox_pred": 4532,
+      "vox_gt": 4744,
+      "nsd3d": {
+        "1.0mm": 0.9188,
+        "2.0mm": 0.9802
+      },
+      "hd95_mm": 1.61
+    },
+    {
+      "case": "pancreas_056",
+      "dice3d": 0.8317,
+      "vox_pred": 1856,
+      "vox_gt": 2369,
+      "nsd3d": {
+        "1.0mm": 0.6847,
+        "2.0mm": 0.7616
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_064",
+      "dice3d": 0.9259,
+      "vox_pred": 8768,
+      "vox_gt": 9042,
+      "nsd3d": {
+        "1.0mm": 0.8577,
+        "2.0mm": 0.9645
+      },
+      "hd95_mm": 1.79
+    },
+    {
+      "case": "pancreas_078",
+      "dice3d": 0.9066,
+      "vox_pred": 1200,
+      "vox_gt": 1220,
+      "nsd3d": {
+        "1.0mm": 0.942,
+        "2.0mm": 0.9973
+      },
+      "hd95_mm": 1.0
+    },
+    {
+      "case": "pancreas_083",
+      "dice3d": 0.8987,
+      "vox_pred": 7148,
+      "vox_gt": 6939,
+      "nsd3d": {
+        "1.0mm": 0.8064,
+        "2.0mm": 0.9302
+      },
+      "hd95_mm": 2.43
+    },
+    {
+      "case": "pancreas_084",
+      "dice3d": 0.0,
+      "vox_pred": 0,
+      "vox_gt": 973,
+      "nsd3d": {
+        "1.0mm": 0.0,
+        "2.0mm": 0.0
+      },
+      "hd95_mm": null
+    },
+    {
+      "case": "pancreas_096",
+      "dice3d": 0.9515,
+      "vox_pred": 14248,
+      "vox_gt": 14131,
+      "nsd3d": {
+        "1.0mm": 0.9255,
+        "2.0mm": 0.9849
+      },
+      "hd95_mm": 1.85
+    },
+    {
+      "case": "pancreas_101",
+      "dice3d": 0.9246,
+      "vox_pred": 2964,
+      "vox_gt": 3123,
+      "nsd3d": {
+        "1.0mm": 0.9495,
+        "2.0mm": 0.9956
+      },
+      "hd95_mm": 1.07
+    },
+    {
+      "case": "pancreas_107",
+      "dice3d": 0.8127,
+      "vox_pred": 1696,
+      "vox_gt": 2084,
+      "nsd3d": {
+        "1.0mm": 0.6025,
+        "2.0mm": 0.7143
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_110",
+      "dice3d": 0.6899,
+      "vox_pred": 616,
+      "vox_gt": 1074,
+      "nsd3d": {
+        "1.0mm": 0.4897,
+        "2.0mm": 0.5807
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_119",
+      "dice3d": 0.9292,
+      "vox_pred": 7352,
+      "vox_gt": 7572,
+      "nsd3d": {
+        "1.0mm": 0.8573,
+        "2.0mm": 0.9239
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_122",
+      "dice3d": 0.9109,
+      "vox_pred": 4280,
+      "vox_gt": 4516,
+      "nsd3d": {
+        "1.0mm": 0.9216,
+        "2.0mm": 0.9936
+      },
+      "hd95_mm": 1.58
+    },
+    {
+      "case": "pancreas_125",
+      "dice3d": 0.9315,
+      "vox_pred": 3496,
+      "vox_gt": 3615,
+      "nsd3d": {
+        "1.0mm": 0.929,
+        "2.0mm": 0.9913
+      },
+      "hd95_mm": 1.86
+    },
+    {
+      "case": "pancreas_127",
+      "dice3d": 0.8971,
+      "vox_pred": 4592,
+      "vox_gt": 5075,
+      "nsd3d": {
+        "1.0mm": 0.7878,
+        "2.0mm": 0.9096
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_137",
+      "dice3d": 0.915,
+      "vox_pred": 3312,
+      "vox_gt": 3547,
+      "nsd3d": {
+        "1.0mm": 0.9061,
+        "2.0mm": 0.9977
+      },
+      "hd95_mm": 1.68
+    },
+    {
+      "case": "pancreas_149",
+      "dice3d": 0.9205,
+      "vox_pred": 5568,
+      "vox_gt": 5419,
+      "nsd3d": {
+        "1.0mm": 0.8871,
+        "2.0mm": 0.9692
+      },
+      "hd95_mm": 1.53
+    },
+    {
+      "case": "pancreas_157",
+      "dice3d": 0.9242,
+      "vox_pred": 2536,
+      "vox_gt": 2686,
+      "nsd3d": {
+        "1.0mm": 0.9345,
+        "2.0mm": 0.9987
+      },
+      "hd95_mm": 1.1
+    },
+    {
+      "case": "pancreas_172",
+      "dice3d": 0.89,
+      "vox_pred": 1120,
+      "vox_gt": 1298,
+      "nsd3d": {
+        "1.0mm": 0.9177,
+        "2.0mm": 0.9925
+      },
+      "hd95_mm": 1.48
+    },
+    {
+      "case": "pancreas_191",
+      "dice3d": 0.8961,
+      "vox_pred": 6428,
+      "vox_gt": 6609,
+      "nsd3d": {
+        "1.0mm": 0.7704,
+        "2.0mm": 0.8806
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_200",
+      "dice3d": 0.9029,
+      "vox_pred": 2732,
+      "vox_gt": 2706,
+      "nsd3d": {
+        "1.0mm": 0.9149,
+        "2.0mm": 0.9799
+      },
+      "hd95_mm": 1.88
+    },
+    {
+      "case": "pancreas_201",
+      "dice3d": 0.8964,
+      "vox_pred": 4436,
+      "vox_gt": 4689,
+      "nsd3d": {
+        "1.0mm": 0.8406,
+        "2.0mm": 0.9621
+      },
+      "hd95_mm": 1.82
+    },
+    {
+      "case": "pancreas_210",
+      "dice3d": 0.7702,
+      "vox_pred": 1376,
+      "vox_gt": 1779,
+      "nsd3d": {
+        "1.0mm": 0.5614,
+        "2.0mm": 0.746
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_218",
+      "dice3d": 0.7279,
+      "vox_pred": 1100,
+      "vox_gt": 1601,
+      "nsd3d": {
+        "1.0mm": 0.4649,
+        "2.0mm": 0.5877
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_226",
+      "dice3d": 0.8889,
+      "vox_pred": 3296,
+      "vox_gt": 3344,
+      "nsd3d": {
+        "1.0mm": 0.7812,
+        "2.0mm": 0.9122
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_235",
+      "dice3d": 0.8357,
+      "vox_pred": 1372,
+      "vox_gt": 1823,
+      "nsd3d": {
+        "1.0mm": 0.6332,
+        "2.0mm": 0.7383
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_239",
+      "dice3d": 0.8327,
+      "vox_pred": 1384,
+      "vox_gt": 1611,
+      "nsd3d": {
+        "1.0mm": 0.707,
+        "2.0mm": 0.7763
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_241",
+      "dice3d": 0.8696,
+      "vox_pred": 5068,
+      "vox_gt": 4530,
+      "nsd3d": {
+        "1.0mm": 0.7409,
+        "2.0mm": 0.8666
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_242",
+      "dice3d": 0.0,
+      "vox_pred": 0,
+      "vox_gt": 405,
+      "nsd3d": {
+        "1.0mm": 0.0,
+        "2.0mm": 0.0
+      },
+      "hd95_mm": null
+    },
+    {
+      "case": "pancreas_256",
+      "dice3d": 0.8876,
+      "vox_pred": 3460,
+      "vox_gt": 3584,
+      "nsd3d": {
+        "1.0mm": 0.7713,
+        "2.0mm": 0.8782
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_258",
+      "dice3d": 0.8907,
+      "vox_pred": 3096,
+      "vox_gt": 3364,
+      "nsd3d": {
+        "1.0mm": 0.8419,
+        "2.0mm": 0.9717
+      },
+      "hd95_mm": 1.63
+    },
+    {
+      "case": "pancreas_259",
+      "dice3d": 0.8513,
+      "vox_pred": 3436,
+      "vox_gt": 3593,
+      "nsd3d": {
+        "1.0mm": 0.7095,
+        "2.0mm": 0.833
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_275",
+      "dice3d": 0.9203,
+      "vox_pred": 11424,
+      "vox_gt": 10961,
+      "nsd3d": {
+        "1.0mm": 0.8264,
+        "2.0mm": 0.9522
+      },
+      "hd95_mm": 2.12
+    },
+    {
+      "case": "pancreas_285",
+      "dice3d": 0.8262,
+      "vox_pred": 1068,
+      "vox_gt": 1389,
+      "nsd3d": {
+        "1.0mm": 0.6954,
+        "2.0mm": 0.795
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_289",
+      "dice3d": 0.9072,
+      "vox_pred": 4072,
+      "vox_gt": 4550,
+      "nsd3d": {
+        "1.0mm": 0.881,
+        "2.0mm": 0.9336
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_301",
+      "dice3d": 0.5448,
+      "vox_pred": 404,
+      "vox_gt": 1024,
+      "nsd3d": {
+        "1.0mm": 0.4978,
+        "2.0mm": 0.5874
+      },
+      "hd95_mm": 10.0
+    },
+    {
+      "case": "pancreas_315",
+      "dice3d": 0.8023,
+      "vox_pred": 2412,
+      "vox_gt": 3262,
+      "nsd3d": {
+        "1.0mm": 0.6588,
+        "2.0mm": 0.7472
+      },
+      "hd95_mm": 7.5
+    },
+    {
+      "case": "pancreas_327",
+      "dice3d": 0.794,
+      "vox_pred": 1624,
+      "vox_gt": 1920,
+      "nsd3d": {
+        "1.0mm": 0.5991,
+        "2.0mm": 0.7223
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_330",
+      "dice3d": 0.8682,
+      "vox_pred": 4232,
+      "vox_gt": 4549,
+      "nsd3d": {
+        "1.0mm": 0.7624,
+        "2.0mm": 0.8923
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_336",
+      "dice3d": 0.9091,
+      "vox_pred": 2792,
+      "vox_gt": 2983,
+      "nsd3d": {
+        "1.0mm": 0.9026,
+        "2.0mm": 0.9868
+      },
+      "hd95_mm": 1.72
+    },
+    {
+      "case": "pancreas_339",
+      "dice3d": 0.8963,
+      "vox_pred": 1568,
+      "vox_gt": 1748,
+      "nsd3d": {
+        "1.0mm": 0.908,
+        "2.0mm": 0.9831
+      },
+      "hd95_mm": 1.86
+    },
+    {
+      "case": "pancreas_346",
+      "dice3d": 0.0,
+      "vox_pred": 0,
+      "vox_gt": 688,
+      "nsd3d": {
+        "1.0mm": 0.0,
+        "2.0mm": 0.0
+      },
+      "hd95_mm": null
+    },
+    {
+      "case": "pancreas_348",
+      "dice3d": 0.9003,
+      "vox_pred": 1196,
+      "vox_gt": 1190,
+      "nsd3d": {
+        "1.0mm": 0.9447,
+        "2.0mm": 0.9909
+      },
+      "hd95_mm": 1.05
+    },
+    {
+      "case": "pancreas_356",
+      "dice3d": 0.9151,
+      "vox_pred": 2000,
+      "vox_gt": 2205,
+      "nsd3d": {
+        "1.0mm": 0.9583,
+        "2.0mm": 0.9938
+      },
+      "hd95_mm": 1.36
+    },
+    {
+      "case": "pancreas_366",
+      "dice3d": 0.873,
+      "vox_pred": 2120,
+      "vox_gt": 2487,
+      "nsd3d": {
+        "1.0mm": 0.7676,
+        "2.0mm": 0.8792
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_369",
+      "dice3d": 0.8322,
+      "vox_pred": 2200,
+      "vox_gt": 2443,
+      "nsd3d": {
+        "1.0mm": 0.6817,
+        "2.0mm": 0.7829
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_377",
+      "dice3d": 0.9306,
+      "vox_pred": 13252,
+      "vox_gt": 12934,
+      "nsd3d": {
+        "1.0mm": 0.8509,
+        "2.0mm": 0.9398
+      },
+      "hd95_mm": 2.59
+    },
+    {
+      "case": "pancreas_378",
+      "dice3d": 0.8637,
+      "vox_pred": 864,
+      "vox_gt": 868,
+      "nsd3d": {
+        "1.0mm": 0.865,
+        "2.0mm": 0.9353
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_393",
+      "dice3d": 0.8571,
+      "vox_pred": 2124,
+      "vox_gt": 2571,
+      "nsd3d": {
+        "1.0mm": 0.6263,
+        "2.0mm": 0.7214
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_399",
+      "dice3d": 0.833,
+      "vox_pred": 2264,
+      "vox_gt": 2682,
+      "nsd3d": {
+        "1.0mm": 0.7081,
+        "2.0mm": 0.7966
+      },
+      "hd95_mm": 5.0
+    },
+    {
+      "case": "pancreas_404",
+      "dice3d": 0.8218,
+      "vox_pred": 984,
+      "vox_gt": 1272,
+      "nsd3d": {
+        "1.0mm": 0.6204,
+        "2.0mm": 0.7184
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "pancreas_418",
+      "dice3d": 0.6192,
+      "vox_pred": 652,
+      "vox_gt": 1102,
+      "nsd3d": {
+        "1.0mm": 0.7156,
+        "2.0mm": 0.7294
+      },
+      "hd95_mm": 15.0
+    }
+  ]
+}

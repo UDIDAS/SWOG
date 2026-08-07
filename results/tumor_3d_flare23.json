@@ -1,0 +1,103 @@
+{
+  "dataset": "flare23",
+  "target": "tumor",
+  "n_patients": 8,
+  "n_skipped_no_gt_tumor": 0,
+  "nsd_taus_mm": [
+    1.0,
+    2.0
+  ],
+  "mean_3d_dice": 0.904,
+  "mean_nsd_2mm": 0.9219,
+  "mean_hd95_mm": 2.96,
+  "cases": [
+    {
+      "case": "FLARE23_0037",
+      "dice3d": 0.9426,
+      "vox_pred": 118504,
+      "vox_gt": 120665,
+      "nsd3d": {
+        "1.0mm": 0.8096,
+        "2.0mm": 0.9869
+      },
+      "hd95_mm": 1.39
+    },
+    {
+      "case": "FLARE23_0097",
+      "dice3d": 0.9006,
+      "vox_pred": 6548,
+      "vox_gt": 7207,
+      "nsd3d": {
+        "1.0mm": 0.7949,
+        "2.0mm": 0.895
+      },
+      "hd95_mm": 7.5
+    },
+    {
+      "case": "FLARE23_0120",
+      "dice3d": 0.8325,
+      "vox_pred": 37432,
+      "vox_gt": 36271,
+      "nsd3d": {
+        "1.0mm": 0.7163,
+        "2.0mm": 0.9415
+      },
+      "hd95_mm": 2.52
+    },
+    {
+      "case": "FLARE23_0156",
+      "dice3d": 0.9219,
+      "vox_pred": 3532,
+      "vox_gt": 3547,
+      "nsd3d": {
+        "1.0mm": 0.9187,
+        "2.0mm": 0.9927
+      },
+      "hd95_mm": 1.68
+    },
+    {
+      "case": "FLARE23_0236",
+      "dice3d": 0.9162,
+      "vox_pred": 5804,
+      "vox_gt": 6327,
+      "nsd3d": {
+        "1.0mm": 0.7989,
+        "2.0mm": 0.8958
+      },
+      "hd95_mm": 2.5
+    },
+    {
+      "case": "FLARE23_0239",
+      "dice3d": 0.9751,
+      "vox_pred": 108096,
+      "vox_gt": 108579,
+      "nsd3d": {
+        "1.0mm": 0.9189,
+        "2.0mm": 0.9628
+      },
+      "hd95_mm": 1.64
+    },
+    {
+      "case": "FLARE23_0262",
+      "dice3d": 0.9385,
+      "vox_pred": 8860,
+      "vox_gt": 8857,
+      "nsd3d": {
+        "1.0mm": 0.9254,
+        "2.0mm": 0.9892
+      },
+      "hd95_mm": 1.48
+    },
+    {
+      "case": "FLARE23_0283",
+      "dice3d": 0.8042,
+      "vox_pred": 1604,
+      "vox_gt": 1920,
+      "nsd3d": {
+        "1.0mm": 0.6136,
+        "2.0mm": 0.7115
+      },
+      "hd95_mm": 5.0
+    }
+  ]
+}

@@ -66,9 +66,10 @@ contributes the organs (and, where annotated, the tumors) it labels:
 label (organ and tumor slices are extracted independently, so a dataset can list more tumor than organ patients —
 e.g. KiTS23, whose kidney-organ and kidney-tumor pools were built separately). LiTS, MSD Pancreas and FLARE-Task2
 are the complete public sets; KiTS23 (489-case challenge) and FLARE23 (~4k labeled) are the local subsets shown.
-Slice counts are the currently-extracted, class-balanced training slices — the **organ pool is capped at 5,000
+Slice counts are the extracted, class-balanced training slices — the **organ pool is capped at 5,000
 slices/dataset for balance**, which is why 34 LiTS scans (~147 liver slices each) and 165 MSD scans (~30 pancreas
-slices each) both yield 5,000; that cap is being lifted to the full patient set for the single-organ models (§3).
+slices each) both yield 5,000, keeping any one dataset from dominating the shared pool (each model still trains
+only on its own dataset's slices, §3).
 
 ---
 
@@ -203,6 +204,25 @@ _pancreas_
 
 Mean in-distribution Dice **0.924** vs zero-shot transfer **0.892** (Δ +0.032). Liver transfers cleanly (all ≥0.92); the widest gap is transfer *into* KiTS (FLARE→KiTS kidney 0.80–0.85), reflecting KiTS's tumor-distorted kidneys and a harder test split — a data-distribution effect that motivates integrating datasets at the KG level rather than expecting one model to cover all.
 <!-- CROSSDATASET:END -->
+
+### 5.2 Patient-level 3-D tumor
+
+The §4 tumor Dice is 2-D (target-present slices); this is its **whole-volume 3-D counterpart**, in the same
+semi-oracle (GT-box, target-present-slice) setting as the organ 3-D above — so the pipeline now reports tumors in
+3-D, matching the protocol of the organ numbers and of 3-D SOTA references.
+
+<!-- TUMOR3D:START -->
+**Patient-level 3-D tumor (whole-volume, semi-oracle setting)** — the 3-D counterpart to the §4 2-D tumor Dice, in the same GT-box / target-present-slice setting as the organ 3-D. DSC / NSD@2mm / HD95, with the 2-D Dice alongside for reference:
+
+| Dataset | Tumor | DSC 3-D | NSD@2mm | HD95 (mm) | 2-D Dice | n |
+|---|---|:--:|:--:|:--:|:--:|:--:|
+| MSD | pancreas | 0.818 | 0.833 | 3.03 | 0.882 | 56 |
+| LiTS | liver | 0.785 | — | — | 0.819 | 21 |
+| KiTS23 | kidney | 0.910 | 0.922 | 2.75 | 0.925 | 36 |
+| FLARE23 | pan-cancer | 0.904 | 0.922 | 2.96 | 0.803 | 8\* |
+
+_LiTS is DSC-only (no mm spacing). **\*FLARE23 3-D is on only the 8 tumor-test patients with local volumes** (of 54), so it reads high on an easy subset — its full-set **2-D 0.803** stays the representative FLARE23 tumor number. Moving tumor from 2-D-target-present to 3-D-whole-volume trims DSC by ~1.5–6.4 points (MSD −6.4, LiTS −3.4, KiTS −1.5) — modest because, like the organ 3-D, the semi-oracle setting scores only tumor-present slices with a GT box; the larger drop expected under autonomous localization (auto-box) is the next experiment._
+<!-- TUMOR3D:END -->
 
 ---
 

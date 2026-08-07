@@ -1,0 +1,141 @@
+{
+  "dataset": "lits",
+  "target": "tumor",
+  "n_patients": 21,
+  "n_skipped_no_gt_tumor": 0,
+  "nsd_taus_mm": [
+    1.0,
+    2.0
+  ],
+  "mean_3d_dice": 0.7848,
+  "mean_nsd_2mm": null,
+  "mean_hd95_mm": null,
+  "cases": [
+    {
+      "case": "volume-101",
+      "dice3d": 0.8678,
+      "vox_pred": 106279,
+      "vox_gt": 97346
+    },
+    {
+      "case": "volume-11",
+      "dice3d": 0.7295,
+      "vox_pred": 2762,
+      "vox_gt": 2831
+    },
+    {
+      "case": "volume-110",
+      "dice3d": 0.8245,
+      "vox_pred": 31097,
+      "vox_gt": 32307
+    },
+    {
+      "case": "volume-113",
+      "dice3d": 0.7585,
+      "vox_pred": 22761,
+      "vox_gt": 21776
+    },
+    {
+      "case": "volume-116",
+      "dice3d": 0.6354,
+      "vox_pred": 75103,
+      "vox_gt": 154250
+    },
+    {
+      "case": "volume-19",
+      "dice3d": 0.6915,
+      "vox_pred": 6706,
+      "vox_gt": 5013
+    },
+    {
+      "case": "volume-21",
+      "dice3d": 0.7945,
+      "vox_pred": 9801,
+      "vox_gt": 9511
+    },
+    {
+      "case": "volume-24",
+      "dice3d": 0.726,
+      "vox_pred": 359,
+      "vox_gt": 382
+    },
+    {
+      "case": "volume-37",
+      "dice3d": 0.8222,
+      "vox_pred": 2982,
+      "vox_gt": 3895
+    },
+    {
+      "case": "volume-43",
+      "dice3d": 0.8736,
+      "vox_pred": 1585,
+      "vox_gt": 1872
+    },
+    {
+      "case": "volume-44",
+      "dice3d": 0.7805,
+      "vox_pred": 32362,
+      "vox_gt": 46902
+    },
+    {
+      "case": "volume-49",
+      "dice3d": 0.7053,
+      "vox_pred": 1701,
+      "vox_gt": 2184
+    },
+    {
+      "case": "volume-54",
+      "dice3d": 0.4469,
+      "vox_pred": 40,
+      "vox_gt": 139
+    },
+    {
+      "case": "volume-68",
+      "dice3d": 0.8883,
+      "vox_pred": 1193,
+      "vox_gt": 1268
+    },
+    {
+      "case": "volume-70",
+      "dice3d": 0.9196,
+      "vox_pred": 28190,
+      "vox_gt": 30575
+    },
+    {
+      "case": "volume-75",
+      "dice3d": 0.7901,
+      "vox_pred": 568,
+      "vox_gt": 723
+    },
+    {
+      "case": "volume-76",
+      "dice3d": 0.9212,
+      "vox_pred": 48363,
+      "vox_gt": 49307
+    },
+    {
+      "case": "volume-80",
+      "dice3d": 0.9341,
+      "vox_pred": 20976,
+      "vox_gt": 22437
+    },
+    {
+      "case": "volume-82",
+      "dice3d": 0.9195,
+      "vox_pred": 34618,
+      "vox_gt": 35985
+    },
+    {
+      "case": "volume-93",
+      "dice3d": 0.8473,
+      "vox_pred": 90737,
+      "vox_gt": 89660
+    },
+    {
+      "case": "volume-99",
+      "dice3d": 0.6043,
+      "vox_pred": 1764,
+      "vox_gt": 3283
+    }
+  ]
+}
