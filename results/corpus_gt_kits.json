@@ -1,0 +1,798 @@
+{
+ "n": 36,
+ "dataset": "kits",
+ "records": [
+  {
+   "case_id": "case_00006",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 384.53,
+     "has_tumor": true,
+     "tumor_volume_cm3": 11.3,
+     "tumor_voxels": 6835,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00008",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 508.88,
+     "has_tumor": true,
+     "tumor_volume_cm3": 565.69,
+     "tumor_voxels": 282908,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00017",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 395.32,
+     "has_tumor": true,
+     "tumor_volume_cm3": 6.39,
+     "tumor_voxels": 2899,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00018",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 436.19,
+     "has_tumor": true,
+     "tumor_volume_cm3": 18.37,
+     "tumor_voxels": 9904,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00021",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 326.39,
+     "has_tumor": true,
+     "tumor_volume_cm3": 26.49,
+     "tumor_voxels": 7837,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00024",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 320.56,
+     "has_tumor": true,
+     "tumor_volume_cm3": 120.4,
+     "tumor_voxels": 54608,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00030",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 268.63,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1447.01,
+     "tumor_voxels": 542374,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00035",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 478.52,
+     "has_tumor": true,
+     "tumor_volume_cm3": 23.78,
+     "tumor_voxels": 5109,
+     "burden_cat": "low",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00039",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 341.7,
+     "has_tumor": true,
+     "tumor_volume_cm3": 6.53,
+     "tumor_voxels": 2641,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00042",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 378.06,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1364.8,
+     "tumor_voxels": 1848011,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00043",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 356.34,
+     "has_tumor": true,
+     "tumor_volume_cm3": 11.73,
+     "tumor_voxels": 7177,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00057",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 334.72,
+     "has_tumor": true,
+     "tumor_volume_cm3": 115.12,
+     "tumor_voxels": 56755,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00060",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 292.33,
+     "has_tumor": true,
+     "tumor_volume_cm3": 35.19,
+     "tumor_voxels": 16867,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00067",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 281.51,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1053.84,
+     "tumor_voxels": 1816289,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00075",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 329.31,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.07,
+     "tumor_voxels": 2030,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00079",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 293.15,
+     "has_tumor": true,
+     "tumor_volume_cm3": 356.08,
+     "tumor_voxels": 171432,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00083",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 654.33,
+     "has_tumor": true,
+     "tumor_volume_cm3": 12.95,
+     "tumor_voxels": 4528,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00086",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 498.05,
+     "has_tumor": true,
+     "tumor_volume_cm3": 29.35,
+     "tumor_voxels": 18854,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00087",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 405.44,
+     "has_tumor": true,
+     "tumor_volume_cm3": 36.64,
+     "tumor_voxels": 15329,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00090",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 217.64,
+     "has_tumor": true,
+     "tumor_volume_cm3": 92.4,
+     "tumor_voxels": 52274,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00092",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 438.96,
+     "has_tumor": true,
+     "tumor_volume_cm3": 489.7,
+     "tumor_voxels": 198103,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00095",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 349.73,
+     "has_tumor": true,
+     "tumor_volume_cm3": 62.26,
+     "tumor_voxels": 47620,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00103",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 284.87,
+     "has_tumor": true,
+     "tumor_volume_cm3": 4.66,
+     "tumor_voxels": 13577,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00105",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 307.25,
+     "has_tumor": true,
+     "tumor_volume_cm3": 55.62,
+     "tumor_voxels": 23271,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00120",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 241.75,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.52,
+     "tumor_voxels": 3647,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00124",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 444.08,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.32,
+     "tumor_voxels": 4303,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00128",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 490.67,
+     "has_tumor": true,
+     "tumor_volume_cm3": 12.89,
+     "tumor_voxels": 6673,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00146",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 453.41,
+     "has_tumor": true,
+     "tumor_volume_cm3": 10.59,
+     "tumor_voxels": 42826,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00148",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 532.37,
+     "has_tumor": true,
+     "tumor_volume_cm3": 25.47,
+     "tumor_voxels": 6203,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00149",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 555.09,
+     "has_tumor": true,
+     "tumor_volume_cm3": 216.62,
+     "tumor_voxels": 113708,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00152",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 371.06,
+     "has_tumor": true,
+     "tumor_volume_cm3": 11.05,
+     "tumor_voxels": 4230,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00154",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 359.58,
+     "has_tumor": true,
+     "tumor_volume_cm3": 17.09,
+     "tumor_voxels": 38895,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00160",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 410.86,
+     "has_tumor": true,
+     "tumor_volume_cm3": 49.09,
+     "tumor_voxels": 241177,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00162",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 204.55,
+     "has_tumor": true,
+     "tumor_volume_cm3": 30.19,
+     "tumor_voxels": 19904,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00165",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 334.08,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.15,
+     "tumor_voxels": 1220,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "case_00175",
+   "dataset": "kits",
+   "observed_organs": [
+    "kidney"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "kidney": {
+     "present": true,
+     "organ_volume_cm3": 436.21,
+     "has_tumor": true,
+     "tumor_volume_cm3": 20.0,
+     "tumor_voxels": 7497,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  }
+ ]
+}

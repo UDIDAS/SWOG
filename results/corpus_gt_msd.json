@@ -1,0 +1,1238 @@
+{
+ "n": 56,
+ "dataset": "msd",
+ "records": [
+  {
+   "case_id": "pancreas_015",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 78.2,
+     "has_tumor": true,
+     "tumor_volume_cm3": 8.2,
+     "tumor_voxels": 6115,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_019",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 92.3,
+     "has_tumor": true,
+     "tumor_volume_cm3": 6.35,
+     "tumor_voxels": 3287,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_041",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 135.63,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.02,
+     "tumor_voxels": 2112,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_045",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 61.55,
+     "has_tumor": true,
+     "tumor_volume_cm3": 9.74,
+     "tumor_voxels": 2923,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_048",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 90.93,
+     "has_tumor": true,
+     "tumor_volume_cm3": 14.12,
+     "tumor_voxels": 5995,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_049",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 173.44,
+     "has_tumor": true,
+     "tumor_volume_cm3": 7.72,
+     "tumor_voxels": 4744,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_056",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 51.69,
+     "has_tumor": true,
+     "tumor_volume_cm3": 3.47,
+     "tumor_voxels": 2369,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_064",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 104.59,
+     "has_tumor": true,
+     "tumor_volume_cm3": 18.09,
+     "tumor_voxels": 9042,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_078",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 87.98,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.53,
+     "tumor_voxels": 1220,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_083",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 111.41,
+     "has_tumor": true,
+     "tumor_volume_cm3": 10.27,
+     "tumor_voxels": 6939,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_084",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 101.78,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.29,
+     "tumor_voxels": 973,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_096",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 150.24,
+     "has_tumor": true,
+     "tumor_volume_cm3": 30.28,
+     "tumor_voxels": 14131,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_101",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 135.28,
+     "has_tumor": true,
+     "tumor_volume_cm3": 8.88,
+     "tumor_voxels": 3123,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_107",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 74.42,
+     "has_tumor": true,
+     "tumor_volume_cm3": 3.18,
+     "tumor_voxels": 2084,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_110",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 171.76,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.56,
+     "tumor_voxels": 1074,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_119",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 104.22,
+     "has_tumor": true,
+     "tumor_volume_cm3": 15.28,
+     "tumor_voxels": 7572,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_122",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 57.69,
+     "has_tumor": true,
+     "tumor_volume_cm3": 7.06,
+     "tumor_voxels": 4516,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_125",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 170.0,
+     "has_tumor": true,
+     "tumor_volume_cm3": 7.84,
+     "tumor_voxels": 3615,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_127",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 185.04,
+     "has_tumor": true,
+     "tumor_volume_cm3": 9.58,
+     "tumor_voxels": 5075,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_137",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 107.84,
+     "has_tumor": true,
+     "tumor_volume_cm3": 6.25,
+     "tumor_voxels": 3547,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_149",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 86.72,
+     "has_tumor": true,
+     "tumor_volume_cm3": 7.94,
+     "tumor_voxels": 5419,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_157",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 118.33,
+     "has_tumor": true,
+     "tumor_volume_cm3": 4.1,
+     "tumor_voxels": 2686,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_172",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 121.84,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.78,
+     "tumor_voxels": 1298,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_191",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 61.56,
+     "has_tumor": true,
+     "tumor_volume_cm3": 9.01,
+     "tumor_voxels": 6609,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_200",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 101.62,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.97,
+     "tumor_voxels": 2706,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_201",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 37.79,
+     "has_tumor": true,
+     "tumor_volume_cm3": 4.87,
+     "tumor_voxels": 4689,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_210",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 73.09,
+     "has_tumor": true,
+     "tumor_volume_cm3": 3.48,
+     "tumor_voxels": 1779,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_218",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 59.04,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.27,
+     "tumor_voxels": 1601,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_226",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 48.38,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.73,
+     "tumor_voxels": 3344,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_235",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 71.81,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.75,
+     "tumor_voxels": 1823,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_239",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 55.55,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.99,
+     "tumor_voxels": 1611,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_241",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 57.0,
+     "has_tumor": true,
+     "tumor_volume_cm3": 7.23,
+     "tumor_voxels": 4530,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_242",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 69.15,
+     "has_tumor": true,
+     "tumor_volume_cm3": 0.77,
+     "tumor_voxels": 405,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_256",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 52.2,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.36,
+     "tumor_voxels": 3584,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_258",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 104.86,
+     "has_tumor": true,
+     "tumor_volume_cm3": 4.49,
+     "tumor_voxels": 3364,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_259",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 43.92,
+     "has_tumor": true,
+     "tumor_volume_cm3": 6.39,
+     "tumor_voxels": 3593,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_275",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 60.14,
+     "has_tumor": true,
+     "tumor_volume_cm3": 15.41,
+     "tumor_voxels": 10961,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_285",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 53.38,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.4,
+     "tumor_voxels": 1389,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_289",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 70.25,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.38,
+     "tumor_voxels": 4550,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_301",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 31.02,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.78,
+     "tumor_voxels": 1024,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_315",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 66.84,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.97,
+     "tumor_voxels": 3262,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_327",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 95.77,
+     "has_tumor": true,
+     "tumor_volume_cm3": 4.58,
+     "tumor_voxels": 1920,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_330",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 33.66,
+     "has_tumor": true,
+     "tumor_volume_cm3": 7.51,
+     "tumor_voxels": 4549,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_336",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 62.54,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.51,
+     "tumor_voxels": 2983,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_339",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 73.39,
+     "has_tumor": true,
+     "tumor_volume_cm3": 3.76,
+     "tumor_voxels": 1748,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_346",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 23.25,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.28,
+     "tumor_voxels": 688,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_348",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 45.96,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.64,
+     "tumor_voxels": 1190,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_356",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 111.15,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.06,
+     "tumor_voxels": 2205,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_366",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 126.75,
+     "has_tumor": true,
+     "tumor_volume_cm3": 4.85,
+     "tumor_voxels": 2487,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_369",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 139.72,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.82,
+     "tumor_voxels": 2443,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_377",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 39.31,
+     "has_tumor": true,
+     "tumor_volume_cm3": 48.2,
+     "tumor_voxels": 12934,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_378",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 68.29,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.19,
+     "tumor_voxels": 868,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_393",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 143.72,
+     "has_tumor": true,
+     "tumor_volume_cm3": 6.13,
+     "tumor_voxels": 2571,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_399",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 64.42,
+     "has_tumor": true,
+     "tumor_volume_cm3": 11.79,
+     "tumor_voxels": 2682,
+     "burden_cat": "medium",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_404",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 60.9,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.46,
+     "tumor_voxels": 1272,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "pancreas_418",
+   "dataset": "msd",
+   "observed_organs": [
+    "pancreas"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "pancreas": {
+     "present": true,
+     "organ_volume_cm3": 72.71,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.72,
+     "tumor_voxels": 1102,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  }
+ ]
+}

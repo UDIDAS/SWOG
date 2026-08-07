@@ -1,0 +1,468 @@
+{
+ "n": 21,
+ "dataset": "lits",
+ "records": [
+  {
+   "case_id": "volume-101",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 1632.13,
+     "has_tumor": true,
+     "tumor_volume_cm3": 97.35,
+     "tumor_voxels": 97346,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-11",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 821.33,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.83,
+     "tumor_voxels": 2831,
+     "burden_cat": "low",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-110",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 780.8,
+     "has_tumor": true,
+     "tumor_volume_cm3": 32.31,
+     "tumor_voxels": 32307,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-113",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 828.02,
+     "has_tumor": true,
+     "tumor_volume_cm3": 21.78,
+     "tumor_voxels": 21776,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-116",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 920.62,
+     "has_tumor": true,
+     "tumor_volume_cm3": 154.25,
+     "tumor_voxels": 154250,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-19",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 973.38,
+     "has_tumor": true,
+     "tumor_volume_cm3": 5.01,
+     "tumor_voxels": 5013,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-21",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 753.12,
+     "has_tumor": true,
+     "tumor_volume_cm3": 9.51,
+     "tumor_voxels": 9511,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-24",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 514.04,
+     "has_tumor": true,
+     "tumor_volume_cm3": 0.38,
+     "tumor_voxels": 382,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-37",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 468.07,
+     "has_tumor": true,
+     "tumor_volume_cm3": 3.9,
+     "tumor_voxels": 3895,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-43",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 682.13,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.87,
+     "tumor_voxels": 1872,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "tail",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-44",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 484.65,
+     "has_tumor": true,
+     "tumor_volume_cm3": 46.9,
+     "tumor_voxels": 46902,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-49",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 182.31,
+     "has_tumor": true,
+     "tumor_volume_cm3": 2.18,
+     "tumor_voxels": 2184,
+     "burden_cat": "low",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-54",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 132.45,
+     "has_tumor": true,
+     "tumor_volume_cm3": 0.14,
+     "tumor_voxels": 139,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-68",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 318.56,
+     "has_tumor": true,
+     "tumor_volume_cm3": 1.27,
+     "tumor_voxels": 1268,
+     "burden_cat": "low",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-70",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 564.94,
+     "has_tumor": true,
+     "tumor_volume_cm3": 30.57,
+     "tumor_voxels": 30575,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "head",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-75",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 152.66,
+     "has_tumor": true,
+     "tumor_volume_cm3": 0.72,
+     "tumor_voxels": 723,
+     "burden_cat": "low",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-76",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 312.27,
+     "has_tumor": true,
+     "tumor_volume_cm3": 49.31,
+     "tumor_voxels": 49307,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-80",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 351.62,
+     "has_tumor": true,
+     "tumor_volume_cm3": 22.44,
+     "tumor_voxels": 22437,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-82",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 1190.38,
+     "has_tumor": true,
+     "tumor_volume_cm3": 35.98,
+     "tumor_voxels": 35985,
+     "burden_cat": "high",
+     "multiplicity": "solitary",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-93",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 1080.38,
+     "has_tumor": true,
+     "tumor_volume_cm3": 89.66,
+     "tumor_voxels": 89660,
+     "burden_cat": "high",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  },
+  {
+   "case_id": "volume-99",
+   "dataset": "lits",
+   "observed_organs": [
+    "liver"
+   ],
+   "granularity": "volume",
+   "organs": {
+    "liver": {
+     "present": true,
+     "organ_volume_cm3": 929.24,
+     "has_tumor": true,
+     "tumor_volume_cm3": 3.28,
+     "tumor_voxels": 3283,
+     "burden_cat": "medium",
+     "multiplicity": "multifocal",
+     "containment": "boundary",
+     "anatomic_location": "body",
+     "size_cat": "unknown"
+    }
+   }
+  }
+ ]
+}

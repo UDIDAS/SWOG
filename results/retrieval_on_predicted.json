@@ -1,0 +1,37 @@
+{
+  "n_aligned": 113,
+  "results": {
+    "1_GT_phenotypes_gamma (upper bound)": {
+      "P@5": 1.0,
+      "P@10": 0.996,
+      "mAP": 0.992,
+      "nDCG": 0.999,
+      "spurious@10": 0.0,
+      "n_queries": 113
+    },
+    "2_PREDICTED_phenotypes_gamma": {
+      "P@5": 1.0,
+      "P@10": 0.992,
+      "mAP": 0.972,
+      "nDCG": 0.996,
+      "spurious@10": 0.0,
+      "n_queries": 113
+    },
+    "3_PREDICTED_no_gamma (coverage_blind)": {
+      "P@5": 0.681,
+      "P@10": 0.673,
+      "mAP": 0.714,
+      "nDCG": 0.676,
+      "spurious@10": 0.32,
+      "n_queries": 113
+    },
+    "4_PREDICTED_base (organ-agnostic)": {
+      "P@5": 0.598,
+      "P@10": 0.535,
+      "mAP": 0.524,
+      "nDCG": 0.558,
+      "spurious@10": 0.465,
+      "n_queries": 113
+    }
+  }
+}

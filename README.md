@@ -197,7 +197,14 @@ implausible phenotypes, so there is nothing to flag (a finding: the validator's 
 | pancreas/flare_task2 | 0.9943 | 4.4% |
 | pancreas/msd | 0.981 | 10.5% |
 
-_OAKG retrieval on predicted phenotypes — computing (pipeline chain running); table lands on completion._
+**OAKG retrieval on predicted phenotypes** — ranked by predicted-phenotype similarity, relevance scored against GT tumor features:
+
+| Setting | P@5 | P@10 | mAP | nDCG | spurious@10 |
+|---|:--:|:--:|:--:|:--:|:--:|
+| GT phenotypes gamma (upper bound) | 1.0 | 0.996 | 0.992 | 0.999 | 0.0 |
+| PREDICTED phenotypes gamma | 1.0 | 0.992 | 0.972 | 0.996 | 0.0 |
+| PREDICTED no gamma (coverage blind) | 0.681 | 0.673 | 0.714 | 0.676 | 0.32 |
+| PREDICTED base (organ-agnostic) | 0.598 | 0.535 | 0.524 | 0.558 | 0.465 |
 <!-- KG:END -->
 
 ---
