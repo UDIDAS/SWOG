@@ -166,6 +166,39 @@ Same semi-oracle setting, so these are the whole-volume *interactive ceiling* �
 _LiTS is DSC-only — its `.npy` volumes did not retain mm spacing, which NSD/HD95 require._
 <!-- RESULTS3D:END -->
 
+### 5.1 Cross-dataset organ generalization
+
+Each per-dataset AUSAM organ model applied to *every* dataset's test split — the transfer view that motivates the
+KG's multi-source integration. On-diagonal is in-distribution; off-diagonal is zero-shot transfer to a dataset the
+model never trained on.
+
+<!-- CROSSDATASET:START -->
+**Cross-dataset organ generalization** — rows = training dataset, columns = test dataset, slice-level Dice (GT box). **Bold** = in-distribution (diagonal); off-diagonal = zero-shot transfer.
+
+_liver_
+| model \ test | FLARE23 | FLARE-Task2 | LiTS |
+|---|:--:|:--:|:--:|
+| FLARE23 | **0.939** | 0.964 | 0.941 |
+| FLARE-Task2 | 0.935 | **0.970** | 0.939 |
+| LiTS | 0.925 | 0.955 | **0.957** |
+
+_kidney_
+| model \ test | FLARE23 | FLARE-Task2 | KiTS23 |
+|---|:--:|:--:|:--:|
+| FLARE23 | **0.922** | 0.948 | 0.849 |
+| FLARE-Task2 | 0.894 | **0.955** | 0.802 |
+| KiTS23 | 0.858 | 0.899 | **0.911** |
+
+_pancreas_
+| model \ test | FLARE23 | FLARE-Task2 | MSD |
+|---|:--:|:--:|:--:|
+| FLARE23 | **0.870** | 0.890 | 0.835 |
+| FLARE-Task2 | 0.852 | **0.913** | 0.841 |
+| MSD | 0.854 | 0.879 | **0.877** |
+
+Mean in-distribution Dice **0.924** vs zero-shot transfer **0.892** (Δ +0.032). Liver transfers cleanly (all ≥0.92); the widest gap is transfer *into* KiTS (FLARE→KiTS kidney 0.80–0.85), reflecting KiTS's tumor-distorted kidneys and a harder test split — a data-distribution effect that motivates integrating datasets at the KG level rather than expecting one model to cover all.
+<!-- CROSSDATASET:END -->
+
 ---
 
 ## 6. Knowledge-graph stage (the contribution)
