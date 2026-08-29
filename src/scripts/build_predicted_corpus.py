@@ -46,8 +46,8 @@ def burden_cat(v, t1, t2):
     return "low" if v < t1 else ("high" if v >= t2 else "medium")
 
 
-def predict_volume(model, proc, ct, seg, labs, ax, text):
-    """Run a model over the labeled slices (semi-oracle GT box) -> 3-D binary mask at native resolution."""
+def predict_volume(model, proc, ct, seg, labs, ax, text, use_box=True):
+    """Run a model over the labeled slices (semi-oracle GT box; text-only if use_box=False) -> 3-D mask."""
     pred = np.zeros(ct.shape, np.uint8)
     for z in range(ct.shape[ax]):
         gm = np.isin(_slice(seg, ax, z), labs)
@@ -55,8 +55,11 @@ def predict_volume(model, proc, ct, seg, labs, ax, text):
         if gm256.sum() < MINPX:
             continue
         rgb = hu_rgb(resize(_slice(ct, ax, z), (256, 256), preserve_range=True, anti_aliasing=True))
-        box = bbox_from_mask(gm256.astype(np.uint8), pad=3) or [0, 0, 255, 255]
-        inp = proc(images=[rgb], text=[text], input_boxes=[[box]], input_boxes_labels=[[1]], return_tensors="pt")
+        pk = dict(images=[rgb], text=[text], return_tensors="pt")
+        if use_box:                                 # box-isolation: drop the GT box for the autonomous variant
+            box = bbox_from_mask(gm256.astype(np.uint8), pad=3) or [0, 0, 255, 255]
+            pk.update(input_boxes=[[box]], input_boxes_labels=[[1]])
+        inp = proc(**pk)
         kw = {"pixel_values": inp["pixel_values"].to(DEV)}
         for k in ("input_ids", "attention_mask", "input_boxes", "input_boxes_labels"):
             if inp.get(k) is not None:

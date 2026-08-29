@@ -173,11 +173,62 @@ def tumor3d():
     return "\n".join(L)
 
 
+def tumor_generalization():
+    fmt = lambda v: (f"{v:.3f}" if isinstance(v, (int, float)) else "—")
+    ded_organ = {"lits": "liver", "msd": "pancreas", "kits": "kidney"}
+    L = ["**Can one FLARE23 pan-cancer tumor expert replace the per-dataset tumor experts?** The numbers below are "
+         "produced by **`src/scripts/eval_tumor_3d.py`**, which loads the checkpoint, **runs SAM3 over every slice** "
+         "of each held-out volume, and **computes Dice vs GT** — a live segmentation, not a lookup. Reproduce end "
+         "to end: `python src/scripts/eval_tumor_3d.py --dataset <ds> --tumor-ckpt sam3_tumor_ausam_flare.pth --tag "
+         "flareXon_<ds>` (checkpoint: `MMKG_AUSAM_2026-08-07/checkpoints/tumor/` on Drive).", "",
+         "| Dataset | FLARE23 expert (DSC 3-D) | Dedicated expert (DSC 3-D) | Δ | n |",
+         "|---|:--:|:--:|:--:|:--:|"]
+    for ds in ["lits", "msd", "kits"]:
+        fa = f"{RES}/tumor_3d_flareXon_{ds}.json"; fd = f"{RES}/tumor_3d_{ds}.json"
+        if not (os.path.exists(fa) and os.path.exists(fd)):
+            continue
+        a = json.load(open(fa)); d = json.load(open(fd))
+        av, dv = a["mean_3d_dice"], d["mean_3d_dice"]
+        L.append(f"| {DS_NAME.get(ds, ds)} ({ded_organ[ds]}) | {fmt(av)} | {fmt(dv)} | {av - dv:+.3f} | {a['n_patients']} |")
+    L += ["", "_The single FLARE23 expert matches the dedicated per-dataset experts within ~0.007 DSC on whole "
+          "volumes (semi-oracle, GT box) — so multi-organ + tumor can be served by one general expert, keeping a "
+          "dedicated expert only where it clearly wins. Model `sam3_tumor_ausam_flare.pth`; results "
+          "`results/tumor_3d_flareXon_*.json` vs the dedicated `tumor_3d_*.json`. (2-D is not compared here — the "
+          "dedicated 2-D was scored on curated pool slices, a different population than these whole-volume slices.)_"]
+    return "\n".join(L)
+
+
+def tumor_boxisolation():
+    fmt = lambda v: (f"{v:.3f}" if isinstance(v, (int, float)) else "—")
+    organ = {"lits": "liver", "msd": "pancreas", "kits": "kidney"}
+    L = ["**How much of the semi-oracle score is the GT box?** The same FLARE23 expert, **with** vs **without** the "
+         "GT-derived box (text-only), on the same held-out volumes. Produced by **`src/scripts/eval_tumor_3d.py`** "
+         "(live SAM3 segmentation + Dice, not a lookup). Reproduce the no-box arm: `python "
+         "src/scripts/eval_tumor_3d.py --dataset <ds> --tumor-ckpt sam3_tumor_ausam_flare.pth --no-box --tag "
+         "flareNoBoxOn_<ds>`.", "",
+         "| Dataset | With GT box (DSC 3-D) | No box / autonomous (DSC 3-D) | Δ (box's contribution) | n |",
+         "|---|:--:|:--:|:--:|:--:|"]
+    for ds in ["lits", "msd", "kits"]:
+        fa = f"{RES}/tumor_3d_flareXon_{ds}.json"; fb = f"{RES}/tumor_3d_flareNoBoxOn_{ds}.json"
+        if not (os.path.exists(fa) and os.path.exists(fb)):
+            continue
+        a = json.load(open(fa)); b = json.load(open(fb))
+        av, bv = a["mean_3d_dice"], b["mean_3d_dice"]
+        L.append(f"| {DS_NAME.get(ds, ds)} ({organ[ds]}) | {fmt(av)} | {fmt(bv)} | {bv - av:+.3f} | {a['n_patients']} |")
+    L += ["", "_Removing the GT box costs **0.23–0.48 DSC** on tumor — so the semi-oracle numbers above are an "
+          "**interactive upper bound**, and GT-derived boxes are **not** a deployable autonomous solution. Closing "
+          "this gap (autonomous localization / auto-box) is the segmentation direction for the broader VKG work. "
+          "Results: `results/tumor_3d_flareNoBoxOn_*.json` (no box) vs `tumor_3d_flareXon_*.json` (box)._"]
+    return "\n".join(L)
+
+
 def main():
     txt = open(README).read()
     txt = replace(txt, "<!-- RESULTS3D:START -->", "<!-- RESULTS3D:END -->", results3d())
     txt = replace(txt, "<!-- CROSSDATASET:START -->", "<!-- CROSSDATASET:END -->", crossdataset())
     txt = replace(txt, "<!-- TUMOR3D:START -->", "<!-- TUMOR3D:END -->", tumor3d())
+    txt = replace(txt, "<!-- TUMORGEN:START -->", "<!-- TUMORGEN:END -->", tumor_generalization())
+    txt = replace(txt, "<!-- TUMORBOX:START -->", "<!-- TUMORBOX:END -->", tumor_boxisolation())
     txt = replace(txt, "<!-- TUMOR_INCR:START -->", "<!-- TUMOR_INCR:END -->", tumor_incremental())
     txt = replace(txt, "<!-- TUMOR_FID:START -->", "<!-- TUMOR_FID:END -->", tumor_fidelity())
     txt = replace(txt, "<!-- KG:START -->", "<!-- KG:END -->", kg())

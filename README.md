@@ -224,6 +224,34 @@ semi-oracle (GT-box, target-present-slice) setting as the organ 3-D above — so
 _LiTS is DSC-only (no mm spacing). **\*FLARE23 3-D is on only the 8 tumor-test patients with local volumes** (of 54), so it reads high on an easy subset — its full-set **2-D 0.803** stays the representative FLARE23 tumor number. Moving tumor from 2-D-target-present to 3-D-whole-volume trims DSC by ~1.5–6.4 points (MSD −6.4, LiTS −3.4, KiTS −1.5) — modest because, like the organ 3-D, the semi-oracle setting scores only tumor-present slices with a GT box; the larger drop expected under autonomous localization (auto-box) is the next experiment._
 <!-- TUMOR3D:END -->
 
+### 5.3 One tumor expert — FLARE23 generalization
+
+<!-- TUMORGEN:START -->
+**Can one FLARE23 pan-cancer tumor expert replace the per-dataset tumor experts?** The numbers below are produced by **`src/scripts/eval_tumor_3d.py`**, which loads the checkpoint, **runs SAM3 over every slice** of each held-out volume, and **computes Dice vs GT** — a live segmentation, not a lookup. Reproduce end to end: `python src/scripts/eval_tumor_3d.py --dataset <ds> --tumor-ckpt sam3_tumor_ausam_flare.pth --tag flareXon_<ds>` (checkpoint: `MMKG_AUSAM_2026-08-07/checkpoints/tumor/` on Drive).
+
+| Dataset | FLARE23 expert (DSC 3-D) | Dedicated expert (DSC 3-D) | Δ | n |
+|---|:--:|:--:|:--:|:--:|
+| LiTS (liver) | 0.778 | 0.785 | -0.007 | 21 |
+| MSD (pancreas) | 0.815 | 0.818 | -0.003 | 56 |
+| KiTS23 (kidney) | 0.903 | 0.910 | -0.006 | 36 |
+
+_The single FLARE23 expert matches the dedicated per-dataset experts within ~0.007 DSC on whole volumes (semi-oracle, GT box) — so multi-organ + tumor can be served by one general expert, keeping a dedicated expert only where it clearly wins. Model `sam3_tumor_ausam_flare.pth`; results `results/tumor_3d_flareXon_*.json` vs the dedicated `tumor_3d_*.json`. (2-D is not compared here — the dedicated 2-D was scored on curated pool slices, a different population than these whole-volume slices.)_
+<!-- TUMORGEN:END -->
+
+### 5.4 The GT box is an upper bound — box-isolation
+
+<!-- TUMORBOX:START -->
+**How much of the semi-oracle score is the GT box?** The same FLARE23 expert, **with** vs **without** the GT-derived box (text-only), on the same held-out volumes. Produced by **`src/scripts/eval_tumor_3d.py`** (live SAM3 segmentation + Dice, not a lookup). Reproduce the no-box arm: `python src/scripts/eval_tumor_3d.py --dataset <ds> --tumor-ckpt sam3_tumor_ausam_flare.pth --no-box --tag flareNoBoxOn_<ds>`.
+
+| Dataset | With GT box (DSC 3-D) | No box / autonomous (DSC 3-D) | Δ (box's contribution) | n |
+|---|:--:|:--:|:--:|:--:|
+| LiTS (liver) | 0.778 | 0.546 | -0.232 | 21 |
+| MSD (pancreas) | 0.815 | 0.332 | -0.484 | 56 |
+| KiTS23 (kidney) | 0.903 | 0.515 | -0.389 | 36 |
+
+_Removing the GT box costs **0.23–0.48 DSC** on tumor — so the semi-oracle numbers above are an **interactive upper bound**, and GT-derived boxes are **not** a deployable autonomous solution. Closing this gap (autonomous localization / auto-box) is the segmentation direction for the broader VKG work. Results: `results/tumor_3d_flareNoBoxOn_*.json` (no box) vs `tumor_3d_flareXon_*.json` (box)._
+<!-- TUMORBOX:END -->
+
 ---
 
 ## 6. Knowledge-graph stage (the contribution)

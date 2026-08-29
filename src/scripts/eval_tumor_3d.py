@@ -41,8 +41,10 @@ def tumor_test_cases(ds, tds):
     cp = f"/home/ud3d4/Desktop/SWOG/results/corpus_predicted_{ds}.json"
     if os.path.exists(cp):
         return [r["case_id"] for r in json.load(open(cp))["records"]]
-    from train_tumor_incremental import patient_split as tumor_split, load_all as tumor_load_all
-    Mt = tumor_load_all()[2]
+    from train_tumor_incremental import patient_split as tumor_split, POOLS
+    Mt = []                                            # npy-free: rebuild meta in POOLS order (same split)
+    for p in POOLS.values():
+        Mt += json.load(open(f"{p}/meta.json"))
     _, _, te = tumor_split(Mt)
     cases = sorted({Mt[i]["case"] for i in te if Mt[i]["dataset"] == tds})
     av = {os.path.basename(f).replace("_ct.nii.gz", "") for f in glob.glob(f"{FFC}/*_ct.nii.gz")}
@@ -54,18 +56,21 @@ def tumor_test_cases(ds, tds):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", required=True); ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--tumor-ckpt", default=None, help="override tumor model (e.g. cross-apply the FLARE expert)")
+    ap.add_argument("--tag", default=None, help="output filename tag (default: dataset)")
+    ap.add_argument("--no-box", action="store_true", help="text-only, no GT box (box-isolation / autonomous)")
     a = ap.parse_args()
     cfg = CFG[a.dataset]
     from transformers import Sam3Processor
     proc = Sam3Processor.from_pretrained(SAM3_MODEL_ID, token=HF_TOKEN)
-    tm = _load_sam3_ckpt(cfg["tm"], DEV)
+    tm = _load_sam3_ckpt(a.tumor_ckpt or cfg["tm"], DEV)
 
     cases = tumor_test_cases(a.dataset, cfg["tds"])
     if a.limit:
         cases = cases[:a.limit]
     print(f"3-D TUMOR [{a.dataset}] {len(cases)} tumor-test patients", flush=True)
 
-    dsc, nsdL, hdL, cout, skipped = [], [], [], [], 0
+    dsc, nsdL, hdL, cout, skipped, slice2dL = [], [], [], [], 0, []
     for ci, case in enumerate(cases):
         try:
             ct, seg, sp = cfg["load"](case)
@@ -74,7 +79,13 @@ def main():
         gt = np.isin(seg, cfg["tlab"])
         if int(gt.sum()) == 0:                      # no GT tumor in this volume -> can't score tumor DSC
             skipped += 1; continue
-        pred = predict_volume(tm, proc, ct, seg, cfg["tlab"], cfg["ax"], "tumor")
+        pred = predict_volume(tm, proc, ct, seg, cfg["tlab"], cfg["ax"], "tumor", use_box=not a.no_box)
+        for z in range(ct.shape[cfg["ax"]]):        # 2-D per-slice Dice on tumor-present slices (tumor_ausam protocol)
+            g2 = np.take(gt, z, cfg["ax"])
+            if int(g2.sum()) == 0:
+                continue
+            p2 = np.take(pred, z, cfg["ax"]); ss2 = int(p2.sum()) + int(g2.sum())
+            slice2dL.append(2 * int((p2 & g2).sum()) / ss2 if ss2 else 1.0)
         inter = int((pred & gt).sum()); s = int(pred.sum()) + int(gt.sum())
         d = 2 * inter / s if s else 1.0
         dsc.append(d)
@@ -89,12 +100,14 @@ def main():
         if (ci + 1) % 5 == 0 or ci == 0:
             print(f"  [{ci+1}/{len(cases)}] {case}: 3Ddice={round(d,4)} (pred {int(pred.sum())} / gt {int(gt.sum())} vox)", flush=True)
 
-    out = {"dataset": a.dataset, "target": "tumor", "n_patients": len(cout), "n_skipped_no_gt_tumor": skipped,
-           "nsd_taus_mm": list(NSD_TAUS),
+    out = {"dataset": a.dataset, "target": "tumor", "tumor_ckpt": a.tumor_ckpt or cfg["tm"],
+           "n_patients": len(cout), "n_skipped_no_gt_tumor": skipped, "nsd_taus_mm": list(NSD_TAUS),
            "mean_3d_dice": round(float(np.mean(dsc)), 4) if dsc else None,
+           "mean_2d_slice_dice": round(float(np.mean(slice2dL)), 4) if slice2dL else None,
+           "n_2d_slices": len(slice2dL),
            "mean_nsd_2mm": round(float(np.mean(nsdL)), 4) if nsdL else None,
            "mean_hd95_mm": round(float(np.mean(hdL)), 2) if hdL else None, "cases": cout}
-    fp = f"/home/ud3d4/Desktop/SWOG/results/tumor_3d_{a.dataset}.json"
+    fp = f"/home/ud3d4/Desktop/SWOG/results/tumor_3d_{a.tag or a.dataset}.json"
     json.dump(out, open(fp, "w"), indent=2)
     print(f"\n=== {a.dataset} TUMOR 3-D  DSC {out['mean_3d_dice']} | NSD@2mm {out['mean_nsd_2mm']} | "
           f"HD95mm {out['mean_hd95_mm']}  (n={len(cout)}, skipped {skipped}) ===", flush=True)
